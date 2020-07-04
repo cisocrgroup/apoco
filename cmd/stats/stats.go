@@ -45,11 +45,11 @@ func run(_ *cobra.Command, args []string) {
 func eachToken(mets, inputFileGrp string, f func(doc *xmlquery.Node) error) error {
 	files, err := pagexml.FilePathsForFileGrp(mets, inputFileGrp)
 	if err != nil {
-		return fmt.Errorf("eachXMLFile: %v", err)
+		return fmt.Errorf("eachToken: %v", err)
 	}
 	for _, file := range files {
 		if err := eachTokenInFile(file, f); err != nil {
-			return fmt.Errorf("eachXMLFile %s: %v", file, err)
+			return fmt.Errorf("eachToken %s: %v", file, err)
 		}
 	}
 	return nil
@@ -181,7 +181,7 @@ func parseDTD(n *xmlquery.Node, skipped, short, lex, cor *bool, rank *int, ocr, 
 	const format = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
 	_, err := fmt.Sscanf(dtd, format, skipped, short, lex, cor, rank, ocr, sug, gt)
 	if err != nil {
-		return fmt.Errorf("cannot parse dataTypeDetails: %q: %v", dtd, err)
+		return fmt.Errorf("parseDTD: cannot parse %q: %v", dtd, err)
 	}
 	return nil
 }
