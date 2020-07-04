@@ -37,22 +37,14 @@ var CMD = &cobra.Command{
 
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameters)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	noerr(err)
 	c.Overwrite(flags.model, flags.nocr, !flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	noerr(err)
 	rrlr, rrfs, err := m.Load("rr", c.Nocr)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	noerr(err)
 	dmlr, dmfs, err := m.Load("dm", c.Nocr)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	noerr(err)
 	cor := corrector{
 		mets: flags.mets,
 		ifg:  flags.inputFileGrp,
@@ -71,12 +63,8 @@ func run(_ *cobra.Command, args []string) {
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
 		correct(&cor),
 	)
-	if err := g.Wait(); err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	if err := cor.correct(); err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	noerr(g.Wait())
+	noerr(cor.correct())
 }
 
 func correct(cor *corrector) apoco.StreamFunc {
@@ -132,5 +120,11 @@ func analyzeRankings(cor *corrector) apoco.StreamFunc {
 			})
 		})
 		return out
+	}
+}
+
+func noerr(err error) {
+	if err != nil {
+		log.Fatalf("error: %v", err)
 	}
 }

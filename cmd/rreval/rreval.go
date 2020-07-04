@@ -39,14 +39,10 @@ var CMD = &cobra.Command{
 
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameters)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	noerr(err)
 	c.Overwrite(flags.model, flags.nocr, flags.nocache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	noerr(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	out := apoco.Pipe(ctx, g,
 		pagexml.Tokenize(flags.mets, flags.inputFileGrp),
@@ -59,9 +55,7 @@ func run(_ *cobra.Command, args []string) {
 	for t := range out { // drain the output channel
 		log.Printf("token: %v", t)
 	}
-	if err := g.Wait(); err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	noerr(g.Wait())
 }
 
 func rreval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
@@ -138,4 +132,10 @@ func runStats(lr *ml.LR, xs, ys []float64, nocr int) {
 func gt(t apoco.Token) float64 {
 	candidate := t.Payload.(*gofiler.Candidate)
 	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
+}
+
+func noerr(err error) {
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
 }

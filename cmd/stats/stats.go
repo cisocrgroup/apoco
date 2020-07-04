@@ -34,14 +34,10 @@ var CMD = &cobra.Command{
 func run(_ *cobra.Command, args []string) {
 	if flags.csv {
 		printCSVHeader()
-		if err := eachToken(flags.mets, flags.inputFileGrp, printCSV); err != nil {
-			log.Fatalf("error: %v", err)
-		}
+		noerr(eachToken(flags.mets, flags.inputFileGrp, printCSV))
 	} else {
 		var s stats
-		if err := eachToken(flags.mets, flags.inputFileGrp, s.stat); err != nil {
-			log.Fatalf("error: %v", err)
-		}
+		noerr(eachToken(flags.mets, flags.inputFileGrp, s.stat))
 		s.write()
 	}
 }
@@ -188,4 +184,10 @@ func parseDTD(n *xmlquery.Node, skipped, short, lex, cor *bool, rank *int, ocr, 
 		return fmt.Errorf("cannot parse dataTypeDetails: %q: %v", dtd, err)
 	}
 	return nil
+}
+
+func noerr(err error) {
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
 }
