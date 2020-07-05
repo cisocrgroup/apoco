@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"example.com/apoco/pkg/apoco"
 	"example.com/apoco/pkg/apoco/ml"
@@ -46,7 +47,7 @@ func run(_ *cobra.Command, args []string) {
 	noerr(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		pagexml.Tokenize(flags.mets, flags.inputFileGrp),
+		pagexml.Tokenize(flags.mets, strings.Split(flags.inputFileGrp, ",")...),
 		apoco.Normalize,
 		apoco.FilterShort,
 		apoco.ConnectLM(c, m.Ngrams),
