@@ -27,12 +27,7 @@ func Tokenize(mets string, fgs ...string) apoco.StreamFunc {
 		out := make(chan apoco.Token)
 		g.Go(func() error {
 			defer close(out)
-			for i, fg := range fgs {
-				if i != 0 { // add a sentry between file group file tokens
-					if err := apoco.SendTokens(ctx, out, apoco.Token{}); err != nil {
-						return fmt.Errorf("tokenize %s: %v", mets, err)
-					}
-				}
+			for _, fg := range fgs {
 				files, err := FilePathsForFileGrp(mets, fg)
 				if err != nil {
 					return fmt.Errorf("tokenize %s: %v", mets, err)

@@ -22,19 +22,6 @@ type Token struct {
 	IsFirstInLine, IsLastInLine bool           // wether the token is the first or last in its line
 }
 
-// IsEmpty returns true iff the token is empty.  Empty tokens are
-// used as sentries between documents in the streams.
-func (t Token) IsEmpty() bool {
-	return t.LM == nil &&
-		t.File == "" &&
-		t.ID == "" &&
-		t.FileGroup == "" &&
-		t.Chars == nil &&
-		t.Confs == nil &&
-		t.Tokens == nil &&
-		t.Lines == nil
-}
-
 // IsLexiconEntry returns true if this token is a normal lexicon entry
 // for its connected language model.
 func (t Token) IsLexiconEntry() bool {
