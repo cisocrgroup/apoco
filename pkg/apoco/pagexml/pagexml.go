@@ -93,8 +93,12 @@ func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.Toke
 		if err != nil {
 			return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 		}
-		token.IsFirstInLine = !findPrevSibling(word, "Word")
-		token.IsLastInLine = !findNextSibling(word, "Word")
+		if !findPrevSibling(word, "Word") {
+			token.SetTrait(0, apoco.FirstInLine)
+		}
+		if !findNextSibling(word, "Word") {
+			token.SetTrait(0, apoco.LastInLine)
+		}
 		if err := apoco.SendTokens(ctx, out, token); err != nil {
 			return fmt.Errorf("tokenizePageXML: %v", err)
 		}
