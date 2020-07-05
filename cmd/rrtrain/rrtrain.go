@@ -45,7 +45,7 @@ func run(_ *cobra.Command, args []string) {
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	noerr(err)
 	g, ctx := errgroup.WithContext(context.Background())
-	out := apoco.Pipe(ctx, g,
+	_ = apoco.Pipe(ctx, g,
 		pagexml.Tokenize(flags.mets, flags.inputFileGrp),
 		apoco.Normalize,
 		apoco.FilterShort,
@@ -53,17 +53,12 @@ func run(_ *cobra.Command, args []string) {
 		apoco.FilterLexiconEntries,
 		apoco.ConnectCandidates,
 		rrtrain(c, m))
-	for t := range out {
-		log.Printf("token: %v", t)
-	}
 	noerr(g.Wait())
 }
 
 func rrtrain(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
 		g.Go(func() error {
-			defer close(out)
 			fs, err := apoco.NewFeatureSet(c.RRFeatures...)
 			if err != nil {
 				return fmt.Errorf("rrtrain: %v", err)
@@ -97,7 +92,7 @@ func rrtrain(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			}
 			return nil
 		})
-		return out
+		return nil
 	}
 }
 
