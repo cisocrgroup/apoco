@@ -43,7 +43,7 @@ func run(_ *cobra.Command, args []string) {
 	c.Overwrite(flags.model, flags.nocr, flags.nocache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	noerr(err)
-	lr, fs, err := m.Load("dm", c.Nocr)
+	lr, fs, err := m.Load("rr", c.Nocr)
 	noerr(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,

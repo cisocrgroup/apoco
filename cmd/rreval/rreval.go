@@ -107,6 +107,10 @@ func (s *stats) precision() float64 {
 	return float64(s.tp) / float64(s.tp+s.fp)
 }
 
+func (s *stats) f1() float64 {
+	return 2 * s.precision() * s.recall() / (s.precision() + s.recall())
+}
+
 func runStats(lr *ml.LR, xs, ys []float64, nocr int) {
 	n := len(ys)
 	x := mat.NewDense(n, len(xs)/n, xs)
@@ -122,6 +126,7 @@ func runStats(lr *ml.LR, xs, ys []float64, nocr int) {
 	fmt.Printf("rr,fn,%d,%d\n", nocr, s.fn)
 	fmt.Printf("rr,pr,%d,%f\n", nocr, s.precision())
 	fmt.Printf("rr,re,%d,%f\n", nocr, s.recall())
+	fmt.Printf("rr,f1,%d,%f\n", nocr, s.f1())
 }
 
 func gt(t apoco.Token) float64 {
