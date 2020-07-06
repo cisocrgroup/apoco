@@ -45,7 +45,7 @@ func run(_ *cobra.Command, args []string) {
 	lr, fs, err := m.Load("dm", c.Nocr)
 	noerr(err)
 	g, ctx := errgroup.WithContext(context.Background())
-	out := apoco.Pipe(ctx, g,
+	_ = apoco.Pipe(ctx, g,
 		pagexml.Tokenize(flags.mets, flags.inputFileGrp),
 		apoco.Normalize,
 		apoco.FilterShort,
@@ -54,17 +54,12 @@ func run(_ *cobra.Command, args []string) {
 		apoco.ConnectCandidates,
 		apoco.ConnectRankings(lr, fs, c.Nocr),
 		traindm(c, m))
-	for t := range out { // drain the output channel
-		log.Printf("token: %v", t)
-	}
 	noerr(g.Wait())
 }
 
 func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
 		g.Go(func() error {
-			defer close(out)
 			fs, err := apoco.NewFeatureSet(c.DMFeatures...)
 			if err != nil {
 				return fmt.Errorf("traindm: %v", err)
@@ -97,7 +92,7 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			}
 			return nil
 		})
-		return out
+		return nil
 	}
 }
 

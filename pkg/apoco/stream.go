@@ -175,14 +175,13 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 		g.Go(func() error {
 			defer close(out)
 			var lm *LanguageModel
-			loader := lmLoader{lm: lm, config: c}
+			var fg string
+			loader := lmLoader{lm: new(LanguageModel), config: c}
 			err := EachToken(ctx, in, func(t Token) error {
-				if lm == nil {
-					lm = new(LanguageModel)
-					loader.lm = lm
-					loader.lm.ngrams = ngrams
+				if fg == "" {
+					fg = t.FileGroup
 				}
-				if t.IsEmpty() { // sentry
+				if fg != t.FileGroup { // new file group
 					if err := loader.load(ctx); err != nil {
 						return fmt.Errorf("connectLM: %v", err)
 					}
@@ -190,6 +189,8 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 						return fmt.Errorf("connectLM: %v", err)
 					}
 					loader.tokens = nil
+					loader.lm = new(LanguageModel)
+					fg = t.FileGroup
 					return nil
 				}
 				loader.tokens = append(loader.tokens, t)
