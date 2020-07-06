@@ -166,15 +166,13 @@ func ConnectCandidates(ctx context.Context, g *errgroup.Group, in <-chan Token) 
 }
 
 // ConnectLM loads the language model for the tokens and adds them to
-// each token.  Empty sentry token mark the begining of new documents.
-// Whenever a sentry token is encoutered a new profile is loaded for
-// the subsequent tokens.
+// each token.  Based on the file group of the tokens different
+// language models are loaded.
 func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
 		out := make(chan Token)
 		g.Go(func() error {
 			defer close(out)
-			var lm *LanguageModel
 			var fg string
 			loader := lmLoader{lm: new(LanguageModel), config: c}
 			err := EachToken(ctx, in, func(t Token) error {
@@ -191,20 +189,19 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 					loader.tokens = nil
 					loader.lm = new(LanguageModel)
 					fg = t.FileGroup
-					return nil
 				}
 				loader.tokens = append(loader.tokens, t)
 				return nil
 			})
 			if err != nil {
-				return fmt.Errorf("add language model: %v", err)
+				return fmt.Errorf("connectLM: %v", err)
 			}
-			if lm != nil {
+			if len(loader.tokens) > 0 {
 				if err := loader.load(ctx); err != nil {
-					return fmt.Errorf("add language model: %v", err)
+					return fmt.Errorf("connectLM: %v", err)
 				}
 				if err := SendTokens(ctx, out, loader.tokens...); err != nil {
-					return fmt.Errorf("add language model: %v", err)
+					return fmt.Errorf("connectLM: %v", err)
 				}
 			}
 			return nil
