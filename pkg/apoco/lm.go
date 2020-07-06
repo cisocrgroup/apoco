@@ -176,8 +176,13 @@ func readCachedProfile(fg string) (gofiler.Profile, bool) {
 		return nil, false
 	}
 	defer is.Close()
+	gz, err := gzip.NewReader(is)
+	if err != nil {
+		return nil, false
+	}
+	defer gz.Close()
 	var profile gofiler.Profile
-	if err := json.NewDecoder(is).Decode(&profile); err != nil {
+	if err := json.NewDecoder(gz).Decode(&profile); err != nil {
 		return nil, false
 	}
 	return profile, true
@@ -196,7 +201,9 @@ func cacheProfile(fg string, profile gofiler.Profile) {
 		return
 	}
 	defer out.Close()
-	_ = json.NewEncoder(out).Encode(profile)
+	gz := gzip.NewWriter(out)
+	defer gz.Close()
+	_ = json.NewEncoder(gz).Encode(profile)
 }
 
 type logger struct {
