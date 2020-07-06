@@ -158,8 +158,8 @@ func split(masterOCR string) (prefix, infix, suffix []rune) {
 			break
 		}
 	}
-	for j = i; j < len(word); j++ {
-		if unicode.IsPunct(word[j]) {
+	for j = len(word); j > 0; j-- {
+		if !unicode.IsPunct(word[j-1]) {
 			break
 		}
 	}
