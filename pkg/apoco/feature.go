@@ -4,24 +4,29 @@ import (
 	"fmt"
 
 	"example.com/apoco/pkg/apoco/lev"
+	"example.com/apoco/pkg/apoco/ml"
 	"github.com/finkf/gofiler"
 )
 
 // registered names for feature functions
 var register = map[string]FeatureFunc{
-	"AgreeingOCRs":             AgreeingOCRs,
-	"OCRTokenConf":             OCRTokenConf,
-	"OCRTokenLen":              OCRTokenLen,
-	"OCRUnigramFreq":           OCRUnigramFreq,
-	"OCRTrigramFreq":           OCRTrigramFreq,
-	"CandidateProfilerWeight":  CandidateProfilerWeight,
-	"CandidateUnigramFreq":     CandidateUnigramFreq,
-	"CandidateTrigramFreq":     CandidateTrigramFreq,
-	"CandidateAgreeingOCR":     CandidateAgreeingOCR,
-	"CandidateOCRPatternConf":  CandidateOCRPatternConf,
-	"CandidateLevenshteinDist": CandidateLevenshteinDist,
-	"RankingConf":              RankingConf,
-	"RankingDiffToNext":        RankingDiffToNext,
+	"AgreeingOCRs":                   AgreeingOCRs,
+	"OCRTokenConf":                   OCRTokenConf,
+	"OCRTokenLen":                    OCRTokenLen,
+	"OCRUnigramFreq":                 OCRUnigramFreq,
+	"OCRTrigramFreq":                 OCRTrigramFreq,
+	"OCRFirstInLine":                 OCRFirstInLine,
+	"OCRLastInLine":                  OCRLastInLine,
+	"CandidateProfilerWeight":        CandidateProfilerWeight,
+	"CandidateUnigramFreq":           CandidateUnigramFreq,
+	"CandidateTrigramFreq":           CandidateTrigramFreq,
+	"CandidateAgreeingOCR":           CandidateAgreeingOCR,
+	"CandidateOCRPatternConf":        CandidateOCRPatternConf,
+	"CandidateLevenshteinDist":       CandidateLevenshteinDist,
+	"RankingConf":                    RankingConf,
+	"RankingConfDiffToNext":          RankingConfDiffToNext,
+	"RankingCandidateConf":           RankingCandidateConf,
+	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -96,6 +101,22 @@ func AgreeingOCRs(t Token, i, n int) (float64, bool) {
 // the unigram language model.
 func OCRUnigramFreq(t Token, i, n int) (float64, bool) {
 	return t.LM.Unigram(t.Tokens[i]), true
+}
+
+// OCRFirstInLine checks if the given token is the first in a line.
+func OCRFirstInLine(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	return ml.Bool(t.HasTrait(0, FirstInLine)), true
+}
+
+// OCRLastInLine checks if the given token is the first in a line.
+func OCRLastInLine(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	return ml.Bool(t.HasTrait(0, LastInLine)), true
 }
 
 // OCRTrigramFreq returns the product of the OCR token's trigrams.
@@ -190,11 +211,11 @@ func RankingConf(t Token, i, n int) (float64, bool) {
 	return ranking.Prob, true
 }
 
-// RankingDiffToNext returns the difference of the best ranked
+// RankingConfDiffToNext returns the difference of the best ranked
 // correction candidate's confidence to the next.  If only one
 // correction candidate is available, the next ranking's confidence is
 // assumed to be 0.
-func RankingDiffToNext(t Token, i, n int) (float64, bool) {
+func RankingConfDiffToNext(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -204,4 +225,29 @@ func RankingDiffToNext(t Token, i, n int) (float64, bool) {
 		next = rankings[1].Prob
 	}
 	return rankings[0].Prob - next, true
+}
+
+// RankingCandidateConf returns the profiler's confidence for the top
+// ranked correction suggestion.
+func RankingCandidateConf(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	return float64(t.Payload.([]Ranking)[0].Candidate.Weight), true
+}
+
+// RankingCandidateConfDiffToNext returns the difference between the
+// profiler's confidence for the top ranked correction suggestion and
+// the next.  If there is only one Correction available, 0 is used as
+// the confidence for the next candidate.
+func RankingCandidateConfDiffToNext(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	rankings := t.Payload.([]Ranking)
+	next := 0.0
+	if len(rankings) > 1 {
+		next = float64(rankings[1].Candidate.Weight)
+	}
+	return float64(rankings[0].Candidate.Weight) - next, true
 }
