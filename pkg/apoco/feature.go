@@ -2,6 +2,7 @@ package apoco
 
 import (
 	"fmt"
+	"unicode/utf8"
 
 	"example.com/apoco/pkg/apoco/lev"
 	"example.com/apoco/pkg/apoco/ml"
@@ -10,29 +11,30 @@ import (
 
 // registered names for feature functions
 var register = map[string]FeatureFunc{
-	"AgreeingOCRs":                   AgreeingOCRs,
-	"OCRTokenConf":                   OCRTokenConf,
-	"OCRTokenLen":                    OCRTokenLen,
-	"OCRUnigramFreq":                 OCRUnigramFreq,
-	"OCRTrigramFreq":                 OCRTrigramFreq,
-	"OCRFirstInLine":                 OCRFirstInLine,
-	"OCRLastInLine":                  OCRLastInLine,
-	"CandidateProfilerWeight":        CandidateProfilerWeight,
-	"CandidateUnigramFreq":           CandidateUnigramFreq,
-	"CandidateTrigramFreq":           CandidateTrigramFreq,
-	"CandidateAgreeingOCR":           CandidateAgreeingOCR,
-	"CandidateOCRPatternConf":        CandidateOCRPatternConf,
-	"CandidateLevenshteinDist":       CandidateLevenshteinDist,
-	"RankingConf":                    RankingConf,
-	"RankingConfDiffToNext":          RankingConfDiffToNext,
-	"RankingCandidateConf":           RankingCandidateConf,
-	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
+	"AgreeingOCRs":                AgreeingOCRs,
+	"OCRTokenConf":                OCRTokenConf,
+	"OCRTokenLen":                 OCRTokenLen,
+	"OCRUnigramFreq":              OCRUnigramFreq,
+	"OCRTrigramFreq":              OCRTrigramFreq,
+	"OCRFirstInLine":              OCRFirstInLine,
+	"OCRLastInLine":               OCRLastInLine,
+	"CandidateProfilerWeight":     CandidateProfilerWeight,
+	"CandidateUnigramFreq":        CandidateUnigramFreq,
+	"CandidateTrigramFreq":        CandidateTrigramFreq,
+	"CandidateAgreeingOCR":        CandidateAgreeingOCR,
+	"CandidateOCRPatternConf":     CandidateOCRPatternConf,
+	"CandidateLevenshteinDist":    CandidateLevenshteinDist,
+	"CandidateLen":                CandidateLen,
+	"RankingConf":                 RankingConf,
+	"RankingConfDiffToNext":       RankingConfDiffToNext,
+	"RankingCandidateUnigramFreq": RankingCandidateUnigramFreq,
+	"RankingCandidateTrigramFreq": RankingCandidateTrigramFreq,
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
 // feature func gets a token and a configuration (the current
-// OCR-index i and the total number of OCRs n).  The function then
-// should return the feature value for the given token and wether if
+// OCR-index i and the total number of parallel OCRs n).  The function
+// then should return the feature value for the given token and wether
 // this feature applies for the given configuration (i and n).
 type FeatureFunc func(t Token, i, n int) (float64, bool)
 
@@ -170,8 +172,8 @@ func CandidateAgreeingOCR(t Token, i, n int) (float64, bool) {
 	return float64(ret), true
 }
 
-// CandidateOCRPatternConf returns the average confidence of the
-// master OCR characters for the assumed OCR error pattern of the
+// CandidateOCRPatternConf returns the product of the confidences of
+// the master OCR characters for the assumed OCR error pattern of the
 // connected candidate.
 func CandidateOCRPatternConf(t Token, i, n int) (float64, bool) {
 	if i != 0 {
@@ -181,11 +183,11 @@ func CandidateOCRPatternConf(t Token, i, n int) (float64, bool) {
 	if len(candidate.OCRPatterns) == 0 {
 		return 0, true
 	}
-	var sum float64
+	prod := 1.0
 	for _, p := range candidate.OCRPatterns {
-		sum += t.Chars.PatternConf(p)
+		prod *= t.Chars.PatternConf(p)
 	}
-	return sum / float64(len(candidate.OCRPatterns)), true
+	return prod, true
 }
 
 // CandidateLevenshteinDist returns the levenshtein distance between
@@ -199,6 +201,15 @@ func CandidateLevenshteinDist(t Token, i, n int) (float64, bool) {
 		return float64(candidate.Distance), true
 	}
 	return float64(lev.Distance(t.Tokens[i], candidate.Suggestion)), true
+}
+
+// CandidateLen returns the length of the connected profiler candidate.
+func CandidateLen(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	len := utf8.RuneCountInString(t.Payload.(*gofiler.Candidate).Suggestion)
+	return float64(len), true
 }
 
 // RankingConf returns the confidence of the best ranked correction
@@ -227,27 +238,20 @@ func RankingConfDiffToNext(t Token, i, n int) (float64, bool) {
 	return rankings[0].Prob - next, true
 }
 
-// RankingCandidateConf returns the profiler's confidence for the top
-// ranked correction suggestion.
-func RankingCandidateConf(t Token, i, n int) (float64, bool) {
+// RankingCandidateTrigramFreq returns the trigram frequency for the
+// profiler candidate of the top ranked correction suggestion.
+func RankingCandidateTrigramFreq(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
-	return float64(t.Payload.([]Ranking)[0].Candidate.Weight), true
+	return t.LM.Trigram(t.Payload.([]Ranking)[0].Candidate.Suggestion), true
 }
 
-// RankingCandidateConfDiffToNext returns the difference between the
-// profiler's confidence for the top ranked correction suggestion and
-// the next.  If there is only one Correction available, 0 is used as
-// the confidence for the next candidate.
-func RankingCandidateConfDiffToNext(t Token, i, n int) (float64, bool) {
+// RankingCandidateUnigramFreq returns the unigram frequency for the
+// profiler candidate of the top ranked correction suggestion.
+func RankingCandidateUnigramFreq(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
-	rankings := t.Payload.([]Ranking)
-	next := 0.0
-	if len(rankings) > 1 {
-		next = float64(rankings[1].Candidate.Weight)
-	}
-	return float64(rankings[0].Candidate.Weight) - next, true
+	return t.LM.Unigram(t.Payload.([]Ranking)[0].Candidate.Suggestion), true
 }
