@@ -120,15 +120,14 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	} else {
 		rank := cor.ranks[t.File][t.ID]
 		cor := t.Payload.(apoco.Correction)
-		corstr := cor.Correction(ocr)
 		gt := notEmpty(t.Tokens[len(t.Tokens)-1])
 		sug := cor.Candidate.Suggestion
 		node.SetAttr(newTE, xml.Attr{
 			Name:  xml.Name{Local: "conf"},
 			Value: strconv.FormatFloat(cor.Conf, 'e', -1, 64),
 		})
-		if cor.Conf > 0.5 {
-			newStr.Data = corstr
+		if cor.Conf > .5 {
+			newStr.Data = cor.Correction(ocr)
 			node.SetAttr(newTE, xml.Attr{
 				Name:  xml.Name{Local: "dataTypeDetails"},
 				Value: fmt.Sprintf(format, false, false, false, true, rank, t.Tokens[0], sug, gt),
@@ -137,7 +136,7 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 			newStr.Data = ocr
 			node.SetAttr(newTE, xml.Attr{
 				Name:  xml.Name{Local: "dataTypeDetails"},
-				Value: fmt.Sprintf(format, false, false, false, true, rank, t.Tokens[0], sug, gt),
+				Value: fmt.Sprintf(format, false, false, false, false, rank, t.Tokens[0], sug, gt),
 			})
 		}
 	}
@@ -164,7 +163,7 @@ func (cor *corrector) cleanWord(word *xmlquery.Node, unicodes []*xmlquery.Node) 
 func (cor *corrector) makeTextEquiv(unicodes []*xmlquery.Node) *xmlquery.Node {
 	newTE := &xmlquery.Node{
 		Type:         xmlquery.ElementNode,
-		Data:         "TextEquiv",
+		Data:         unicodes[0].Parent.Data, // TextEquiv
 		Prefix:       unicodes[0].Parent.Prefix,
 		NamespaceURI: unicodes[0].Parent.NamespaceURI,
 	}
@@ -172,9 +171,10 @@ func (cor *corrector) makeTextEquiv(unicodes []*xmlquery.Node) *xmlquery.Node {
 		Name:  xml.Name{Local: "index"},
 		Value: "1",
 	})
+	conf, _ := node.LookupAttr(unicodes[0].Parent, xml.Name{Local: "conf"})
 	node.SetAttr(newTE, xml.Attr{
 		Name:  xml.Name{Local: "conf"},
-		Value: "0.0",
+		Value: conf,
 	})
 	if cor.protocol {
 		node.SetAttr(newTE, xml.Attr{
