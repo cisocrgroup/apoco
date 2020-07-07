@@ -95,7 +95,8 @@ type stats struct {
 	falsef, missedops, disimps, succc int
 	badrank, missingcor               int
 	totalerrs, skippederrs, corerrs   int
-	errsafter                         int
+	errsafter, taken, nottaken        int
+	goodsuggs                         int
 }
 
 func (s *stats) stat(word *xmlquery.Node) error {
@@ -143,10 +144,9 @@ func (s *stats) stat(word *xmlquery.Node) error {
 	if !skipped && ocr != gt {
 		s.corerrs++
 	}
-	if (cor && sug != gt) || (!cor && ocr != gt) || (skipped && ocr != gt) {
-		s.errsafter++
-	}
-	if !skipped && ocr != gt && sug == gt {
+	if (skipped && ocr != gt) || // errors in skipped tokens
+		(!skipped && cor && sug != gt) || // disimprovement
+		(!skipped && !cor && ocr != gt) { // not corrected and false
 		s.errsafter++
 	}
 	if !skipped && rank == 0 {
@@ -154,6 +154,15 @@ func (s *stats) stat(word *xmlquery.Node) error {
 	}
 	if !skipped && rank > 1 {
 		s.badrank++
+	}
+	if !skipped && cor {
+		s.taken++
+	}
+	if !skipped && !cor {
+		s.nottaken++
+	}
+	if !skipped && rank == 1 {
+		s.goodsuggs++
 	}
 	return nil
 }
@@ -168,10 +177,13 @@ func (s *stats) write() {
 	fmt.Printf("missed oportunities    = %d\n", s.missedops)
 	fmt.Printf("missing correction     = %d\n", s.missingcor)
 	fmt.Printf("bad rank               = %d\n", s.badrank)
+	fmt.Printf("good suggestions       = %d\n", s.goodsuggs)
 	fmt.Printf("disimprovements        = %d\n", s.disimps)
 	fmt.Printf("succesfull corrections = %d\n", s.succc)
 	fmt.Printf("uncorrectable errors   = %d\n", s.skippederrs)
 	fmt.Printf("correctable errors     = %d\n", s.corerrs)
+	fmt.Printf("corrections taken      = %d\n", s.taken)
+	fmt.Printf("corrections not taken  = %d\n", s.nottaken)
 	fmt.Printf("total errors (before)  = %d\n", s.totalerrs)
 	fmt.Printf("total errors (after)   = %d\n", s.errsafter)
 }
