@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // Config defines the command's configuration.
@@ -22,14 +23,20 @@ type Config struct {
 
 // ReadConfig reads the config from a json file.
 func ReadConfig(file string) (*Config, error) {
-	var config Config
 	is, err := os.Open(file)
 	if err != nil {
-		return nil, fmt.Errorf("read json %s: %v", file, err)
+		return nil, fmt.Errorf("readConfig %s: %v", file, err)
 	}
 	defer is.Close()
+	var config Config
+	if strings.HasSuffix(file, ".toml") {
+		if err := toml.DecoderReader(is, &config); err != nil {
+			return nil, fmt.Errorf("readConfig %s: %v", file, err)
+		}
+		return &config, nil
+	}
 	if err := json.NewDecoder(is).Decode(&config); err != nil {
-		return nil, fmt.Errorf("read json %s: %v", file, err)
+		return nil, fmt.Errorf("readConfig %s: %v", file, err)
 	}
 	return &config, nil
 }
