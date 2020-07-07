@@ -51,7 +51,11 @@ func (f *FreqList) relative(str string) float64 {
 	if f.Total == 0 {
 		return 0
 	}
-	return float64(f.absolute(str)) / float64(f.Total)
+	abs := f.absolute(str)
+	if abs == 0 {
+		return 1.0 / float64(f.Total)
+	}
+	return float64(abs) / float64(f.Total)
 }
 
 func (f *FreqList) loadCSV(in io.Reader) error {
@@ -98,14 +102,9 @@ func (lm *LanguageModel) Trigram(str string) float64 {
 	if end > len(tmp) {
 		end = len(tmp)
 	}
-	d := 1.0e-5
-	ret := d
+	ret := 1.0
 	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
-		val := lm.ngrams.relative(string(tmp[i:j]))
-		if val == 0 {
-			val = d
-		}
-		ret *= val
+		ret *= lm.ngrams.relative(string(tmp[i:j]))
 	}
 	return ret
 }
