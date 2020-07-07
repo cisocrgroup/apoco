@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
 // Config defines the command's configuration.
@@ -30,7 +32,7 @@ func ReadConfig(file string) (*Config, error) {
 	defer is.Close()
 	var config Config
 	if strings.HasSuffix(file, ".toml") {
-		if err := toml.DecoderReader(is, &config); err != nil {
+		if _, err := toml.DecodeReader(is, &config); err != nil {
 			return nil, fmt.Errorf("readConfig %s: %v", file, err)
 		}
 		return &config, nil
