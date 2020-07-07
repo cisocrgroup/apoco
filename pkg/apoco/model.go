@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"example.com/apoco/pkg/apoco/ml"
@@ -55,7 +56,8 @@ func ReadModel(model, ngrams string) (Model, error) {
 	return m, nil
 }
 
-func (m Model) readGzippedNgrams(path string) error {
+func (m *Model) readGzippedNgrams(path string) error {
+	log.Printf("readGzippedNgrams(%q)", path)
 	is, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("readGzippedNGrams %s: %v", path, err)
@@ -73,7 +75,7 @@ func (m Model) readGzippedNgrams(path string) error {
 }
 
 // Write writes the model as json encoded, gziped file to the given
-// path.
+// path overwriting any previous existing models.
 func (m Model) Write(path string) (err error) {
 	out, err := os.Create(path)
 	if err != nil {
