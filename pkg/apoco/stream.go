@@ -174,7 +174,7 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 		g.Go(func() error {
 			defer close(out)
 			var fg string
-			loader := lmLoader{lm: new(LanguageModel), config: c}
+			loader := lmLoader{config: c, lm: &LanguageModel{ngrams: ngrams}}
 			err := EachToken(ctx, in, func(t Token) error {
 				if fg == "" {
 					fg = t.FileGroup
@@ -186,11 +186,11 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 					if err := SendTokens(ctx, out, loader.tokens...); err != nil {
 						return fmt.Errorf("connectLM: %v", err)
 					}
-					loader.tokens = nil
-					loader.lm = new(LanguageModel)
+					loader.tokens = loader.tokens[:]
 					fg = t.FileGroup
 				}
 				loader.tokens = append(loader.tokens, t)
+				loader.lm = &LanguageModel{ngrams: ngrams}
 				return nil
 			})
 			if err != nil {
@@ -219,7 +219,13 @@ type lmLoader struct {
 func (l lmLoader) load(ctx context.Context) error {
 	var g errgroup.Group
 	g.Go(func() error {
-		err := l.lm.LoadProfile(ctx, l.config.ProfilerBin, l.config.ProfilerConfig, l.config.NoCache, l.tokens...)
+		err := l.lm.LoadProfile(
+			ctx,
+			l.config.ProfilerBin,
+			l.config.ProfilerConfig,
+			l.config.NoCache,
+			l.tokens...,
+		)
 		return err
 	})
 	for i := range l.tokens {
