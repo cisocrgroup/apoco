@@ -15,8 +15,9 @@ import (
 )
 
 // Tokenize tokenizes tokens from line snippets TSV files (identyfied
-// by the given file extensions) and alignes them accordingly.  For each
-// file.ext if there exists a file.gt.txt, the ground truth is aligned as well.
+// by the given file extensions) and alignes them accordingly.  If a extension
+// ends with `.txt`, one line is read from the text file (no confidences).  Otherwise
+// the file is read as a TSV file expecting on char and its confidence on each line.
 func Tokenize(fileExts []string, dirs ...string) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
 		out := make(chan apoco.Token)
