@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 
 	"example.com/apoco/pkg/apoco"
 	"example.com/apoco/pkg/apoco/node"
@@ -18,43 +16,44 @@ import (
 )
 
 type corrector struct {
-	corrected      map[string]map[string]apoco.Token // map file -> id -> token
-	lexEntries     map[string]map[string]struct{}    // set file -> id
-	ranks          map[string]map[string]int         // set file -> id -> rank
+	// corrected      map[string]map[string]apoco.Token // map file -> id -> token
+	// lexEntries     map[string]map[string]struct{}    // set file -> id
+	// ranks          map[string]map[string]int         // set file -> id -> rank
+	info           infoMap
 	mets, ofg, ifg string
 	doc, fileGrp   *xmlquery.Node
 	protocol       bool
 }
 
-func (cor *corrector) addCorrected(token apoco.Token) {
-	if cor.corrected == nil {
-		cor.corrected = make(map[string]map[string]apoco.Token)
-	}
-	if _, ok := cor.corrected[token.File]; !ok {
-		cor.corrected[token.File] = make(map[string]apoco.Token)
-	}
-	cor.corrected[token.File][token.ID] = token
-}
+// func (cor *corrector) addCorrected(token apoco.Token) {
+// 	if cor.corrected == nil {
+// 		cor.corrected = make(map[string]map[string]apoco.Token)
+// 	}
+// 	if _, ok := cor.corrected[token.File]; !ok {
+// 		cor.corrected[token.File] = make(map[string]apoco.Token)
+// 	}
+// 	cor.corrected[token.File][token.ID] = token
+// }
 
-func (cor *corrector) addLex(token apoco.Token) {
-	if cor.lexEntries == nil {
-		cor.lexEntries = make(map[string]map[string]struct{})
-	}
-	if _, ok := cor.lexEntries[token.File]; !ok {
-		cor.lexEntries[token.File] = make(map[string]struct{})
-	}
-	cor.lexEntries[token.File][token.ID] = struct{}{}
-}
+// func (cor *corrector) addLex(token apoco.Token) {
+// 	if cor.lexEntries == nil {
+// 		cor.lexEntries = make(map[string]map[string]struct{})
+// 	}
+// 	if _, ok := cor.lexEntries[token.File]; !ok {
+// 		cor.lexEntries[token.File] = make(map[string]struct{})
+// 	}
+// 	cor.lexEntries[token.File][token.ID] = struct{}{}
+// }
 
-func (cor *corrector) addRank(token apoco.Token, rank int) {
-	if cor.ranks == nil {
-		cor.ranks = make(map[string]map[string]int)
-	}
-	if _, ok := cor.ranks[token.File]; !ok {
-		cor.ranks[token.File] = make(map[string]int)
-	}
-	cor.ranks[token.File][token.ID] = rank
-}
+// func (cor *corrector) addRank(token apoco.Token, rank int) {
+// 	if cor.ranks == nil {
+// 		cor.ranks = make(map[string]map[string]int)
+// 	}
+// 	if _, ok := cor.ranks[token.File]; !ok {
+// 		cor.ranks[token.File] = make(map[string]int)
+// 	}
+// 	cor.ranks[token.File][token.ID] = rank
+// }
 
 func (cor *corrector) correct() error {
 	files, err := pagexml.FilePathsForFileGrp(cor.mets, cor.ifg)
@@ -107,38 +106,32 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	newU := cor.makeUnicode(unicodes)
 	newStr := &xmlquery.Node{Type: xmlquery.TextNode}
 	ocr := node.Data(unicodes[0].FirstChild)
-	const format = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
-	if t, ok := cor.corrected[file][id]; !ok {
-		_, lex := cor.lexEntries[file][id]
-		gtnorm := notEmpty(strings.ToLower(trim(node.Data(unicodes[len(unicodes)-1].FirstChild))))
-		ocrnorm := notEmpty(strings.ToLower(trim(ocr)))
+
+	info := cor.info[file][id]
+	if info == nil {
+		return fmt.Errorf("correctWord: unknown token: %s/%s", file, id)
+	}
+	// if t, ok := cor.corrected[file][id]; !ok {
+	if info.skipped {
 		newStr.Data = ocr
 		node.SetAttr(newTE, xml.Attr{
 			Name:  xml.Name{Local: "dataTypeDetails"},
-			Value: fmt.Sprintf(format, true, short(trim(ocr)), lex, false, 0, ocrnorm, notEmpty(""), gtnorm),
+			Value: info.String(),
 		})
 	} else {
-		rank := cor.ranks[t.File][t.ID]
-		cor := t.Payload.(apoco.Correction)
-		gt := notEmpty(t.Tokens[len(t.Tokens)-1])
-		sug := cor.Candidate.Suggestion
-		node.SetAttr(newTE, xml.Attr{
-			Name:  xml.Name{Local: "conf"},
-			Value: strconv.FormatFloat(cor.Conf, 'e', -1, 64),
-		})
-		if cor.Conf > .5 {
-			newStr.Data = cor.Correction(ocr)
-			node.SetAttr(newTE, xml.Attr{
-				Name:  xml.Name{Local: "dataTypeDetails"},
-				Value: fmt.Sprintf(format, false, false, false, true, rank, t.Tokens[0], sug, gt),
-			})
+		if info.cor {
+			newStr.Data = apoco.ApplyOCRToCorrection(ocr, info.sug)
 		} else {
 			newStr.Data = ocr
-			node.SetAttr(newTE, xml.Attr{
-				Name:  xml.Name{Local: "dataTypeDetails"},
-				Value: fmt.Sprintf(format, false, false, false, false, rank, t.Tokens[0], sug, gt),
-			})
 		}
+		node.SetAttr(newTE, xml.Attr{
+			Name:  xml.Name{Local: "conf"},
+			Value: strconv.FormatFloat(info.conf, 'e', -1, 64),
+		})
+		node.SetAttr(newTE, xml.Attr{
+			Name:  xml.Name{Local: "dataTypeDetails"},
+			Value: info.String(),
+		})
 	}
 	newTE.FirstChild = newU
 	newU.Parent = newTE
@@ -300,21 +293,4 @@ func writeXML(doc *xmlquery.Node, path string) (err error) {
 		return fmt.Errorf("writeXML %s: %v", path, err)
 	}
 	return nil
-}
-
-func trim(str string) string {
-	return strings.TrimFunc(str, func(r rune) bool {
-		return unicode.IsPunct(r)
-	})
-}
-
-func notEmpty(str string) string {
-	if len(str) == 0 {
-		return "\u03b5" // small letter epsilon
-	}
-	return str
-}
-
-func short(str string) bool {
-	return utf8.RuneCountInString(str) <= 3
 }

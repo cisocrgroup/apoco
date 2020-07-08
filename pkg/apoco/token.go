@@ -106,18 +106,18 @@ type Correction struct {
 	Conf      float64
 }
 
-// Correction applies the casing of the master OCR string to the
+// ApplyOCRToCorrection applies the casing of the master OCR string to the
 // correction's candidate suggestion and prepends and appends any
 // punctuation of the master OCR to the suggestion.
-func (cor Correction) Correction(masterOCR string) string {
-	suggestion := []rune(cor.Candidate.Suggestion)
-	pre, inf, suf := split(masterOCR)
-	for i := 0; i < len(suggestion) && i < len(inf); i++ {
+func ApplyOCRToCorrection(ocr, sug string) string {
+	correction := []rune(sug)
+	pre, inf, suf := split(ocr)
+	for i := 0; i < len(correction) && i < len(inf); i++ {
 		if unicode.IsUpper(inf[i]) {
-			suggestion[i] = unicode.ToUpper(suggestion[i])
+			correction[i] = unicode.ToUpper(correction[i])
 		}
 	}
-	return string(pre) + string(suggestion) + string(suf)
+	return string(pre) + string(correction) + string(suf)
 }
 
 func split(masterOCR string) (prefix, infix, suffix []rune) {
