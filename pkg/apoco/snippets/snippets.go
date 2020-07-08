@@ -36,24 +36,24 @@ func Tokenize(fileExts []string, dirs ...string) apoco.StreamFunc {
 	}
 }
 
-func readTokensFromDir(ctx context.Context, out chan<- apoco.Token, dir string, fileExts []string) error {
+func readTokensFromDir(ctx context.Context, out chan<- apoco.Token, bdir string, fileExts []string) error {
 	if len(fileExts) == 0 {
-		return fmt.Errorf("readTokensFromDir %s: empty file extensions", dir)
+		return fmt.Errorf("readTokensFromDir %s: empty file extensions", bdir)
 	}
 	// Use a dir path stack to iterate over all dirs in the tree.
-	dirs := []string{dir}
+	dirs := []string{bdir}
 	for len(dirs) != 0 {
 		dir := dirs[len(dirs)-1]
 		dirs = dirs[0 : len(dirs)-1]
 		// Read all file info entries from the dir.
 		is, err := os.Open(dir)
 		if err != nil {
-			return fmt.Errorf("readTokensFromDir %s: %v", dir, err)
+			return fmt.Errorf("readTokensFromDir %s: %v", bdir, err)
 		}
 		fis, err := is.Readdir(-1)
 		is.Close() // Unconditionally close the dir.
 		if err != nil {
-			return fmt.Errorf("readTokensFromDir %s: %v", dir, err)
+			return fmt.Errorf("readTokensFromDir %s: %v", bdir, err)
 		}
 		// Either append new dirs to the stack or handle files with
 		// the master file extension at index 0. Skip all other files.
@@ -65,15 +65,15 @@ func readTokensFromDir(ctx context.Context, out chan<- apoco.Token, dir string, 
 			if !strings.HasSuffix(fi.Name(), fileExts[0]) {
 				continue
 			}
-			if err := readTokensFromSnippets(ctx, out, filepath.Join(dir, fi.Name()), fileExts); err != nil {
-				return fmt.Errorf("readTokensFromDir %s: %v", dir, err)
+			if err := readTokensFromSnippets(ctx, out, bdir, filepath.Join(dir, fi.Name()), fileExts); err != nil {
+				return fmt.Errorf("readTokensFromDir %s: %v", bdir, err)
 			}
 		}
 	}
 	return nil
 }
 
-func readTokensFromSnippets(ctx context.Context, out chan<- apoco.Token, file string, fileExts []string) error {
+func readTokensFromSnippets(ctx context.Context, out chan<- apoco.Token, bdir, file string, fileExts []string) error {
 	var lines []apoco.Chars
 	pairs, err := readFile(file)
 	if err != nil {
@@ -88,18 +88,20 @@ func readTokensFromSnippets(ctx context.Context, out chan<- apoco.Token, file st
 		}
 		lines = append(lines, pairs)
 	}
-	if err := sendTokens(ctx, out, file, lines); err != nil {
+	if err := sendTokens(ctx, out, bdir, file, lines); err != nil {
 		return fmt.Errorf("readTokensFromSnippets: %v", err)
 	}
 	return nil
 }
 
-func sendTokens(ctx context.Context, out chan<- apoco.Token, file string, lines []apoco.Chars) error {
+func sendTokens(ctx context.Context, out chan<- apoco.Token, bdir, file string, lines []apoco.Chars) error {
 	alignments := align(lines...)
 	for i := range alignments {
-		var t apoco.Token
-		t.File = file
-		t.ID = strconv.Itoa(i + 1)
+		t := apoco.Token{
+			File:      file,
+			FileGroup: bdir,
+			ID:        strconv.Itoa(i + 1),
+		}
 		for j, p := range alignments[i] {
 			if j == 0 {
 				t.Chars = lines[j][p.b:p.e]
