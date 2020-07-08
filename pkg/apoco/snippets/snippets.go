@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
@@ -23,8 +24,9 @@ func Tokenize(fileExts []string, dirs ...string) apoco.StreamFunc {
 		out := make(chan apoco.Token)
 		g.Go(func() error {
 			defer close(out)
+			// Iterate over the directories and read the tokens from each dir.
 			for _, dir := range dirs {
-				if err := readTokensFromDirs(ctx, out, dir, fileExts); err != nil {
+				if err := readTokensFromDir(ctx, out, dir, fileExts); err != nil {
 					return fmt.Errorf("tokenize: %v", err)
 				}
 			}
@@ -34,24 +36,38 @@ func Tokenize(fileExts []string, dirs ...string) apoco.StreamFunc {
 	}
 }
 
-func readTokensFromDirs(ctx context.Context, out chan<- apoco.Token, dir string, fileExts []string) error {
+func readTokensFromDir(ctx context.Context, out chan<- apoco.Token, dir string, fileExts []string) error {
 	if len(fileExts) == 0 {
 		return fmt.Errorf("readTokensFromDir %s: empty file extensions", dir)
 	}
-	is, err := os.Open(dir)
-	if err != nil {
-		return fmt.Errorf("readTokensFromDir %s: %v", dir, err)
-	}
-	files, err := is.Readdirnames(-1)
-	if err != nil {
-		return fmt.Errorf("readTokensFromDirs %s: %v", dir, err)
-	}
-	for _, file := range files {
-		if !strings.HasSuffix(file, fileExts[0]) {
-			continue
+	// Use a dir path stack to iterate over all dirs in the tree.
+	dirs := []string{dir}
+	for len(dirs) != 0 {
+		dir := dirs[len(dirs)-1]
+		dirs = dirs[0 : len(dirs)-1]
+		// Read all file info entries from the dir.
+		is, err := os.Open(dir)
+		if err != nil {
+			return fmt.Errorf("readTokensFromDir %s: %v", dir, err)
 		}
-		if err := readTokensFromSnippets(ctx, out, file, fileExts); err != nil {
-			return fmt.Errorf("readTokensFromDirs %s: %v", dir, err)
+		fis, err := is.Readdir(-1)
+		is.Close() // Unconditionally close the dir.
+		if err != nil {
+			return fmt.Errorf("readTokensFromDir %s: %v", dir, err)
+		}
+		// Either append new dirs to the stack or handle files with
+		// the master file extension at index 0. Skip all other files.
+		for _, fi := range fis {
+			if fi.IsDir() {
+				dirs = append(dirs, filepath.Join(dir, fi.Name()))
+				continue
+			}
+			if !strings.HasSuffix(fi.Name(), fileExts[0]) {
+				continue
+			}
+			if err := readTokensFromSnippets(ctx, out, filepath.Join(dir, fi.Name()), fileExts); err != nil {
+				return fmt.Errorf("readTokensFromDir %s: %v", dir, err)
+			}
 		}
 	}
 	return nil
