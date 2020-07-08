@@ -111,7 +111,7 @@ func newTokenFromNode(fg, file string, wordNode *xmlquery.Node) (apoco.Token, er
 	if !ok {
 		return apoco.Token{}, fmt.Errorf("newTokenFromNode: missing id for word node")
 	}
-	ret := apoco.Token{FileGroup: fg, File: file, ID: id}
+	ret := apoco.Token{Group: fg, File: file, ID: id}
 	lines := FindUnicodesFromRegionSorted(node.Parent(wordNode))
 	words := FindUnicodesFromRegionSorted(wordNode)
 	for i := 0; i < len(lines) && i < len(words); i++ {

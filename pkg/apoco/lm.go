@@ -147,7 +147,7 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, no
 		return nil
 	}
 	if !nocache {
-		if profile, ok := readCachedProfile(tokens[0].FileGroup); ok {
+		if profile, ok := readCachedProfile(tokens[0].Group); ok {
 			lm.Profile = profile
 			return nil
 		}
@@ -165,7 +165,7 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, no
 	if nocache {
 		return nil
 	}
-	go func() { cacheProfile(tokens[0].FileGroup, profile) }()
+	go func() { cacheProfile(tokens[0].Group, profile) }()
 	return nil
 }
 

@@ -10,16 +10,16 @@ import (
 
 // Token represent aligned OCR-tokens.
 type Token struct {
-	LM        *LanguageModel // language model for this token
-	Payload   interface{}    // token payload; *gofiler.Candidate, []Ranking or Correction
-	File      string         // the file of the token
-	ID        string         // id of the token in this file
-	FileGroup string         // file group of the token
-	Chars     Chars          // master OCR tokens with confidences
-	Confs     []float64      // master and support OCR confidences
-	Tokens    []string       // master and support OCRs and gt
-	Lines     []string       // lines of the tokens
-	traits    TraitType      // token traits
+	LM      *LanguageModel // language model for this token
+	Payload interface{}    // token payload; *gofiler.Candidate, []Ranking or Correction
+	File    string         // the file of the token
+	Group   string         // file group of the token
+	ID      string         // id of the token in this file
+	Chars   Chars          // master OCR tokens with confidences
+	Confs   []float64      // master and support OCR confidences
+	Tokens  []string       // master and support OCRs and gt
+	Lines   []string       // lines of the tokens
+	traits  TraitType      // token traits
 }
 
 // IsLexiconEntry returns true if this token is a normal lexicon entry

@@ -177,9 +177,9 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 			loader := lmLoader{config: c, lm: &LanguageModel{ngrams: ngrams}}
 			err := EachToken(ctx, in, func(t Token) error {
 				if fg == "" {
-					fg = t.FileGroup
+					fg = t.Group
 				}
-				if fg != t.FileGroup { // new file group
+				if fg != t.Group { // new file group
 					if err := loader.load(ctx); err != nil {
 						return fmt.Errorf("connectLM: %v", err)
 					}
@@ -187,7 +187,7 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 						return fmt.Errorf("connectLM: %v", err)
 					}
 					loader.tokens = loader.tokens[:]
-					fg = t.FileGroup
+					fg = t.Group
 				}
 				loader.tokens = append(loader.tokens, t)
 				loader.lm = &LanguageModel{ngrams: ngrams}
