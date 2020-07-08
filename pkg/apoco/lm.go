@@ -109,6 +109,19 @@ func (lm *LanguageModel) Trigram(str string) float64 {
 	return ret
 }
 
+// EachTrigram looks up the trigrams of the given token and returns the
+// product of the token's trigrams.
+func (lm *LanguageModel) EachTrigram(str string, f func(float64)) {
+	tmp := []rune("$" + str + "$")
+	begin, end := 0, 3
+	if end > len(tmp) {
+		end = len(tmp)
+	}
+	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
+		f(lm.ngrams.relative(string(tmp[i:j])))
+	}
+}
+
 // LoadGzippedNGram loads the (gzipped) ngram model file.  The expected format
 // for each line is `%d,%s`.
 func (lm *LanguageModel) LoadGzippedNGram(path string) error {

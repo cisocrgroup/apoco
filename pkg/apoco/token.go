@@ -75,36 +75,6 @@ func (t *Token) HasTrait(i int, trait TraitType) bool {
 // Chars represents the master OCR chars with the respective confidences.
 type Chars []Char
 
-// PatternConf calculates the product of the pattern confidences for the
-// matching right side of the given pattern.
-func (chars Chars) PatternConf(p gofiler.Pattern) float64 {
-	if len(chars) == 0 || p.Pos < 0 {
-		return 0
-	}
-	if len(p.Right) == 0 { // deletion
-		if p.Pos == 0 {
-			return chars[0].Conf
-		} else if p.Pos >= len(chars) {
-			return chars[len(chars)-1].Conf
-		}
-		return (chars[p.Pos].Conf + chars[p.Pos-1].Conf) / 2.0
-	}
-	if p.Pos >= len(chars) {
-		return chars[len(chars)-1].Conf
-	}
-	var sum float64
-	var n int
-	for _, r := range p.Right {
-		_ = r
-		if p.Pos+n >= len(chars) {
-			break
-		}
-		sum += chars[p.Pos+n].Conf
-		n++
-	}
-	return sum / float64(n)
-}
-
 func (chars Chars) String() string {
 	strs := make([]string, len(chars))
 	for i := range chars {

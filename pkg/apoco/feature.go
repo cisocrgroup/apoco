@@ -11,24 +11,33 @@ import (
 
 // registered names for feature functions
 var register = map[string]FeatureFunc{
-	"AgreeingOCRs":                AgreeingOCRs,
-	"OCRTokenConf":                OCRTokenConf,
-	"OCRTokenLen":                 OCRTokenLen,
-	"OCRUnigramFreq":              OCRUnigramFreq,
-	"OCRTrigramFreq":              OCRTrigramFreq,
-	"OCRFirstInLine":              OCRFirstInLine,
-	"OCRLastInLine":               OCRLastInLine,
-	"CandidateProfilerWeight":     CandidateProfilerWeight,
-	"CandidateUnigramFreq":        CandidateUnigramFreq,
-	"CandidateTrigramFreq":        CandidateTrigramFreq,
-	"CandidateAgreeingOCR":        CandidateAgreeingOCR,
-	"CandidateOCRPatternConf":     CandidateOCRPatternConf,
-	"CandidateLevenshteinDist":    CandidateLevenshteinDist,
-	"CandidateLen":                CandidateLen,
-	"RankingConf":                 RankingConf,
-	"RankingConfDiffToNext":       RankingConfDiffToNext,
-	"RankingCandidateUnigramFreq": RankingCandidateUnigramFreq,
-	"RankingCandidateTrigramFreq": RankingCandidateTrigramFreq,
+	"AgreeingOCRs":                   AgreeingOCRs,
+	"OCRTokenConf":                   OCRTokenConf,
+	"OCRTokenLen":                    OCRTokenLen,
+	"OCRUnigramFreq":                 OCRUnigramFreq,
+	"OCRTrigramFreq":                 OCRTrigramFreq,
+	"OCRMaxTrigramFreq":              OCRMinTrigramFreq,
+	"OCRMinTrigramFreq":              OCRMaxTrigramFreq,
+	"OCRFirstInLine":                 OCRFirstInLine,
+	"OCRLastInLine":                  OCRLastInLine,
+	"OCRMaxCharConf":                 OCRMaxCharConf,
+	"OCRMinCharConf":                 OCRMinCharConf,
+	"CandidateProfilerWeight":        CandidateProfilerWeight,
+	"CandidateUnigramFreq":           CandidateUnigramFreq,
+	"CandidateTrigramFreq":           CandidateTrigramFreq,
+	"CandidateAgreeingOCR":           CandidateAgreeingOCR,
+	"CandidateOCRPatternConf":        CandidateOCRPatternConf,
+	"CandidateLevenshteinDist":       CandidateLevenshteinDist,
+	"CandidateMaxTrigramFreq":        CandidateMaxTrigramFreq,
+	"CandidateMinTrigramFreq":        CandidateMinTrigramFreq,
+	"CandidateLen":                   CandidateLen,
+	"CandidateMatchesOCR":            CandidateMatchesOCR,
+	"RankingConf":                    RankingConf,
+	"RankingConfDiffToNext":          RankingConfDiffToNext,
+	"RankingCandidateConf":           RankingCandidateConf,
+	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
+	"RankingCandidateUnigramFreq":    RankingCandidateUnigramFreq,
+	"RankingCandidateTrigramFreq":    RankingCandidateTrigramFreq,
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -105,6 +114,11 @@ func OCRUnigramFreq(t Token, i, n int) (float64, bool) {
 	return t.LM.Unigram(t.Tokens[i]), true
 }
 
+// OCRTrigramFreq returns the product of the OCR token's trigrams.
+func OCRTrigramFreq(t Token, i, n int) (float64, bool) {
+	return t.LM.Trigram(t.Tokens[i]), true
+}
+
 // OCRFirstInLine checks if the given token is the first in a line.
 func OCRFirstInLine(t Token, i, n int) (float64, bool) {
 	if i != 0 {
@@ -121,9 +135,58 @@ func OCRLastInLine(t Token, i, n int) (float64, bool) {
 	return ml.Bool(t.HasTrait(0, LastInLine)), true
 }
 
-// OCRTrigramFreq returns the product of the OCR token's trigrams.
-func OCRTrigramFreq(t Token, i, n int) (float64, bool) {
-	return t.LM.Trigram(t.Tokens[i]), true
+// OCRMaxCharConf returns the maximal character confidence of the
+// master OCR token.
+func OCRMaxCharConf(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	max := 0.0
+	for _, c := range t.Chars {
+		if max < c.Conf {
+			max = c.Conf
+		}
+	}
+	return max, true
+}
+
+// OCRMinCharConf returns the minimal character confidence of the
+// master OCR token.
+func OCRMinCharConf(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	min := 1.0
+	for _, c := range t.Chars {
+		if min > c.Conf {
+			min = c.Conf
+		}
+	}
+	return min, true
+}
+
+// OCRMaxTrigramFreq returns the maximal trigram relative frequenzy
+// confidence of the tokens.
+func OCRMaxTrigramFreq(t Token, i, n int) (float64, bool) {
+	max := 0.0
+	t.LM.EachTrigram(t.Tokens[i], func(conf float64) {
+		if max < conf {
+			max = conf
+		}
+	})
+	return max, true
+}
+
+// OCRMinTrigramFreq returns the minimal trigram relative frequenzy
+// confidence of the tokens.
+func OCRMinTrigramFreq(t Token, i, n int) (float64, bool) {
+	min := 1.0
+	t.LM.EachTrigram(t.Tokens[i], func(conf float64) {
+		if min > conf {
+			min = conf
+		}
+	})
+	return min, true
 }
 
 // CandidateProfilerWeight returns the profiler confidence value for
@@ -162,10 +225,10 @@ func CandidateAgreeingOCR(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
+	candidate := mustGetCandidate(t)
 	var ret int
-	suggestion := t.Payload.(*gofiler.Candidate).Suggestion
 	for j := 0; j < n; j++ {
-		if t.Tokens[j] == suggestion {
+		if t.Tokens[j] == candidate.Suggestion {
 			ret++
 		}
 	}
@@ -179,15 +242,49 @@ func CandidateOCRPatternConf(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
-	candidate := t.Payload.(*gofiler.Candidate)
+	candidate := mustGetCandidate(t)
 	if len(candidate.OCRPatterns) == 0 {
 		return 0, true
 	}
 	prod := 1.0
 	for _, p := range candidate.OCRPatterns {
-		prod *= t.Chars.PatternConf(p)
+		prod *= averagePosPatternConf(t.Chars, p)
 	}
 	return prod, true
+}
+
+func averagePosPatternConf(chars Chars, p gofiler.Pattern) float64 {
+	if len(chars) == 0 || p.Pos < 0 {
+		return 0
+	}
+	if len(p.Right) == 0 { // deletion
+		if p.Pos == 0 {
+			return chars[0].Conf
+		} else if p.Pos >= len(chars) {
+			return chars[len(chars)-1].Conf
+		}
+		return (chars[p.Pos].Conf + chars[p.Pos-1].Conf) / 2.0
+	}
+	if p.Pos >= len(chars) {
+		return chars[len(chars)-1].Conf
+	}
+	var sum float64
+	var n int
+	for _ = range p.Right {
+		if p.Pos+n >= len(chars) {
+			break
+		}
+		sum += chars[p.Pos+n].Conf
+		n++
+	}
+	return sum / float64(n)
+}
+
+// CandidateMatchesOCR returns true if the according ocr matches the
+// connected candidate and false otherwise.
+func CandidateMatchesOCR(t Token, i, n int) (float64, bool) {
+	candidate := mustGetCandidate(t)
+	return ml.Bool(candidate.Suggestion == t.Tokens[i]), true
 }
 
 // CandidateLevenshteinDist returns the levenshtein distance between
@@ -196,7 +293,7 @@ func CandidateOCRPatternConf(t Token, i, n int) (float64, bool) {
 // is used, whereas for support OCRs the levenshtein distance is
 // calculated.
 func CandidateLevenshteinDist(t Token, i, n int) (float64, bool) {
-	candidate := t.Payload.(*gofiler.Candidate)
+	candidate := mustGetCandidate(t)
 	if i == 0 {
 		return float64(candidate.Distance), true
 	}
@@ -210,6 +307,49 @@ func CandidateLen(t Token, i, n int) (float64, bool) {
 	}
 	len := utf8.RuneCountInString(t.Payload.(*gofiler.Candidate).Suggestion)
 	return float64(len), true
+}
+
+// CandidateMaxTrigramFreq returns the maximal trigram frequenzy for
+// the connected candidate.
+func CandidateMaxTrigramFreq(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	candidate := mustGetCandidate(t)
+	max := 0.0
+	t.LM.EachTrigram(candidate.Suggestion, func(conf float64) {
+		if max < conf {
+			max = conf
+		}
+	})
+	return max, true
+}
+
+// CandidateMinTrigramFreq returns the minimal trigram frequezy for
+// the connected candidate.
+func CandidateMinTrigramFreq(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	candidate := mustGetCandidate(t)
+	min := 1.0
+	t.LM.EachTrigram(candidate.Suggestion, func(conf float64) {
+		if min > conf {
+			min = conf
+		}
+	})
+	return min, true
+}
+
+func mustGetCandidate(t Token) *gofiler.Candidate {
+	switch tx := t.Payload.(type) {
+	case *gofiler.Candidate:
+		return tx
+	case []Ranking:
+		return tx[0].Candidate
+	default:
+		panic(fmt.Sprintf("mustGetCandidate: bad type: %T", tx))
+	}
 }
 
 // RankingConf returns the confidence of the best ranked correction
@@ -254,4 +394,26 @@ func RankingCandidateUnigramFreq(t Token, i, n int) (float64, bool) {
 		return 0, false
 	}
 	return t.LM.Unigram(t.Payload.([]Ranking)[0].Candidate.Suggestion), true
+}
+
+// RankingCandidateConf returns the top ranked candidate's weight.
+func RankingCandidateConf(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	return float64(t.Payload.([]Ranking)[0].Candidate.Weight), true
+}
+
+// RankingCandidateConfDiffToNext returns the top ranked candidate's
+// weight minus the the weight of the next (or 0).
+func RankingCandidateConfDiffToNext(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	rankings := t.Payload.([]Ranking)
+	next := 0.0
+	if len(rankings) > 1 {
+		next = float64(rankings[1].Candidate.Weight)
+	}
+	return float64(rankings[0].Candidate.Weight) - next, true
 }
