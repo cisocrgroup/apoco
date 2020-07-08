@@ -199,7 +199,7 @@ func readTSV(is io.Reader) (apoco.Chars, error) {
 		chars = append(chars, c)
 	}
 	if s.Err() != nil {
-		return nil, fmt.Errorf("readCSV: %v", s.Err())
+		return nil, fmt.Errorf("readTSV: %v", s.Err())
 	}
 	return trim(chars), nil
 }
