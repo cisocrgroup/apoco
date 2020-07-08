@@ -270,7 +270,7 @@ func averagePosPatternConf(chars Chars, p gofiler.Pattern) float64 {
 	}
 	var sum float64
 	var n int
-	for _ = range p.Right {
+	for range p.Right {
 		if p.Pos+n >= len(chars) {
 			break
 		}
