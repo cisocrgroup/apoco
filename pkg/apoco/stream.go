@@ -77,9 +77,14 @@ func Normalize(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan T
 		defer close(out)
 		return EachToken(ctx, in, func(t Token) error {
 			for i := range t.Tokens {
-				t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
-					return unicode.IsPunct(r)
-				})
+				if i == 0 { // handle master OCR in a special way
+					t.Chars = normalizeChars(t.Chars)
+					t.Tokens[i] = charsToString(t.Chars)
+				} else {
+					t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
+						return unicode.IsPunct(r)
+					})
+				}
 				t.Tokens[i] = strings.ToLower(t.Tokens[i])
 			}
 			if err := SendTokens(ctx, out, t); err != nil {
@@ -89,6 +94,29 @@ func Normalize(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan T
 		})
 	})
 	return out
+}
+
+func charsToString(chars Chars) string {
+	var b strings.Builder
+	for _, char := range chars {
+		b.WriteRune(char.Char)
+	}
+	return b.String()
+}
+
+func normalizeChars(chars Chars) Chars {
+	var i, j int
+	for i = 0; i < len(chars); i++ {
+		if !unicode.IsPunct(chars[i].Char) {
+			break
+		}
+	}
+	for j = len(chars); j > i; j-- {
+		if !unicode.IsPunct(chars[j-1].Char) {
+			break
+		}
+	}
+	return chars[i:j]
 }
 
 // FilterShort filters short master OCR tokens from the input stream.
