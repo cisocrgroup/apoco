@@ -98,9 +98,9 @@ func sendTokens(ctx context.Context, out chan<- apoco.Token, bdir, file string, 
 	alignments := align(lines...)
 	for i := range alignments {
 		t := apoco.Token{
-			File:      file,
-			FileGroup: bdir,
-			ID:        strconv.Itoa(i + 1),
+			File:  file,
+			Group: bdir,
+			ID:    strconv.Itoa(i + 1),
 		}
 		for j, p := range alignments[i] {
 			if j == 0 {
