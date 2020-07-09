@@ -90,13 +90,16 @@ func printCSV(word *xmlquery.Node) error {
 }
 
 type stats struct {
-	corrected, skipped, total         int
-	unknown, lex, short               int
-	falsef, missedops, disimps, succc int
-	badrank, missingcor               int
-	totalerrs, skippederrs, corerrs   int
-	errsafter, taken, nottaken        int
-	goodsuggs                         int
+	skipped, short, nocands, lex              int
+	shorterr, nocandserr, lexerr              int
+	replaced, ocrcorrect, ocrincorrect        int
+	suspicious, ocraccept, disimprovement     int
+	successfulcorrection, donotcare           int
+	notreplaced, ocrcorrectNR, ocrincorrectNR int
+	ocracceptNR, disimprovementNR             int
+	missedopportunity, donotcareNR            int
+	total, badrank, missingcorrection         int
+	totalerrbefore, totalerrafter             int
 }
 
 func (s *stats) stat(word *xmlquery.Node) error {
@@ -111,81 +114,115 @@ func (s *stats) stat(word *xmlquery.Node) error {
 	if skipped {
 		s.skipped++
 	}
-	if !skipped {
-		s.corrected++
-	}
 	if skipped && short {
 		s.short++
 	}
-	if skipped && lex {
+	if skipped && short && ocr != gt {
+		s.shorterr++
+	}
+	if skipped && !short && !lex {
+		s.nocands++
+	}
+	if skipped && !short && !lex && ocr != gt {
+		s.nocandserr++
+	}
+	if skipped && !short && lex {
 		s.lex++
 	}
-	if skipped && !(lex || short) {
-		s.unknown++
+	if skipped && !short && lex && ocr != gt {
+		s.lexerr++
 	}
-	if skipped && lex && ocr != gt {
-		s.falsef++
+	if !skipped {
+		s.suspicious++
+	}
+	if !skipped && cor {
+		s.replaced++
+	}
+	if !skipped && cor && gt == ocr {
+		s.ocrcorrect++
+	}
+	if !skipped && cor && gt == ocr && sug == gt {
+		s.ocraccept++
+	}
+	if !skipped && cor && gt == ocr && sug != gt {
+		s.disimprovement++
+	}
+	if !skipped && cor && gt != ocr {
+		s.ocrincorrect++
+	}
+	if !skipped && cor && gt != ocr && sug == gt {
+		s.successfulcorrection++
+	}
+	if !skipped && cor && gt != ocr && sug != gt {
+		s.donotcare++
+	}
+	if !skipped && !cor {
+		s.notreplaced++
+	}
+	if !skipped && !cor && ocr == gt {
+		s.ocrcorrectNR++
+	}
+	if !skipped && !cor && ocr == gt && sug == gt {
+		s.ocracceptNR++
+	}
+	if !skipped && !cor && ocr == gt && sug != gt {
+		s.disimprovementNR++
+	}
+	if !skipped && !cor && ocr != gt {
+		s.ocrincorrectNR++
 	}
 	if !skipped && !cor && ocr != gt && sug == gt {
-		s.missedops++
+		s.missedopportunity++
 	}
-	if !skipped && cor && ocr == gt && sug != gt {
-		s.disimps++
-	}
-	if !skipped && cor && ocr != gt && sug == gt {
-		s.succc++
-	}
-	if ocr != gt {
-		s.totalerrs++
-	}
-	if skipped && ocr != gt {
-		s.skippederrs++
-	}
-	if !skipped && ocr != gt {
-		s.corerrs++
-	}
-	if (skipped && ocr != gt) || // errors in skipped tokens
-		(!skipped && cor && sug != gt) || // disimprovement
-		(!skipped && !cor && ocr != gt) { // not corrected and false
-		s.errsafter++
+	if !skipped && !cor && ocr != gt && sug != gt {
+		s.donotcareNR++
 	}
 	if !skipped && rank == 0 {
-		s.missingcor++
+		s.missingcorrection++
 	}
 	if !skipped && rank > 1 {
 		s.badrank++
 	}
-	if !skipped && cor {
-		s.taken++
+	if ocr != gt {
+		s.totalerrbefore++
 	}
-	if !skipped && !cor {
-		s.nottaken++
-	}
-	if !skipped && rank == 1 {
-		s.goodsuggs++
+	if (skipped && ocr != gt) || // errors in skipped tokens
+		(!skipped && cor && sug != gt) || // infelicious correction
+		(!skipped && !cor && ocr != gt) { // not corrected and false
+		s.totalerrafter++
 	}
 	return nil
 }
 
+// skipped, short, nocands, lex, falsef int
 func (s *stats) write() {
-	fmt.Printf("total tokens           = %d\n", s.total)
-	fmt.Printf("skipped tokens         = %d\n", s.skipped)
-	fmt.Printf("short tokens           = %d\n", s.short)
-	fmt.Printf("uninterpretable tokens = %d\n", s.unknown)
-	fmt.Printf("lexical tokens         = %d\n", s.lex)
-	fmt.Printf("false friends          = %d\n", s.falsef)
-	fmt.Printf("missed oportunities    = %d\n", s.missedops)
-	fmt.Printf("missing correction     = %d\n", s.missingcor)
-	fmt.Printf("bad rank               = %d\n", s.badrank)
-	fmt.Printf("good suggestions       = %d\n", s.goodsuggs)
-	fmt.Printf("disimprovements        = %d\n", s.disimps)
-	fmt.Printf("succesfull corrections = %d\n", s.succc)
-	fmt.Printf("uncorrectable errors   = %d\n", s.skippederrs)
-	fmt.Printf("correctable errors     = %d\n", s.corerrs)
-	fmt.Printf("corrections taken      = %d\n", s.taken)
-	fmt.Printf("corrections not taken  = %d\n", s.nottaken)
-	fmt.Printf("total errors (before)  = %d\n", s.totalerrs)
-	fmt.Printf("total errors (after)   = %d\n", s.errsafter)
+	fmt.Printf("missing correction candidate    = %d\n", s.missingcorrection)
+	fmt.Printf("bad rank                        = %d\n", s.badrank)
+	fmt.Printf("total errors (before)           = %d\n", s.totalerrbefore)
+	fmt.Printf("total errors (after)            = %d\n", s.totalerrafter)
+	fmt.Printf("total tokens                    = %d\n", s.total)
+	fmt.Printf("├ skipped                       = %d\n", s.skipped)
+	fmt.Printf("│ ├ short                       = %d\n", s.short)
+	fmt.Printf("│ │ └ errors                    = %d\n", s.shorterr)
+	fmt.Printf("│ ├ no candidate                = %d\n", s.nocands)
+	fmt.Printf("│ │ └ errors                    = %d\n", s.nocandserr)
+	fmt.Printf("│ └ lexicon entries             = %d\n", s.lex)
+	fmt.Printf("│   └ false friends             = %d\n", s.lexerr)
+	fmt.Printf("└ suspicious                    = %d\n", s.suspicious)
+	fmt.Printf("  ├ replaced                    = %d\n", s.replaced)
+	fmt.Printf("  │ ├ ocr correct               = %d\n", s.ocrcorrect)
+	fmt.Printf("  │ │ ├ ocr accept              = %d\n", s.ocraccept)
+	fmt.Printf("  │ │ └ infelicitous correction = %d\n", s.disimprovement)
+	fmt.Printf("  │ └ ocr not correct           = %d\n", s.ocrincorrect)
+	fmt.Printf("  │   ├ successful correction   = %d\n", s.successfulcorrection)
+	fmt.Printf("  │   └ do not care             = %d\n", s.donotcare)
+	fmt.Printf("  └ not replaced                = %d\n", s.notreplaced)
+	fmt.Printf("    ├ ocr correct               = %d\n", s.ocrcorrectNR)
+	fmt.Printf("    │ ├ candiate correct        = %d\n", s.ocracceptNR)
+	fmt.Printf("    │ └ candiate not correct    = %d\n", s.disimprovementNR)
+	fmt.Printf("    └ ocr no correct            = %d\n", s.ocrincorrectNR)
+	fmt.Printf("      ├ missed opportunity      = %d\n", s.missedopportunity)
+	fmt.Printf("      └ ocr incorrect           = %d\n", s.donotcareNR)
 }
 
 func parseDTD(n *xmlquery.Node, skipped, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
