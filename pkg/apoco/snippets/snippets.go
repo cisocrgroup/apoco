@@ -141,7 +141,13 @@ func alignAt(spaces []int, str []rune) []pos {
 	b := -1
 	for _, s := range spaces {
 		e := alignmentPos(str, s)
-		ret = append(ret, pos{b: b + 1, e: e})
+		// Var b points to the last found space.
+		// Skip to the next non space token after b.
+		b = skipSpace(str, b+1)
+		if e <= b { // (e <= b) -> (b>=0) -> len(ret) > 0
+			b = ret[len(ret)-1].b
+		}
+		ret = append(ret, pos{b: b, e: e})
 		if e != len(str) {
 			b = e
 		}
@@ -170,6 +176,13 @@ func alignmentPos(str []rune, pos int) int {
 	}
 }
 
+func skipSpace(str []rune, pos int) int {
+	for pos < len(str) && unicode.IsSpace(str[pos]) {
+		pos++
+	}
+	return pos
+}
+
 type pos struct {
 	b, e int
 }
@@ -187,7 +200,7 @@ func readFile(path string) (apoco.Chars, error) {
 		pairs, err = readTSV(is)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("readFile: %v", err)
+		return nil, fmt.Errorf("readFile %s: %v", path, err)
 	}
 	return pairs, nil
 }
@@ -212,8 +225,14 @@ func readTSV(is io.Reader) (apoco.Chars, error) {
 	s := bufio.NewScanner(is)
 	for s.Scan() {
 		var c apoco.Char
-		if _, err := fmt.Sscanf("%c\t%f", s.Text(), &c.Char, &c.Char); err != nil {
-			return nil, fmt.Errorf("readTSV: %v", err)
+		if _, err := fmt.Sscanf(s.Text(), "%c\t%f", &c.Char, &c.Conf); err != nil {
+			// The TSV files contain artifacts of the form "\t%f".
+			// Skip these.
+			var tmp float64
+			if _, err := fmt.Sscanf(s.Text(), "\t%f", &tmp); err != nil {
+				return nil, fmt.Errorf("readTSV: %v", err)
+			}
+			continue
 		}
 		chars = append(chars, c)
 	}
