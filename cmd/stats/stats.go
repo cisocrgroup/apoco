@@ -225,10 +225,10 @@ func (s *stats) write() {
 	fmt.Printf("      └ ocr incorrect           = %d\n", s.donotcareNR)
 }
 
-func parseDTD(n *xmlquery.Node, skipped, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
+func parseDTD(n *xmlquery.Node, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
 	dtd, _ := node.LookupAttr(n, xml.Name{Local: "dataTypeDetails"})
 	const format = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
-	_, err := fmt.Sscanf(dtd, format, skipped, short, lex, cor, rank, ocr, sug, gt)
+	_, err := fmt.Sscanf(dtd, format, skip, short, lex, cor, rank, ocr, sug, gt)
 	if err != nil {
 		return fmt.Errorf("parseDTD: cannot parse %q: %v", dtd, err)
 	}
