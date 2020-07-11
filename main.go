@@ -8,6 +8,7 @@ import (
 	"example.com/apoco/cmd/rreval"
 	"example.com/apoco/cmd/rrtrain"
 	"example.com/apoco/cmd/stats"
+	"example.com/apoco/cmd/version"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +25,7 @@ func init() {
 	root.AddCommand(rreval.CMD)
 	root.AddCommand(rrtrain.CMD)
 	root.AddCommand(stats.CMD)
+	root.AddCommand(version.CMD)
 }
 
 func main() {
