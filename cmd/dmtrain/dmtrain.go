@@ -68,6 +68,9 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			var xs, ys []float64
 			err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
 				vals := fs.Calculate(t, c.Nocr)
+				if !use(t) {
+					return nil
+				}
 				xs = append(xs, vals...)
 				ys = append(ys, gt(t))
 				return nil
@@ -84,7 +87,7 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			if err := ml.Normalize(x); err != nil {
 				return fmt.Errorf("traindm: %v", err)
 			}
-			log.Printf("fitting %d tokens, %d features, nocr=%d, lr=%f, ntrain=%d",
+			log.Printf("dmtrain: fitting %d tokens, %d features, nocr=%d, lr=%f, ntrain=%d",
 				len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
 			lr.Fit(x, y)
 			m.Put("dm", c.Nocr, &lr, c.DMFeatures)
@@ -100,6 +103,15 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 func gt(t apoco.Token) float64 {
 	candidate := t.Payload.([]apoco.Ranking)[0].Candidate
 	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
+}
+
+func use(t apoco.Token) bool {
+	ocr := t.Tokens[0]
+	gt := t.Tokens[len(t.Tokens)-1]
+	if gt != ocr {
+		return t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion == gt
+	}
+	return true
 }
 
 func noerr(err error) {

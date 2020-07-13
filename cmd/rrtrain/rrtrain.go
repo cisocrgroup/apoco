@@ -83,7 +83,7 @@ func rrtrain(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 				LearningRate: c.LearningRate,
 				Ntrain:       c.Ntrain,
 			}
-			log.Printf("fitting %d tokens, %d features, nocr=%d, lr=%f, ntrain=%d",
+			log.Printf("rrtrain: fitting %d tokens, %d features, nocr=%d, lr=%f, ntrain=%d",
 				n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 			lr.Fit(x, y)
 			m.Put("rr", c.Nocr, &lr, c.RRFeatures)
