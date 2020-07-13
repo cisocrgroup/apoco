@@ -220,9 +220,9 @@ func (s *stats) write() {
 	fmt.Printf("      ├─ ocr correct                = %d\n", s.ocrcorrectNR)
 	fmt.Printf("      │  ├ candiate correct         = %d\n", s.ocracceptNR)
 	fmt.Printf("      │  └ candiate not correct     = %d\n", s.disimprovementNR)
-	fmt.Printf("      └─ ocr no correct             = %d\n", s.ocrincorrectNR)
+	fmt.Printf("      └─ ocr not correct            = %d\n", s.ocrincorrectNR)
 	fmt.Printf("         ├─ missed opportunity      = %d\n", s.missedopportunity)
-	fmt.Printf("         └─ ocr incorrect           = %d\n", s.donotcareNR)
+	fmt.Printf("         └─ ocr not correct         = %d\n", s.donotcareNR)
 }
 
 func parseDTD(n *xmlquery.Node, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
