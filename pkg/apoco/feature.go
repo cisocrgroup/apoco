@@ -2,6 +2,7 @@ package apoco
 
 import (
 	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	"example.com/apoco/pkg/apoco/lev"
@@ -27,6 +28,7 @@ var register = map[string]FeatureFunc{
 	"CandidateTrigramFreq":           CandidateTrigramFreq,
 	"CandidateAgreeingOCR":           CandidateAgreeingOCR,
 	"CandidateOCRPatternConf":        CandidateOCRPatternConf,
+	"CandidateHistPatternConf":       CandidateHistPatternConf,
 	"CandidateLevenshteinDist":       CandidateLevenshteinDist,
 	"CandidateMaxTrigramFreq":        CandidateMaxTrigramFreq,
 	"CandidateMinTrigramFreq":        CandidateMinTrigramFreq,
@@ -38,6 +40,8 @@ var register = map[string]FeatureFunc{
 	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
 	"RankingCandidateUnigramFreq":    RankingCandidateUnigramFreq,
 	"RankingCandidateTrigramFreq":    RankingCandidateTrigramFreq,
+	"GoodOCRPatterns":                GoodOCRPatterns,
+	"GoodHistPatterns":               GoodHistPatterns,
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -55,6 +59,14 @@ type FeatureSet []FeatureFunc
 func NewFeatureSet(names ...string) (FeatureSet, error) {
 	funcs := make([]FeatureFunc, len(names))
 	for i, name := range names {
+		if strings.HasPrefix(name, "HasOCRPattern_") {
+			funcs[i] = HasOCRPattern(name[14:])
+			continue
+		}
+		if strings.HasPrefix(name, "HasHistPattern_") {
+			funcs[i] = HasHistPattern(name[15:])
+			continue
+		}
 		f, ok := register[name]
 		if !ok {
 			return nil, fmt.Errorf("newFeatureSet %s: no such feature function", name)
@@ -235,8 +247,26 @@ func CandidateAgreeingOCR(t Token, i, n int) (float64, bool) {
 	return float64(ret), true
 }
 
+// CandidateHistPatternConf returns the product of the confidences of
+// the primary OCR characters for the assumed historical rewrite
+// pattern of the connected candidate.
+func CandidateHistPatternConf(t Token, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	candidate := mustGetCandidate(t)
+	if len(candidate.HistPatterns) == 0 {
+		return 0, true
+	}
+	prod := 1.0
+	for _, p := range candidate.HistPatterns {
+		prod *= averagePosPatternConf(t.Chars, p)
+	}
+	return prod, true
+}
+
 // CandidateOCRPatternConf returns the product of the confidences of
-// the master OCR characters for the assumed OCR error pattern of the
+// the primary OCR characters for the assumed OCR error pattern of the
 // connected candidate.
 func CandidateOCRPatternConf(t Token, i, n int) (float64, bool) {
 	if i != 0 {
