@@ -78,7 +78,7 @@ func printCSVHeader() {
 }
 
 func printCSV(word *xmlquery.Node) error {
-	te := pagexml.FindUnicodesFromRegionSorted(word)[0].Parent
+	te := pagexml.FindUnicodesInRegionSorted(word)[0].Parent
 	dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
 	if dtd == "" || !found {
 		return nil
@@ -107,7 +107,13 @@ type stats struct {
 }
 
 func (s *stats) stat(word *xmlquery.Node) error {
-	te := pagexml.FindUnicodesFromRegionSorted(word)[0].Parent
+	// Simply skip this word if id does not contain any actionable
+	// data.
+	us := pagexml.FindUnicodesInRegionSorted(word)
+	if len(us) == 0 { // skip
+		return nil
+	}
+	te := us[0].Parent
 	dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
 	if dtd == "" || !found {
 		return nil

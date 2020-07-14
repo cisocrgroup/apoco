@@ -66,7 +66,7 @@ func (cor *corrector) correctFile(file string) error {
 
 func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	id, _ := node.LookupAttr(word, xml.Name{Local: "id"})
-	unicodes := pagexml.FindUnicodesFromRegionSorted(word)
+	unicodes := pagexml.FindUnicodesInRegionSorted(word)
 	if len(unicodes) == 0 {
 		return nil
 	}

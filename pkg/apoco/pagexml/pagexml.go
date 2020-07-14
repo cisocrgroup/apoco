@@ -112,8 +112,8 @@ func newTokenFromNode(fg, file string, wordNode *xmlquery.Node) (apoco.Token, er
 		return apoco.Token{}, fmt.Errorf("newTokenFromNode: missing id for word node")
 	}
 	ret := apoco.Token{Group: fg, File: file, ID: id}
-	lines := FindUnicodesFromRegionSorted(node.Parent(wordNode))
-	words := FindUnicodesFromRegionSorted(wordNode)
+	lines := FindUnicodesInRegionSorted(node.Parent(wordNode))
+	words := FindUnicodesInRegionSorted(wordNode)
 	for i := 0; i < len(lines) && i < len(words); i++ {
 		if i == 0 {
 			chars, err := readCharsFromNode(node.Parent(node.Parent(words[i])))
@@ -152,11 +152,11 @@ func findFileGrpFLocatFromRoot(doc *xmlquery.Node, fg string) ([]*xmlquery.Node,
 	return node.QueryAll(doc, expr)
 }
 
-// FindUnicodesFromRegionSorted searches for the TextEquiv / Unicode
+// FindUnicodesInRegionSorted searches for the TextEquiv / Unicode
 // nodes beneath a text region (TextRegion, Line, Word, Glyph).  The
 // returend node list is ordered by the TextEquiv's index entries
 // (interpreted as integers).
-func FindUnicodesFromRegionSorted(region *xmlquery.Node) []*xmlquery.Node {
+func FindUnicodesInRegionSorted(region *xmlquery.Node) []*xmlquery.Node {
 	expr := "./*[local-name()='TextEquiv']/*[local-name()='Unicode']"
 	nodes := xmlquery.Find(region, expr)
 	index := xml.Name{Local: "index"}
