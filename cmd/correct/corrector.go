@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,44 +17,11 @@ import (
 )
 
 type corrector struct {
-	// corrected      map[string]map[string]apoco.Token // map file -> id -> token
-	// lexEntries     map[string]map[string]struct{}    // set file -> id
-	// ranks          map[string]map[string]int         // set file -> id -> rank
 	info           infoMap
 	mets, ofg, ifg string
 	doc, fileGrp   *xmlquery.Node
 	protocol       bool
 }
-
-// func (cor *corrector) addCorrected(token apoco.Token) {
-// 	if cor.corrected == nil {
-// 		cor.corrected = make(map[string]map[string]apoco.Token)
-// 	}
-// 	if _, ok := cor.corrected[token.File]; !ok {
-// 		cor.corrected[token.File] = make(map[string]apoco.Token)
-// 	}
-// 	cor.corrected[token.File][token.ID] = token
-// }
-
-// func (cor *corrector) addLex(token apoco.Token) {
-// 	if cor.lexEntries == nil {
-// 		cor.lexEntries = make(map[string]map[string]struct{})
-// 	}
-// 	if _, ok := cor.lexEntries[token.File]; !ok {
-// 		cor.lexEntries[token.File] = make(map[string]struct{})
-// 	}
-// 	cor.lexEntries[token.File][token.ID] = struct{}{}
-// }
-
-// func (cor *corrector) addRank(token apoco.Token, rank int) {
-// 	if cor.ranks == nil {
-// 		cor.ranks = make(map[string]map[string]int)
-// 	}
-// 	if _, ok := cor.ranks[token.File]; !ok {
-// 		cor.ranks[token.File] = make(map[string]int)
-// 	}
-// 	cor.ranks[token.File][token.ID] = rank
-// }
 
 func (cor *corrector) correct() error {
 	files, err := pagexml.FilePathsForFileGrp(cor.mets, cor.ifg)
@@ -109,15 +77,18 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 
 	info := cor.info[file][id]
 	if info == nil {
-		return fmt.Errorf("correctWord: unknown token: %s/%s", file, id)
+		// return fmt.Errorf("correctWord: unknown token: %s/%s", file, id)
+		log.Printf("correctWord: unknown token: %s/%s", file, id)
+		return nil
 	}
-	// if t, ok := cor.corrected[file][id]; !ok {
 	if info.skipped {
 		newStr.Data = ocr
-		node.SetAttr(newTE, xml.Attr{
-			Name:  xml.Name{Local: "dataTypeDetails"},
-			Value: info.String(),
-		})
+		if cor.protocol {
+			node.SetAttr(newTE, xml.Attr{
+				Name:  xml.Name{Local: "dataTypeDetails"},
+				Value: info.String(),
+			})
+		}
 	} else {
 		if info.cor {
 			newStr.Data = apoco.ApplyOCRToCorrection(ocr, info.sug)
@@ -128,10 +99,12 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 			Name:  xml.Name{Local: "conf"},
 			Value: strconv.FormatFloat(info.conf, 'e', -1, 64),
 		})
-		node.SetAttr(newTE, xml.Attr{
-			Name:  xml.Name{Local: "dataTypeDetails"},
-			Value: info.String(),
-		})
+		if cor.protocol {
+			node.SetAttr(newTE, xml.Attr{
+				Name:  xml.Name{Local: "dataTypeDetails"},
+				Value: info.String(),
+			})
+		}
 	}
 	newTE.FirstChild = newU
 	newU.Parent = newTE

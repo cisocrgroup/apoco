@@ -19,6 +19,7 @@ func init() {
 	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P", "config.json", "set configuration file")
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profiles (overwrites setting in the configuration file)")
+	CMD.Flags().BoolVarP(&flags.protocol, "protocol", "p", false, "add evaluation protocol")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "", "set model path (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.simple, "simple", "s", false, "do not correct only output")
 }
@@ -27,7 +28,7 @@ var flags = struct {
 	mets, inputFileGrp, outputFileGrp string
 	parameters, model                 string
 	nocr                              int
-	cache, simple                     bool
+	cache, simple, protocol           bool
 }{}
 
 // CMD runs the apoco correct command.
@@ -51,6 +52,7 @@ func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
 		pagexml.Tokenize(flags.mets, flags.inputFileGrp),
+		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		register(infoMap),
 		filterShort(infoMap),
@@ -63,7 +65,7 @@ func run(_ *cobra.Command, args []string) {
 		correct(infoMap),
 	)
 	noerr(g.Wait())
-	if flags.simple {
+	if flags.simple && flags.protocol {
 		for _, ids := range infoMap {
 			for _, info := range ids {
 				fmt.Printf("%s\n", info)
@@ -71,10 +73,11 @@ func run(_ *cobra.Command, args []string) {
 		}
 	} else {
 		cor := corrector{
-			info: infoMap,
-			mets: flags.mets,
-			ifg:  flags.inputFileGrp,
-			ofg:  flags.outputFileGrp,
+			info:     infoMap,
+			mets:     flags.mets,
+			ifg:      flags.inputFileGrp,
+			ofg:      flags.outputFileGrp,
+			protocol: flags.protocol,
 		}
 		noerr(cor.correct())
 	}
