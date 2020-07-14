@@ -119,6 +119,31 @@ func normalizeChars(chars Chars) Chars {
 	return chars[i:j]
 }
 
+// FilterBad filters tokens with not enough ocr and/or gt tokens.
+func FilterBad(min int) StreamFunc {
+	return func(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
+		out := make(chan Token)
+		g.Go(func() error {
+			defer close(out)
+			err := EachToken(ctx, in, func(t Token) error {
+				if len(t.Tokens) < min {
+					return nil
+				}
+				if err := SendTokens(ctx, out, t); err != nil {
+					return fmt.Errorf("filterBad: %v", err)
+				}
+				return nil
+			})
+			if err != nil {
+				return fmt.Errorf("filterBad: %v", err)
+			}
+			return nil
+		})
+		return out
+
+	}
+}
+
 // FilterShort filters short master OCR tokens from the input stream.
 // Short tokens are tokens, with less than 4 unicode characters.
 func FilterShort(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {

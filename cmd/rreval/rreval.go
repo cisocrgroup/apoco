@@ -46,6 +46,7 @@ func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
 		pagexml.Tokenize(flags.mets, flags.inputFileGrp),
+		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		apoco.FilterShort,
 		apoco.ConnectLM(c, m.Ngrams),
