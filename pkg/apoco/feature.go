@@ -333,12 +333,14 @@ func CandidateLevenshteinDist(t Token, i, n int) (float64, bool) {
 	return float64(lev.Distance(t.Tokens[i], candidate.Suggestion)), true
 }
 
-// CandidateLen returns the length of the connected profiler candidate.
+// CandidateLen returns the length of the connected profiler
+// candidate.
 func CandidateLen(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
-	len := utf8.RuneCountInString(t.Payload.(*gofiler.Candidate).Suggestion)
+	candidate := mustGetCandidate(t)
+	len := utf8.RuneCountInString(candidate.Suggestion)
 	return float64(len), true
 }
 
