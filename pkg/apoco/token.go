@@ -38,7 +38,7 @@ func (t Token) IsLexiconEntry() bool {
 }
 
 func (t Token) String() string {
-	return strings.Join(t.Tokens, ",")
+	return fmt.Sprintf("%s,%s,%s", t.File, t.ID, strings.Join(t.Tokens, ","))
 }
 
 // TraitType is used to define different
