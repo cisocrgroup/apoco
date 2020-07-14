@@ -79,10 +79,14 @@ func printCSVHeader() {
 
 func printCSV(word *xmlquery.Node) error {
 	te := pagexml.FindUnicodesFromRegionSorted(word)[0].Parent
+	dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
+	if dtd == "" || !found {
+		return nil
+	}
 	var skipped, short, lex, cor bool
 	var rank int
 	var ocr, sug, gt string
-	if err := parseDTD(te, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
+	if err := parseDTD(dtd, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
 		return fmt.Errorf("printCSV: %v", err)
 	}
 	fmt.Printf("%t,%t,%t,%t,%d,%s,%s,%s\n", skipped, short, lex, cor, rank, ocr, sug, gt)
@@ -104,10 +108,14 @@ type stats struct {
 
 func (s *stats) stat(word *xmlquery.Node) error {
 	te := pagexml.FindUnicodesFromRegionSorted(word)[0].Parent
+	dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
+	if dtd == "" || !found {
+		return nil
+	}
 	var skipped, short, lex, cor bool
 	var rank int
 	var ocr, sug, gt string
-	if err := parseDTD(te, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
+	if err := parseDTD(dtd, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
 		return fmt.Errorf("stat: %v", err)
 	}
 	s.total++
@@ -225,8 +233,7 @@ func (s *stats) write() {
 	fmt.Printf("         └─ ocr not correct         = %d\n", s.donotcareNR)
 }
 
-func parseDTD(n *xmlquery.Node, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
-	dtd, _ := node.LookupAttr(n, xml.Name{Local: "dataTypeDetails"})
+func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
 	const format = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
 	_, err := fmt.Sscanf(dtd, format, skip, short, lex, cor, rank, ocr, sug, gt)
 	if err != nil {
