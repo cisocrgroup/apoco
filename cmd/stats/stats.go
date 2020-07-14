@@ -210,18 +210,26 @@ func (s *stats) stat(word *xmlquery.Node) error {
 
 // skipped, short, nocands, lex, falsef int
 func (s *stats) write() {
+	errb := float64(s.totalerrbefore) / float64(s.total)
+	erra := float64(s.totalerrafter) / float64(s.total)
+	accb := 1.0 - errb
+	acca := 1.0 - erra
+	fmt.Printf("error rate (before)                 = %f\n", errb)
+	fmt.Printf("error rate (after)                  = %f\n", erra)
+	fmt.Printf("accuracy (before)                   = %f\n", accb)
+	fmt.Printf("accuracy (after)                    = %f\n", acca)
 	fmt.Printf("missing correction candidate        = %d\n", s.missingcorrection)
 	fmt.Printf("bad rank                            = %d\n", s.badrank)
 	fmt.Printf("total errors (before)               = %d\n", s.totalerrbefore)
 	fmt.Printf("total errors (after)                = %d\n", s.totalerrafter)
 	fmt.Printf("total tokens                        = %d\n", s.total)
 	fmt.Printf("├─ skipped                          = %d\n", s.skipped)
-	fmt.Printf("│ ├─ short                          = %d\n", s.short)
-	fmt.Printf("│ │  └─ errors                      = %d\n", s.shorterr)
-	fmt.Printf("│ ├─ no candidate                   = %d\n", s.nocands)
-	fmt.Printf("│ │  └─ errors                      = %d\n", s.nocandserr)
-	fmt.Printf("│ └─ lexicon entries                = %d\n", s.lex)
-	fmt.Printf("│    └─ false friends               = %d\n", s.lexerr)
+	fmt.Printf("│  ├─ short                         = %d\n", s.short)
+	fmt.Printf("│  │  └─ errors                     = %d\n", s.shorterr)
+	fmt.Printf("│  ├─ no candidate                  = %d\n", s.nocands)
+	fmt.Printf("│  │  └─ errors                     = %d\n", s.nocandserr)
+	fmt.Printf("│  └─ lexicon entries               = %d\n", s.lex)
+	fmt.Printf("│     └─ false friends              = %d\n", s.lexerr)
 	fmt.Printf("└─ suspicious                       = %d\n", s.suspicious)
 	fmt.Printf("   ├─ replaced                      = %d\n", s.replaced)
 	fmt.Printf("   │  ├─ ocr correct                = %d\n", s.ocrcorrect)
