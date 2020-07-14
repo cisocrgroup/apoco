@@ -15,13 +15,11 @@ import (
 func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set mets file")
 	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
-	CMD.Flags().BoolVarP(&flags.csv, "csv", "c", false, "output csv data")
 }
 
 var flags = struct {
 	mets, inputFileGrp string
 	parameters         string
-	csv                bool
 }{}
 
 // CMD runs the apoco stats command.
@@ -32,14 +30,9 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	if flags.csv {
-		printCSVHeader()
-		noerr(eachToken(flags.mets, flags.inputFileGrp, printCSV))
-	} else {
-		var s stats
-		noerr(eachToken(flags.mets, flags.inputFileGrp, s.stat))
-		s.write()
-	}
+	var s stats
+	noerr(eachToken(flags.mets, flags.inputFileGrp, s.stat))
+	s.write()
 }
 
 func eachToken(mets, inputFileGrp string, f func(doc *xmlquery.Node) error) error {
@@ -70,26 +63,6 @@ func eachTokenInFile(path string, f func(doc *xmlquery.Node) error) error {
 			return err
 		}
 	}
-	return nil
-}
-
-func printCSVHeader() {
-	fmt.Printf("# skipped,short,lex,cor,rank,ocr,sug,gt\n")
-}
-
-func printCSV(word *xmlquery.Node) error {
-	te := pagexml.FindUnicodesInRegionSorted(word)[0].Parent
-	dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
-	if dtd == "" || !found {
-		return nil
-	}
-	var skipped, short, lex, cor bool
-	var rank int
-	var ocr, sug, gt string
-	if err := parseDTD(dtd, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
-		return fmt.Errorf("printCSV: %v", err)
-	}
-	fmt.Printf("%t,%t,%t,%t,%d,%s,%s,%s\n", skipped, short, lex, cor, rank, ocr, sug, gt)
 	return nil
 }
 
