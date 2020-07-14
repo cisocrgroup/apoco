@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -76,9 +75,8 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	ocr := node.Data(unicodes[0].FirstChild)
 
 	info := cor.info[file][id]
+	// Just skip words that we do not have any info about.
 	if info == nil {
-		// return fmt.Errorf("correctWord: unknown token: %s/%s", file, id)
-		log.Printf("correctWord: unknown token: %s/%s", file, id)
 		return nil
 	}
 	if info.skipped {
