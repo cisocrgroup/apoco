@@ -65,8 +65,7 @@ func rreval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			}
 			var xs, ys []float64
 			err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				vals := fs.Calculate(t, c.Nocr)
-				xs = append(xs, vals...)
+				xs = fs.Calculate(t, c.Nocr, xs)
 				ys = append(ys, gt(t))
 				return nil
 			})

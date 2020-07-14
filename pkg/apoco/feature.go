@@ -77,20 +77,23 @@ func NewFeatureSet(names ...string) (FeatureSet, error) {
 }
 
 // Calculate calculates the feature vector for the given feature
-// functions for the given token and the given number of OCRs.  Any
-// given feature function that does not apply to the given
-// configuration (and returns false as it second return parameter for
-// the configuration) is omitted from the resulting feature vector.
-func (fs FeatureSet) Calculate(t Token, n int) []float64 {
-	ret := make([]float64, 0, n*len(fs))
+// functions for the given token and the given number of OCRs and
+// appends it to the given vector.  Any given feature function that
+// does not apply to the given configuration (and returns false as it
+// second return parameter for the configuration) is omitted and not
+// appended to the resulting feature vector.
+func (fs FeatureSet) Calculate(t Token, n int, xs []float64) []float64 {
+	// ret := make([]float64, 0, n*len(fs))
 	for _, f := range fs {
 		for i := 0; i < n; i++ {
 			if val, ok := f(t, i, n); ok {
-				ret = append(ret, val)
+				xs = append(xs, val)
+				// ret = append(ret, val)
 			}
 		}
 	}
-	return ret
+	return xs
+	// return ret
 }
 
 // OCRTokenLen returns the length of the OCR token.  It operates on

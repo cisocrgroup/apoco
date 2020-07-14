@@ -331,8 +331,7 @@ func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []Token) Token {
 	var xs []float64
 	// calculate feature values
 	for _, token := range tokens {
-		vals := fs.Calculate(token, n)
-		xs = append(xs, vals...)
+		xs = fs.Calculate(token, n, xs)
 	}
 	// calculate prediction probabilities
 	xmat := mat.NewDense(len(tokens), len(xs)/len(tokens), xs)
@@ -389,8 +388,7 @@ func ConnectCorrections(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
 func connectCorrections(lr *ml.LR, fs FeatureSet, nocr int, tokens []Token) {
 	xs := make([]float64, 0, len(tokens)*len(fs))
 	for _, t := range tokens {
-		vals := fs.Calculate(t, nocr)
-		xs = append(xs, vals...)
+		xs = fs.Calculate(t, nocr, xs)
 	}
 	x := mat.NewDense(len(tokens), len(xs)/len(tokens), xs)
 	p := lr.PredictProb(x)
