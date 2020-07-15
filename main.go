@@ -2,6 +2,7 @@ package main
 
 import (
 	"example.com/apoco/cmd/align"
+	"example.com/apoco/cmd/cat"
 	"example.com/apoco/cmd/correct"
 	"example.com/apoco/cmd/dmeval"
 	"example.com/apoco/cmd/dmtrain"
@@ -19,6 +20,7 @@ var root = &cobra.Command{
 
 func init() {
 	root.AddCommand(align.CMD)
+	root.AddCommand(cat.CMD)
 	root.AddCommand(correct.CMD)
 	root.AddCommand(dmeval.CMD)
 	root.AddCommand(dmtrain.CMD)
