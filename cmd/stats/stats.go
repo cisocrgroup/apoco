@@ -31,7 +31,7 @@ var CMD = &cobra.Command{
 
 func run(_ *cobra.Command, args []string) {
 	var s stats
-	noerr(eachToken(flags.mets, flags.inputFileGrp, s.stat))
+	chk(eachToken(flags.mets, flags.inputFileGrp, s.stat))
 	s.write()
 }
 
@@ -229,7 +229,7 @@ func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *
 	return nil
 }
 
-func noerr(err error) {
+func chk(err error) {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

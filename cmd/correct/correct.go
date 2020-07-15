@@ -39,14 +39,14 @@ var CMD = &cobra.Command{
 
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.Params)
-	noerr(err)
+	chk(err)
 	c.Overwrite(flags.model, flags.nocr, !flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
-	noerr(err)
+	chk(err)
 	rrlr, rrfs, err := m.Load("rr", c.Nocr)
-	noerr(err)
+	chk(err)
 	dmlr, dmfs, err := m.Load("dm", c.Nocr)
-	noerr(err)
+	chk(err)
 	infoMap := make(infoMap)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
@@ -63,7 +63,7 @@ func run(_ *cobra.Command, args []string) {
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
 		correct(infoMap),
 	)
-	noerr(g.Wait())
+	chk(g.Wait())
 	if flags.simple && flags.protocol {
 		for _, ids := range infoMap {
 			for _, info := range ids {
@@ -78,7 +78,7 @@ func run(_ *cobra.Command, args []string) {
 			ofg:      flags.outputFileGrp,
 			protocol: flags.protocol,
 		}
-		noerr(cor.correct())
+		chk(cor.correct())
 	}
 }
 
@@ -180,7 +180,7 @@ func analyzeRankings(m infoMap) apoco.StreamFunc {
 	}
 }
 
-func noerr(err error) {
+func chk(err error) {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

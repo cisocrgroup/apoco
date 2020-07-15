@@ -36,12 +36,12 @@ var CMD = &cobra.Command{
 
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.Params)
-	noerr(err)
+	chk(err)
 	c.Overwrite(flags.model, flags.nocr, flags.nocache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
-	noerr(err)
+	chk(err)
 	lr, fs, err := m.Load("rr", c.Nocr)
-	noerr(err)
+	chk(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
 		flags.Flags.Tokenize(),
@@ -53,7 +53,7 @@ func run(_ *cobra.Command, args []string) {
 		apoco.ConnectCandidates,
 		apoco.ConnectRankings(lr, fs, c.Nocr),
 		traindm(c, m))
-	noerr(g.Wait())
+	chk(g.Wait())
 }
 
 func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
@@ -111,7 +111,7 @@ func use(t apoco.Token) bool {
 	return true
 }
 
-func noerr(err error) {
+func chk(err error) {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

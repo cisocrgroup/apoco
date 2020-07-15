@@ -27,7 +27,7 @@ var CMD = &cobra.Command{
 func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g, flags.Tokenize(), cat)
-	noerr(g.Wait())
+	chk(g.Wait())
 }
 
 func cat(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
@@ -40,7 +40,7 @@ func cat(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan a
 	return nil
 }
 
-func noerr(err error) {
+func chk(err error) {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
