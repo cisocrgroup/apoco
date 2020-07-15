@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
+	"example.com/apoco/cmd/internal"
 	"example.com/apoco/pkg/apoco"
 	"example.com/apoco/pkg/apoco/ml"
-	"example.com/apoco/pkg/apoco/pagexml"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"gonum.org/v1/gonum/mat"
@@ -47,7 +46,7 @@ func run(_ *cobra.Command, args []string) {
 	noerr(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		pagexml.Tokenize(flags.mets, strings.Split(flags.inputFileGrp, ",")...),
+		internal.Tokenize(flags.mets, nil, []string{flags.inputFileGrp}),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		apoco.FilterShort,
