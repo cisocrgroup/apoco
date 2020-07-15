@@ -15,19 +15,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Extensions is used to tokenize snippets in directories using the
+// list of file extensions.
+type Extensions []string
+
 // Tokenize tokenizes tokens from line snippets TSV files (identyfied
 // by the given file extensions) and alignes them accordingly.  If a
 // extension ends with `.txt`, one line is read from the text file (no
 // confidences).  Otherwise the file is read as a TSV file expecting
 // on char and its confidence on each line.
-func Tokenize(fileExts []string, dirs ...string) apoco.StreamFunc {
+func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
 		out := make(chan apoco.Token)
 		g.Go(func() error {
 			defer close(out)
 			// Iterate over the directories and read the tokens from each dir.
 			for _, dir := range dirs {
-				if err := readTokensFromDir(ctx, out, dir, fileExts); err != nil {
+				if err := e.readTokensFromDir(ctx, out, dir); err != nil {
 					return fmt.Errorf("tokenize: %v", err)
 				}
 			}
@@ -37,8 +41,8 @@ func Tokenize(fileExts []string, dirs ...string) apoco.StreamFunc {
 	}
 }
 
-func readTokensFromDir(ctx context.Context, out chan<- apoco.Token, bdir string, fileExts []string) error {
-	if len(fileExts) == 0 {
+func (e Extensions) readTokensFromDir(ctx context.Context, out chan<- apoco.Token, bdir string) error {
+	if len(e) == 0 {
 		return fmt.Errorf("readTokensFromDir %s: empty file extensions", bdir)
 	}
 	// Use a dir path stack to iterate over all dirs in the tree.
@@ -63,10 +67,11 @@ func readTokensFromDir(ctx context.Context, out chan<- apoco.Token, bdir string,
 				dirs = append(dirs, filepath.Join(dir, fi.Name()))
 				continue
 			}
-			if !strings.HasSuffix(fi.Name(), fileExts[0]) {
+			if !strings.HasSuffix(fi.Name(), e[0]) {
 				continue
 			}
-			if err := readTokensFromSnippets(ctx, out, bdir, filepath.Join(dir, fi.Name()), fileExts); err != nil {
+			file := filepath.Join(dir, fi.Name())
+			if err := e.readTokensFromSnippets(ctx, out, bdir, file); err != nil {
 				return fmt.Errorf("readTokensFromDir %s: %v", bdir, err)
 			}
 		}
@@ -74,15 +79,15 @@ func readTokensFromDir(ctx context.Context, out chan<- apoco.Token, bdir string,
 	return nil
 }
 
-func readTokensFromSnippets(ctx context.Context, out chan<- apoco.Token, bdir, file string, fileExts []string) error {
+func (e Extensions) readTokensFromSnippets(ctx context.Context, out chan<- apoco.Token, bdir, file string) error {
 	var lines []apoco.Chars
 	pairs, err := readFile(file)
 	if err != nil {
 		return fmt.Errorf("readTokensFromSnippets: %v", err)
 	}
 	lines = append(lines, pairs)
-	for i := 1; i < len(fileExts); i++ {
-		path := file[0:len(file)-len(fileExts[0])] + fileExts[i]
+	for i := 1; i < len(e); i++ {
+		path := file[0:len(file)-len(e[0])] + e[i]
 		pairs, err := readFile(path)
 		if err != nil {
 			return fmt.Errorf("readTokensFromSnippets: %v", err)
