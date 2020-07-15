@@ -13,10 +13,8 @@ import (
 )
 
 func init() {
-	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set mets file")
-	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
+	flags.Flags.Init(CMD)
 	CMD.Flags().StringVarP(&flags.outputFileGrp, "output-file-grp", "O", "", "set input file group")
-	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P", "config.json", "set configuration file")
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profiles (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.protocol, "protocol", "p", false, "add evaluation protocol")
@@ -25,10 +23,11 @@ func init() {
 }
 
 var flags = struct {
-	mets, inputFileGrp, outputFileGrp string
-	parameters, model                 string
-	nocr                              int
-	cache, simple, protocol           bool
+	internal.Flags
+	outputFileGrp           string
+	model                   string
+	nocr                    int
+	cache, simple, protocol bool
 }{}
 
 // CMD runs the apoco correct command.
@@ -39,7 +38,7 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameters)
+	c, err := apoco.ReadConfig(flags.Params)
 	noerr(err)
 	c.Overwrite(flags.model, flags.nocr, !flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
@@ -51,7 +50,7 @@ func run(_ *cobra.Command, args []string) {
 	infoMap := make(infoMap)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		internal.Tokenize(flags.mets, nil, []string{flags.inputFileGrp}),
+		flags.Flags.Tokenize(),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		register(infoMap),
@@ -74,8 +73,8 @@ func run(_ *cobra.Command, args []string) {
 	} else {
 		cor := corrector{
 			info:     infoMap,
-			mets:     flags.mets,
-			ifg:      flags.inputFileGrp,
+			mets:     flags.METS,
+			ifg:      flags.IFGs,
 			ofg:      flags.outputFileGrp,
 			protocol: flags.protocol,
 		}

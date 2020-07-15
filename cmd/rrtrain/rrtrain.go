@@ -15,20 +15,17 @@ import (
 )
 
 func init() {
-	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set mets file")
-	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
-	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P", "config.json", "set configuration file")
+	flags.Flags.Init(CMD)
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.nocache, "nocache", "c", false, "disable caching of profiles (overwrites setting in the configuration file)")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "", "set model path (overwrites setting in the configuration file)")
 }
 
 var flags = struct {
-	mets, inputFileGrp string
-	parameters         string
-	model              string
-	nocr               int
-	nocache            bool
+	internal.Flags
+	model   string
+	nocr    int
+	nocache bool
 }{}
 
 // CMD defines the apoco train command.
@@ -39,14 +36,14 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameters)
+	c, err := apoco.ReadConfig(flags.Params)
 	noerr(err)
 	c.Overwrite(flags.model, flags.nocr, flags.nocache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	noerr(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		internal.Tokenize(flags.mets, nil, []string{flags.inputFileGrp}),
+		flags.Flags.Tokenize(),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		apoco.FilterShort,
