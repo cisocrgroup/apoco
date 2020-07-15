@@ -19,8 +19,6 @@ var register = map[string]FeatureFunc{
 	"OCRTrigramFreq":                 OCRTrigramFreq,
 	"OCRMaxTrigramFreq":              OCRMinTrigramFreq,
 	"OCRMinTrigramFreq":              OCRMaxTrigramFreq,
-	"OCRFirstInLine":                 OCRFirstInLine,
-	"OCRLastInLine":                  OCRLastInLine,
 	"OCRMaxCharConf":                 OCRMaxCharConf,
 	"OCRMinCharConf":                 OCRMinCharConf,
 	"CandidateProfilerWeight":        CandidateProfilerWeight,
@@ -36,10 +34,7 @@ var register = map[string]FeatureFunc{
 	"CandidateMatchesOCR":            CandidateMatchesOCR,
 	"RankingConf":                    RankingConf,
 	"RankingConfDiffToNext":          RankingConfDiffToNext,
-	"RankingCandidateConf":           RankingCandidateConf,
 	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
-	"RankingCandidateUnigramFreq":    RankingCandidateUnigramFreq,
-	"RankingCandidateTrigramFreq":    RankingCandidateTrigramFreq,
 	"GoodOCRPatterns":                GoodOCRPatterns,
 	"GoodHistPatterns":               GoodHistPatterns,
 }
@@ -134,22 +129,6 @@ func OCRTrigramFreq(t Token, i, n int) (float64, bool) {
 	return t.LM.Trigram(t.Tokens[i]), true
 }
 
-// OCRFirstInLine checks if the given token is the first in a line.
-func OCRFirstInLine(t Token, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
-	}
-	return ml.Bool(t.HasTrait(0, FirstInLine)), true
-}
-
-// OCRLastInLine checks if the given token is the first in a line.
-func OCRLastInLine(t Token, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
-	}
-	return ml.Bool(t.HasTrait(0, LastInLine)), true
-}
-
 // OCRMaxCharConf returns the maximal character confidence of the
 // master OCR token.
 func OCRMaxCharConf(t Token, i, n int) (float64, bool) {
@@ -220,7 +199,7 @@ func CandidateUnigramFreq(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
-	candidate := t.Payload.(*gofiler.Candidate)
+	candidate := mustGetCandidate(t)
 	return t.LM.Unigram(candidate.Suggestion), true
 }
 
@@ -230,7 +209,7 @@ func CandidateTrigramFreq(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
-	candidate := t.Payload.(*gofiler.Candidate)
+	candidate := mustGetCandidate(t)
 	return t.LM.Trigram(candidate.Suggestion), true
 }
 
@@ -411,32 +390,6 @@ func RankingConfDiffToNext(t Token, i, n int) (float64, bool) {
 		next = rankings[1].Prob
 	}
 	return rankings[0].Prob - next, true
-}
-
-// RankingCandidateTrigramFreq returns the trigram frequency for the
-// profiler candidate of the top ranked correction suggestion.
-func RankingCandidateTrigramFreq(t Token, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
-	}
-	return t.LM.Trigram(t.Payload.([]Ranking)[0].Candidate.Suggestion), true
-}
-
-// RankingCandidateUnigramFreq returns the unigram frequency for the
-// profiler candidate of the top ranked correction suggestion.
-func RankingCandidateUnigramFreq(t Token, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
-	}
-	return t.LM.Unigram(t.Payload.([]Ranking)[0].Candidate.Suggestion), true
-}
-
-// RankingCandidateConf returns the top ranked candidate's weight.
-func RankingCandidateConf(t Token, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
-	}
-	return float64(t.Payload.([]Ranking)[0].Candidate.Weight), true
 }
 
 // RankingCandidateConfDiffToNext returns the top ranked candidate's
