@@ -64,7 +64,7 @@ func run(_ *cobra.Command, args []string) {
 		correct(infoMap),
 	)
 	chk(g.Wait())
-	if flags.simple && flags.protocol {
+	if flags.simple {
 		for _, ids := range infoMap {
 			for _, info := range ids {
 				fmt.Printf("%s\n", info)
