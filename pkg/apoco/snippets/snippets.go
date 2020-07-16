@@ -143,6 +143,11 @@ func align(lines ...apoco.Chars) [][]pos {
 }
 
 func alignAt(spaces []int, str []rune) []pos {
+	// If str is empty, each alignment is the empty string.
+	// We need to return still a slice with the right lenght.
+	if len(str) == 0 {
+		return make([]pos, len(spaces)+1)
+	}
 	ret := make([]pos, 0, len(spaces)+1)
 	b := -1
 	for _, s := range spaces {
