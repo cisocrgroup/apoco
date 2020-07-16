@@ -1,8 +1,10 @@
 package stats
 
 import (
+	"bufio"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -15,11 +17,12 @@ import (
 func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set mets file")
 	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
+	CMD.Flags().BoolVarP(&flags.simple, "simple", "s", false, "read simple input")
 }
 
 var flags = struct {
 	mets, inputFileGrp string
-	parameters         string
+	simple             bool
 }{}
 
 // CMD runs the apoco stats command.
@@ -31,24 +34,41 @@ var CMD = &cobra.Command{
 
 func run(_ *cobra.Command, args []string) {
 	var s stats
-	chk(eachToken(flags.mets, flags.inputFileGrp, s.stat))
+	if flags.simple {
+		chk(eachLine(os.Stdin, s.stat))
+	} else {
+		chk(eachWord(flags.mets, flags.inputFileGrp, s.stat))
+	}
 	s.write()
 }
 
-func eachToken(mets, inputFileGrp string, f func(doc *xmlquery.Node) error) error {
+func eachLine(in io.Reader, f func(string) error) error {
+	scanner := bufio.NewScanner(in)
+	for scanner.Scan() {
+		if err := f(scanner.Text()); err != nil {
+			return fmt.Errorf("eachLine: %v", err)
+		}
+	}
+	if scanner.Err() != nil {
+		return fmt.Errorf("eachLine: %v", scanner.Err())
+	}
+	return nil
+}
+
+func eachWord(mets, inputFileGrp string, f func(string) error) error {
 	files, err := pagexml.FilePathsForFileGrp(mets, inputFileGrp)
 	if err != nil {
-		return fmt.Errorf("eachToken: %v", err)
+		return fmt.Errorf("eachWord: %v", err)
 	}
 	for _, file := range files {
 		if err := eachTokenInFile(file, f); err != nil {
-			return fmt.Errorf("eachToken %s: %v", file, err)
+			return fmt.Errorf("eachWord %s: %v", file, err)
 		}
 	}
 	return nil
 }
 
-func eachTokenInFile(path string, f func(doc *xmlquery.Node) error) error {
+func eachTokenInFile(path string, f func(string) error) error {
 	is, err := os.Open(path)
 	if err != nil {
 		return err
@@ -59,7 +79,18 @@ func eachTokenInFile(path string, f func(doc *xmlquery.Node) error) error {
 		return err
 	}
 	for _, word := range xmlquery.Find(doc, "//*[local-name()='Word']") {
-		if err := f(word); err != nil {
+		// Simply skip this word if id does not contain any actionable
+		// data.
+		us := pagexml.FindUnicodesInRegionSorted(word)
+		if len(us) == 0 { // skip
+			return nil
+		}
+		te := us[0].Parent
+		dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
+		if dtd == "" || !found { // skip
+			return nil
+		}
+		if err := f(dtd); err != nil {
 			return err
 		}
 	}
@@ -79,18 +110,7 @@ type stats struct {
 	totalerrbefore, totalerrafter             int
 }
 
-func (s *stats) stat(word *xmlquery.Node) error {
-	// Simply skip this word if id does not contain any actionable
-	// data.
-	us := pagexml.FindUnicodesInRegionSorted(word)
-	if len(us) == 0 { // skip
-		return nil
-	}
-	te := us[0].Parent
-	dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
-	if dtd == "" || !found {
-		return nil
-	}
+func (s *stats) stat(dtd string) error {
 	var skipped, short, lex, cor bool
 	var rank int
 	var ocr, sug, gt string
