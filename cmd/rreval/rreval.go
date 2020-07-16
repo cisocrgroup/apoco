@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"example.com/apoco/cmd/internal"
-	"example.com/apoco/pkg/apoco"
-	"example.com/apoco/pkg/apoco/ml"
+	"git.sr.ht/~flobar/apoco/cmd/internal"
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"

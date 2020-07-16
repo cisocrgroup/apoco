@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"example.com/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
 )
 
 type info struct {

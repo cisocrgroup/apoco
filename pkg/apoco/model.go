@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"example.com/apoco/pkg/apoco/ml"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 )
 
 // Model holds the different models for the different number of OCRs.

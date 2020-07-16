@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode"
 
-	"example.com/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"golang.org/x/sync/errgroup"
 )
 

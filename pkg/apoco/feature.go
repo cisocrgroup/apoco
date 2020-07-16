@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"example.com/apoco/pkg/apoco/lev"
-	"example.com/apoco/pkg/apoco/ml"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/lev"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/finkf/gofiler"
 )
 

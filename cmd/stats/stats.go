@@ -8,8 +8,8 @@ import (
 	"log"
 	"os"
 
-	"example.com/apoco/pkg/apoco/node"
-	"example.com/apoco/pkg/apoco/pagexml"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"github.com/antchfx/xmlquery"
 	"github.com/spf13/cobra"
 )

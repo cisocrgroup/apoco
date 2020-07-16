@@ -6,8 +6,8 @@ import (
 	"log"
 	"unicode/utf8"
 
-	"example.com/apoco/cmd/internal"
-	"example.com/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/cmd/internal"
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )

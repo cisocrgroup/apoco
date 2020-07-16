@@ -1,5 +1,5 @@
 VERSION ?= v0.0.1
-LDFLAGS := "-X example.com/apoco/cmd/version.version=${VERSION}"
+LDFLAGS := "-X git.sr.ht/~flobar/apoco/cmd/version.version=${VERSION}"
 build:
 	go build -ldflags ${LDFLAGS}
 install:

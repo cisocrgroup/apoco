@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 
-	"example.com/apoco/pkg/apoco"
-	"example.com/apoco/pkg/apoco/node"
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"github.com/antchfx/xmlquery"
 	"golang.org/x/sync/errgroup"
 )

@@ -1,15 +1,15 @@
 package main
 
 import (
-	"example.com/apoco/cmd/align"
-	"example.com/apoco/cmd/cat"
-	"example.com/apoco/cmd/correct"
-	"example.com/apoco/cmd/dmeval"
-	"example.com/apoco/cmd/dmtrain"
-	"example.com/apoco/cmd/rreval"
-	"example.com/apoco/cmd/rrtrain"
-	"example.com/apoco/cmd/stats"
-	"example.com/apoco/cmd/version"
+	"git.sr.ht/~flobar/apoco/cmd/align"
+	"git.sr.ht/~flobar/apoco/cmd/cat"
+	"git.sr.ht/~flobar/apoco/cmd/correct"
+	"git.sr.ht/~flobar/apoco/cmd/dmeval"
+	"git.sr.ht/~flobar/apoco/cmd/dmtrain"
+	"git.sr.ht/~flobar/apoco/cmd/rreval"
+	"git.sr.ht/~flobar/apoco/cmd/rrtrain"
+	"git.sr.ht/~flobar/apoco/cmd/stats"
+	"git.sr.ht/~flobar/apoco/cmd/version"
 	"github.com/spf13/cobra"
 )
 

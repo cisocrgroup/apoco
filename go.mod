@@ -1,4 +1,4 @@
-module example.com/apoco
+module git.sr.ht/~flobar/apoco
 
 go 1.14
 

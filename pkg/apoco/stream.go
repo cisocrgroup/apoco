@@ -8,7 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"example.com/apoco/pkg/apoco/ml"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/finkf/gofiler"
 	"golang.org/x/sync/errgroup"
 	"gonum.org/v1/gonum/mat"

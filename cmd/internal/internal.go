@@ -3,9 +3,9 @@ package internal
 import (
 	"strings"
 
-	"example.com/apoco/pkg/apoco"
-	"example.com/apoco/pkg/apoco/pagexml"
-	"example.com/apoco/pkg/apoco/snippets"
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
 	"github.com/spf13/cobra"
 )
 

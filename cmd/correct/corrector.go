@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"example.com/apoco/pkg/apoco"
-	"example.com/apoco/pkg/apoco/node"
-	"example.com/apoco/pkg/apoco/pagexml"
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"github.com/antchfx/xmlquery"
 )
 
