@@ -199,16 +199,16 @@ func readFile(path string) (apoco.Chars, error) {
 		return nil, fmt.Errorf("readFile %s: %v", path, err)
 	}
 	defer is.Close()
-	var pairs apoco.Chars
+	var line apoco.Chars
 	if strings.HasSuffix(path, ".txt") {
-		pairs, err = readTXT(is)
+		line, err = readTXT(is)
 	} else {
-		pairs, err = readTSV(is)
+		line, err = readTSV(is)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("readFile %s: %v", path, err)
 	}
-	return pairs, nil
+	return line, nil
 }
 
 func readTXT(is io.Reader) (apoco.Chars, error) {
@@ -216,7 +216,7 @@ func readTXT(is io.Reader) (apoco.Chars, error) {
 	s := bufio.NewScanner(is)
 	for s.Scan() {
 		for _, r := range s.Text() {
-			chars = append(chars, apoco.Char{Char: r})
+			chars = appendChar(chars, apoco.Char{Char: r})
 		}
 		break
 	}
@@ -240,12 +240,23 @@ func readTSV(is io.Reader) (apoco.Chars, error) {
 			}
 			continue
 		}
-		chars = append(chars, c)
+		chars = appendChar(chars, c)
 	}
 	if s.Err() != nil {
 		return nil, fmt.Errorf("readTSV: %v", s.Err())
 	}
 	return trim(chars), nil
+}
+
+func appendChar(chars apoco.Chars, c apoco.Char) apoco.Chars {
+	if len(chars) == 0 {
+		return append(chars, c)
+	}
+	// We do not want to append multiple whitespaces.
+	if unicode.IsSpace(chars[len(chars)-1].Char) && unicode.IsSpace(c.Char) {
+		return chars
+	}
+	return append(chars, c)
 }
 
 func trim(chars apoco.Chars) apoco.Chars {
