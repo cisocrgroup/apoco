@@ -26,14 +26,14 @@ var CMD = &cobra.Command{
 
 func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
-	_ = apoco.Pipe(ctx, g, flags.Tokenize(), cat)
+	_ = apoco.Pipe(ctx, g, flags.Tokenize(), apoco.Normalize, cat)
 	chk(g.Wait())
 }
 
 func cat(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 	g.Go(func() error {
 		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-			fmt.Printf("%s", t)
+			fmt.Printf("%s\n", t)
 			return nil
 		})
 	})
