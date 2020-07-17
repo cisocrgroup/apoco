@@ -169,13 +169,13 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 	return nil
 }
 
-func cachePath(fg string) (string, bool) {
+func cachePath(group string) (string, bool) {
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
 		return "", false
 	}
-	dir := url.PathEscape(fg)
-	return filepath.Join(cacheDir, "apoco", dir, "profile.json"), true
+	base := url.PathEscape(group)
+	return filepath.Join(cacheDir, "apoco", base+"-profile.json.gz"), true
 }
 
 func readCachedProfile(fg string) (gofiler.Profile, bool) {
