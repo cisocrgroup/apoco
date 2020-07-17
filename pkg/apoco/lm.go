@@ -78,9 +78,10 @@ func (f *FreqList) loadCSV(in io.Reader) error {
 
 // LanguageModel consists of holds the language model for tokens.
 type LanguageModel struct {
-	ngrams   FreqList
-	unigrams FreqList
-	Profile  gofiler.Profile
+	ngrams     FreqList
+	unigrams   FreqList
+	Profile    gofiler.Profile
+	Lexicality float64
 }
 
 // AddUnigram adds the token to the language model's unigram map.
@@ -141,6 +142,21 @@ func (lm *LanguageModel) LoadGzippedNGram(path string) error {
 	return nil
 }
 
+func (lm *LanguageModel) calculateLexicality(tokens ...Token) {
+	var total, lexical int
+	for _, token := range tokens {
+		total++
+		interpretation, ok := lm.Profile[token.Tokens[0]]
+		if !ok || len(interpretation.Candidates) == 0 {
+			continue
+		}
+		if interpretation.Candidates[0].Distance == 0 {
+			lexical++
+		}
+	}
+	lm.Lexicality = float64(lexical) / float64(total)
+}
+
 // LoadProfile loads the profile for the master OCR tokens.
 func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, cache bool, tokens ...Token) error {
 	if len(tokens) == 0 {
@@ -166,6 +182,7 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 		return nil
 	}
 	go func() { cacheProfile(tokens[0].Group, profile) }()
+	lm.calculateLexicality(tokens...)
 	return nil
 }
 
