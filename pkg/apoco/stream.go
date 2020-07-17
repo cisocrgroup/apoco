@@ -276,7 +276,7 @@ func (l lmLoader) load(ctx context.Context) error {
 			ctx,
 			l.config.ProfilerBin,
 			l.config.ProfilerConfig,
-			l.config.NoCache,
+			l.config.Cache,
 			l.tokens...,
 		)
 		return err
