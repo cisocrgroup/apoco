@@ -87,6 +87,8 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			log.Printf("dmtrain: fitting %d tokens, %d features, nocr=%d, lr=%f, ntrain=%d",
 				len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
 			lr.Fit(x, y)
+			log.Printf("dmtrain: fitted %d tokens, %d features, nocr=%d, lr=%f, ntrain=%d",
+				len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
 			m.Put("dm", c.Nocr, &lr, c.DMFeatures)
 			if err := m.Write(c.Model); err != nil {
 				return fmt.Errorf("traindm: %v", err)
