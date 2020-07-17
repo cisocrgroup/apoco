@@ -142,11 +142,11 @@ func (lm *LanguageModel) LoadGzippedNGram(path string) error {
 }
 
 // LoadProfile loads the profile for the master OCR tokens.
-func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, nocache bool, tokens ...Token) error {
+func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, cache bool, tokens ...Token) error {
 	if len(tokens) == 0 {
 		return nil
 	}
-	if !nocache {
+	if cache {
 		if profile, ok := readCachedProfile(tokens[0].Group); ok {
 			lm.Profile = profile
 			return nil
@@ -162,7 +162,7 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, no
 		return fmt.Errorf("load profile: %v", err)
 	}
 	lm.Profile = profile
-	if nocache {
+	if !cache {
 		return nil
 	}
 	go func() { cacheProfile(tokens[0].Group, profile) }()

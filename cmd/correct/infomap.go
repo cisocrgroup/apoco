@@ -2,6 +2,7 @@ package correct
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -22,6 +23,7 @@ func (i *info) String() string {
 }
 
 func e(str string) string {
+	str = strings.Trim(str, " \t\n\r")
 	if len(str) == 0 {
 		return "ε"
 	}

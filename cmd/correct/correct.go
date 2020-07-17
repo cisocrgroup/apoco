@@ -40,7 +40,7 @@ var CMD = &cobra.Command{
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.Params)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, !flags.cache)
+	c.Overwrite(flags.model, flags.nocr, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	rrlr, rrfs, err := m.Load("rr", c.Nocr)

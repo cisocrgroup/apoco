@@ -16,15 +16,15 @@ import (
 func init() {
 	flags.Flags.Init(CMD)
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0, "set nocr (overwrites setting in the configuration file)")
-	CMD.Flags().BoolVarP(&flags.nocache, "nocache", "c", false, "disable caching of profiles (overwrites setting in the configuration file)")
+	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "disable caching of profiles (overwrites setting in the configuration file)")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "", "set model path (overwrites setting in the configuration file)")
 }
 
 var flags = struct {
 	internal.Flags
-	model   string
-	nocr    int
-	nocache bool
+	model string
+	nocr  int
+	cache bool
 }{}
 
 // CMD defines the apoco train command.
@@ -37,7 +37,7 @@ var CMD = &cobra.Command{
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.Params)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, flags.nocache)
+	c.Overwrite(flags.model, flags.nocr, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Load("rr", c.Nocr)
