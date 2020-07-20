@@ -181,7 +181,7 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 	if !cache {
 		return nil
 	}
-	go func() { cacheProfile(tokens[0].Group, profile) }()
+	cacheProfile(tokens[0].Group, profile)
 	lm.calculateLexicality(tokens...)
 	return nil
 }
