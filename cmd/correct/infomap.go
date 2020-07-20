@@ -27,14 +27,14 @@ func e(str string) string {
 	if len(str) == 0 {
 		return "ε"
 	}
-	return str
+	return strings.Replace(str, " ", "_", -1)
 }
 
 var infoMapLock sync.Mutex
 
 type infoMap map[string]map[string]*info // file -> id -> info
 
-func (m infoMap) put(t apoco.Token) *info {
+func (m infoMap) get(t apoco.Token) *info {
 	infoMapLock.Lock()
 	defer infoMapLock.Unlock()
 	if _, ok := m[t.File]; !ok {

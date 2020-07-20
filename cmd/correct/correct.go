@@ -86,10 +86,11 @@ func correct(m infoMap) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 		g.Go(func() error {
 			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				m.put(t).skipped = false
-				m.put(t).cor = t.Payload.(apoco.Correction).Conf > 0.5
-				m.put(t).conf = t.Payload.(apoco.Correction).Conf
-				m.put(t).sug = t.Payload.(apoco.Correction).Candidate.Suggestion
+				info := m.get(t)
+				info.skipped = false
+				info.cor = t.Payload.(apoco.Correction).Conf > 0.5
+				info.conf = t.Payload.(apoco.Correction).Conf
+				info.sug = t.Payload.(apoco.Correction).Candidate.Suggestion
 				return nil
 			})
 		})
@@ -106,7 +107,7 @@ func register(m infoMap) apoco.StreamFunc {
 				// Each token is skipped as default.
 				// If a token is not skipped, skipped
 				// must be explicitly set to false.
-				m.put(t).skipped = true
+				m.get(t).skipped = true
 				if err := apoco.SendTokens(ctx, out, t); err != nil {
 					return fmt.Errorf("register: %v", err)
 				}
@@ -124,7 +125,7 @@ func filterLex(m infoMap) apoco.StreamFunc {
 			defer close(out)
 			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
 				if t.IsLexiconEntry() {
-					m.put(t).lex = true
+					m.get(t).lex = true
 					return nil
 				}
 				if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -144,7 +145,7 @@ func filterShort(m infoMap) apoco.StreamFunc {
 			defer close(out)
 			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
 				if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
-					m.put(t).short = true
+					m.get(t).short = true
 					return nil
 				}
 				if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -170,7 +171,7 @@ func analyzeRankings(m infoMap) apoco.StreamFunc {
 						break
 					}
 				}
-				m.put(t).rank = rank
+				m.get(t).rank = rank
 				if err := apoco.SendTokens(ctx, out, t); err != nil {
 					return fmt.Errorf("analyzeRankings: %v", err)
 				}
