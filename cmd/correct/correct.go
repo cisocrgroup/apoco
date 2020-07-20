@@ -104,7 +104,8 @@ func register(m infoMap) apoco.StreamFunc {
 			defer close(out)
 			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
 				// Each token is skipped as default.
-				// If a token is not skipped, skipped must be explicitly set to false.
+				// If a token is not skipped, skipped
+				// must be explicitly set to false.
 				m.put(t).skipped = true
 				if err := apoco.SendTokens(ctx, out, t); err != nil {
 					return fmt.Errorf("register: %v", err)
