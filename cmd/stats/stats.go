@@ -211,10 +211,12 @@ func (s *stats) write() {
 	erra := float64(s.totalerrafter) / float64(s.total)
 	accb := 1.0 - errb
 	acca := 1.0 - erra
+	impr := float64(s.totalerrbefore-s.totalerrafter) / float64(s.totalerrafter) * 100
 	fmt.Printf("error rate (before)                 = %f\n", errb)
 	fmt.Printf("error rate (after)                  = %f\n", erra)
 	fmt.Printf("accuracy (before)                   = %f\n", accb)
 	fmt.Printf("accuracy (after)                    = %f\n", acca)
+	fmt.Printf("improvement                         = %f%%\n", impr)
 	fmt.Printf("missing correction candidate        = %d\n", s.missingcorrection)
 	fmt.Printf("bad rank                            = %d\n", s.badrank)
 	fmt.Printf("total errors (before)               = %d\n", s.totalerrbefore)
