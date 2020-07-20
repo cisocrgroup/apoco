@@ -240,10 +240,10 @@ func (s *stats) write() {
 	fmt.Printf("   └─ not replaced                  = %d\n", s.notreplaced)
 	fmt.Printf("      ├─ ocr correct                = %d\n", s.ocrcorrectNR)
 	fmt.Printf("      │  ├ candiate correct         = %d\n", s.ocracceptNR)
-	fmt.Printf("      │  └ candiate not correct     = %d\n", s.disimprovementNR)
+	fmt.Printf("      │  └ candidate not correct    = %d\n", s.disimprovementNR)
 	fmt.Printf("      └─ ocr not correct            = %d\n", s.ocrincorrectNR)
 	fmt.Printf("         ├─ missed opportunity      = %d\n", s.missedopportunity)
-	fmt.Printf("         └─ ocr not correct         = %d\n", s.donotcareNR)
+	fmt.Printf("         └─ candidate not correct   = %d\n", s.donotcareNR)
 }
 
 const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
