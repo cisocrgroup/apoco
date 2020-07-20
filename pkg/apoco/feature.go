@@ -2,7 +2,6 @@ package apoco
 
 import (
 	"fmt"
-	"strings"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco/lev"
@@ -35,8 +34,6 @@ var register = map[string]FeatureFunc{
 	"RankingConf":                    RankingConf,
 	"RankingConfDiffToNext":          RankingConfDiffToNext,
 	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
-	"GoodOCRPatterns":                GoodOCRPatterns,
-	"GoodHistPatterns":               GoodHistPatterns,
 	"Lexicality":                     Lexicality,
 }
 
@@ -55,14 +52,6 @@ type FeatureSet []FeatureFunc
 func NewFeatureSet(names ...string) (FeatureSet, error) {
 	funcs := make([]FeatureFunc, len(names))
 	for i, name := range names {
-		if strings.HasPrefix(name, "HasOCRPattern_") {
-			funcs[i] = HasOCRPattern(name[14:])
-			continue
-		}
-		if strings.HasPrefix(name, "HasHistPattern_") {
-			funcs[i] = HasHistPattern(name[15:])
-			continue
-		}
 		f, ok := register[name]
 		if !ok {
 			return nil, fmt.Errorf("newFeatureSet %s: no such feature function", name)
