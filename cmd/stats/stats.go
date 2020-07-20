@@ -18,11 +18,12 @@ func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set mets file")
 	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
 	CMD.Flags().BoolVarP(&flags.simple, "simple", "s", false, "read simple input")
+	CMD.Flags().BoolVarP(&flags.verbose, "verbose", "v", false, "verbose output of stats")
 }
 
 var flags = struct {
 	mets, inputFileGrp string
-	simple             bool
+	simple, verbose    bool
 }{}
 
 // CMD runs the apoco stats command.
@@ -117,6 +118,9 @@ func (s *stats) stat(dtd string) error {
 	if err := parseDTD(dtd, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
 		return fmt.Errorf("stat: %v", err)
 	}
+	if flags.verbose {
+		verbose(skipped, short, lex, cor, rank, ocr, sug, gt)
+	}
 	s.total++
 	if skipped {
 		s.skipped++
@@ -194,7 +198,7 @@ func (s *stats) stat(dtd string) error {
 		s.totalerrbefore++
 	}
 	if (skipped && ocr != gt) || // errors in skipped tokens
-		(!skipped && cor && sug != gt) || // infelicious correction
+		(!skipped && cor && sug != gt) || // infelicitous correction
 		(!skipped && !cor && ocr != gt) { // not corrected and false
 		s.totalerrafter++
 	}
@@ -240,9 +244,31 @@ func (s *stats) write() {
 	fmt.Printf("         └─ ocr not correct         = %d\n", s.donotcareNR)
 }
 
+const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
+
+func verbose(skipped, short, lex, cor bool, rank int, ocr, sug, gt string) {
+	write := func(pre string) {
+		fmt.Printf(pre+dtdFormat+"\n", skipped, short, lex, cor, rank, ocr, sug, gt)
+	}
+	if !skipped && rank > 1 {
+		write("bad rank:                ")
+	}
+	if !skipped && rank == 0 {
+		write("missing correction:      ")
+	}
+	if !skipped && cor && gt == ocr && sug != gt {
+		write("infelicitous correction: ")
+	}
+	if !skipped && !cor && ocr != gt && sug == gt {
+		write("missed opportunity:      ")
+	}
+	if !skipped && cor && gt != ocr && sug == gt {
+		write("successful correction:   ")
+	}
+}
+
 func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
-	const format = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
-	_, err := fmt.Sscanf(dtd, format, skip, short, lex, cor, rank, ocr, sug, gt)
+	_, err := fmt.Sscanf(dtd, dtdFormat, skip, short, lex, cor, rank, ocr, sug, gt)
 	if err != nil {
 		return fmt.Errorf("parseDTD: cannot parse %q: %v", dtd, err)
 	}
