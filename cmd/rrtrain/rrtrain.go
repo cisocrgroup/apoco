@@ -80,10 +80,10 @@ func rrtrain(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 				LearningRate: c.LearningRate,
 				Ntrain:       c.Ntrain,
 			}
-			log.Printf("rrtrain: fitting %d tokens, %d features, nocr=%d, lr=%f, ntrain=%d",
+			log.Printf("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
 				n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 			lr.Fit(x, y)
-			log.Printf("rrtrain: fitted %d tokens, %d features, nocr=%d, lr=%f, ntrain=%d",
+			log.Printf("rrtrain: fitted %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
 				len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
 			m.Put("rr", c.Nocr, &lr, c.RRFeatures)
 			if err := m.Write(c.Model); err != nil {
