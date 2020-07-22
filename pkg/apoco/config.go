@@ -21,6 +21,7 @@ type Config struct {
 	Ntrain         int      `json:"ntrain"`
 	Nocr           int      `json:"nocr"`
 	Cache          bool     `json:"cache"`
+	Cautious       bool     `json:"cautious"`
 }
 
 // ReadConfig reads the config from a json file.
@@ -46,12 +47,15 @@ func ReadConfig(file string) (*Config, error) {
 // Overwrite overwrites the appropriate variables in the config file
 // with the given values.  Values only overwrite the variables if they
 // are not go's default zero value.
-func (c *Config) Overwrite(model string, nocr int, cache bool) {
+func (c *Config) Overwrite(model string, nocr int, cautious, cache bool) {
 	if model != "" {
 		c.Model = model
 	}
 	if nocr != 0 {
 		c.Nocr = nocr
+	}
+	if cautious {
+		c.Cautious = cautious
 	}
 	if cache {
 		c.Cache = cache

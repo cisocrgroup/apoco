@@ -37,7 +37,7 @@ var CMD = &cobra.Command{
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.Params)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, flags.cache)
+	c.Overwrite(flags.model, flags.nocr, false, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Load("rr", c.Nocr)
@@ -135,7 +135,9 @@ func runStats(lr *ml.LR, xs, ys []float64, tokens []apoco.Token, nocr int) {
 
 func gt(t apoco.Token) float64 {
 	candidate := t.Payload.([]apoco.Ranking)[0].Candidate
-	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
+	gt := t.Tokens[len(t.Tokens)-1]
+	// return ml.Bool(candidate.Suggestion == gt && t.Tokens[0] != gt)
+	return ml.Bool(candidate.Suggestion == gt)
 }
 
 func chk(err error) {

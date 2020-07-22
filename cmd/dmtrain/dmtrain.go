@@ -17,14 +17,16 @@ func init() {
 	flags.Flags.Init(CMD)
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "disable caching of profiles (overwrites setting in the configuration file)")
+	CMD.Flags().BoolVarP(&flags.cautious, "cautious", "C", false, "cautious dm tranining (overwrites setting in the configuration file)")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "", "set model path (overwrites setting in the configuration file)")
 }
 
 var flags = struct {
 	internal.Flags
-	model string
-	nocr  int
-	cache bool
+	model    string
+	nocr     int
+	cache    bool
+	cautious bool
 }{}
 
 // CMD defines the apoco train command.
@@ -37,7 +39,7 @@ var CMD = &cobra.Command{
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.Params)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, flags.cache)
+	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Load("rr", c.Nocr)
@@ -65,7 +67,7 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			}
 			var xs, ys []float64
 			err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				if !use(t) {
+				if !use(t, c.Cautious) {
 					return nil
 				}
 				xs = fs.Calculate(t, c.Nocr, xs)
@@ -101,10 +103,15 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 
 func gt(t apoco.Token) float64 {
 	candidate := t.Payload.([]apoco.Ranking)[0].Candidate
-	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
+	gt := t.Tokens[len(t.Tokens)-1]
+	//return ml.Bool(candidate.Suggestion == gt && t.Tokens[0] != gt)
+	return ml.Bool(candidate.Suggestion == gt)
 }
 
-func use(t apoco.Token) bool {
+func use(t apoco.Token, cautious bool) bool {
+	if cautious {
+		return true
+	}
 	ocr := t.Tokens[0]
 	gt := t.Tokens[len(t.Tokens)-1]
 	if gt != ocr {

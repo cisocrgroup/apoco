@@ -23,8 +23,8 @@ func init() {
 
 var flags = struct {
 	internal.Flags
-	model   string
-	nocr    int
+	model string
+	nocr  int
 	cache bool
 }{}
 
@@ -38,7 +38,7 @@ var CMD = &cobra.Command{
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.Params)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, flags.cache)
+	c.Overwrite(flags.model, flags.nocr, false, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	g, ctx := errgroup.WithContext(context.Background())
