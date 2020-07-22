@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/align"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -101,7 +102,7 @@ func (e Extensions) readTokensFromSnippets(ctx context.Context, out chan<- apoco
 }
 
 func sendTokens(ctx context.Context, out chan<- apoco.Token, bdir, file string, lines []apoco.Chars) error {
-	alignments := align(lines...)
+	alignments := alignLines(lines...)
 	for i := range alignments {
 		t := apoco.Token{
 			File:  file,
@@ -110,9 +111,9 @@ func sendTokens(ctx context.Context, out chan<- apoco.Token, bdir, file string, 
 		}
 		for j, p := range alignments[i] {
 			if j == 0 {
-				t.Chars = lines[j][p.b:p.e]
+				t.Chars = lines[j][p.B:p.E]
 			}
-			t.Tokens = append(t.Tokens, string(runes(lines[j][p.b:p.e])))
+			t.Tokens = append(t.Tokens, string(p.Slice(runes(lines[j])))) //lines[j][p.b:p.e])))
 		}
 		if err := apoco.SendTokens(ctx, out, t); err != nil {
 			return fmt.Errorf("sendTokens: %v", err)
@@ -121,81 +122,12 @@ func sendTokens(ctx context.Context, out chan<- apoco.Token, bdir, file string, 
 	return nil
 }
 
-func align(lines ...apoco.Chars) [][]pos {
-	var spaces []int
-	var words [][]pos
-	b := -1
-	for i := range lines[0] {
-		if unicode.IsSpace(lines[0][i].Char) {
-			spaces = append(spaces, i)
-			words = append(words, []pos{{b: b + 1, e: i}})
-			b = i
-		}
+func alignLines(lines ...apoco.Chars) [][]align.Pos {
+	var rs [][]rune
+	for _, line := range lines {
+		rs = append(rs, runes(line))
 	}
-	words = append(words, []pos{{b: b + 1, e: len(lines[0])}})
-	for i := 1; i < len(lines); i++ {
-		alignments := alignAt(spaces, runes(lines[i]))
-		for j := range words {
-			words[j] = append(words[j], alignments[j])
-		}
-	}
-	return words
-}
-
-func alignAt(spaces []int, str []rune) []pos {
-	// If str is empty, each alignment is the empty string.
-	// We need to return still a slice with the right lenght.
-	if len(str) == 0 {
-		return make([]pos, len(spaces)+1)
-	}
-	ret := make([]pos, 0, len(spaces)+1)
-	b := -1
-	for _, s := range spaces {
-		e := alignmentPos(str, s)
-		// Var b points to the last found space.
-		// Skip to the next non space token after b.
-		b = skipSpace(str, b+1)
-		if e <= b { // (e <= b) -> (b>=0) -> len(ret) > 0
-			b = ret[len(ret)-1].b
-		}
-		ret = append(ret, pos{b: b, e: e})
-		if e != len(str) {
-			b = e
-		}
-	}
-	ret = append(ret, pos{b: b + 1, e: len(str)})
-	return ret
-}
-
-func alignmentPos(str []rune, pos int) int {
-	if pos >= len(str) {
-		return len(str)
-	}
-	if str[pos] == ' ' {
-		return pos
-	}
-	for i := 1; ; i++ {
-		if pos+i >= len(str) && i >= pos {
-			return len(str)
-		}
-		if pos+i < len(str) && str[pos+i] == ' ' {
-			return pos + i
-		}
-		if i <= pos && str[pos-i] == ' ' {
-			return pos - i
-		}
-	}
-}
-
-func skipSpace(str []rune, pos int) int {
-	for pos < len(str) && unicode.IsSpace(str[pos]) {
-		pos++
-	}
-	return pos
-}
-
-type pos struct {
-	b, e int
+	return align.Do(rs[0], rs[1:]...)
 }
 
 func readFile(path string) (apoco.Chars, error) {
