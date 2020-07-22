@@ -125,9 +125,9 @@ func (cor *corrector) cleanWord(word *xmlquery.Node, unicodes []*xmlquery.Node) 
 }
 
 func (cor *corrector) makeTextEquiv(unicodes []*xmlquery.Node) *xmlquery.Node {
-	newTE := &xmlquery.Node{
+	newTE := &xmlquery.Node{ // TextEquiv
 		Type:         xmlquery.ElementNode,
-		Data:         unicodes[0].Parent.Data, // TextEquiv
+		Data:         unicodes[0].Parent.Data,
 		Prefix:       unicodes[0].Parent.Prefix,
 		NamespaceURI: unicodes[0].Parent.NamespaceURI,
 	}
@@ -214,6 +214,7 @@ func (cor *corrector) addFileToFileGrp(file string) {
 	fileid := filepath.Base(file[0 : len(file)-len(filepath.Ext(file))])
 	// Build parent file node
 	fnode := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
 		Data:         "file",
 		Prefix:       cor.fileGrp.Prefix,
 		NamespaceURI: cor.fileGrp.NamespaceURI,
@@ -228,6 +229,7 @@ func (cor *corrector) addFileToFileGrp(file string) {
 	})
 	// Build child FLocat node.
 	flocat := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
 		Data:         "FLocat",
 		Prefix:       cor.fileGrp.Prefix,
 		NamespaceURI: cor.fileGrp.NamespaceURI,
