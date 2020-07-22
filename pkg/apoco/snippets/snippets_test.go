@@ -17,7 +17,7 @@ func TestTokenize(t *testing.T) {
 		if len(token.Tokens) != 3 {
 			t.Fatalf("bad token: %s", token)
 		}
-		if token.Group != "testdata/dir" {
+		if token.Group != "dir" {
 			t.Fatalf("bad group: %s", token.Group)
 		}
 		if token.File != "testdata/dir/a/00001.prob.1" &&
