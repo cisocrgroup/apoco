@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/align"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
@@ -20,13 +19,13 @@ import (
 )
 
 func init() {
-	flags.Init(CMD)
 	CMD.Flags().StringVarP(&flags.ofg, "out-file-grp", "O", "", "set output file group of alignments")
+	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to mets file")
+	CMD.Flags().StringVarP(&flags.ifgs, "input-file-grp", "I", "", "set input file groups")
 }
 
 var flags = struct {
-	internal.Flags
-	ofg string
+	ofg, ifgs, mets string
 }{}
 
 // CMD defines the apoco align command.
@@ -37,9 +36,9 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	paths, err := alignPaths(flags.METS, strings.Split(flags.IFGs, ","))
+	paths, err := alignPaths(flags.mets, strings.Split(flags.ifgs, ","))
 	chk(err)
-	chk(alignFiles(flags.METS, flags.ofg, paths))
+	chk(alignFiles(flags.mets, flags.ofg, paths))
 }
 
 func alignFiles(mets, ofg string, paths [][]string) error {
