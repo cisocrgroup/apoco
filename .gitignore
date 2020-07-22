@@ -1,3 +1,3 @@
 ./apoco
-apoco.exe
+*.exe
 *.out
