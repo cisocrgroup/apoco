@@ -72,6 +72,24 @@ func AppendChild(p, c *xmlquery.Node) {
 	p.LastChild = c
 }
 
+// PrependChild prepends the child c to the parent p. Both given nodes
+// must not be null.
+func PrependChild(p, c *xmlquery.Node) {
+	if p.FirstChild == nil || p.LastChild == nil {
+		p.FirstChild = c
+		p.LastChild = c
+		c.Parent = p
+		c.PrevSibling = nil
+		c.NextSibling = nil
+		return
+	}
+	c.NextSibling = p.FirstChild
+	c.PrevSibling = nil
+	c.Parent = p
+	p.FirstChild.PrevSibling = c
+	p.FirstChild = c
+}
+
 // PrependSibling prepends to the node n a new sibling s. Both given
 // nodes must not be null.
 func PrependSibling(n, s *xmlquery.Node) {

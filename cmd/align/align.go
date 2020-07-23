@@ -11,7 +11,9 @@ import (
 	"strconv"
 	"strings"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/align"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"github.com/antchfx/xmlquery"
@@ -78,8 +80,8 @@ func getPaths(mets string, ifgs []string) ([][]string, error) {
 	return ret, nil
 }
 
-func alignFiles(mets, ofg string, paths [][]string) error {
-	mdoc, fg, err := readMETS(mets, ofg)
+func alignFiles(mpath, ofg string, paths [][]string) error {
+	mdoc, fg, err := readMETS(mpath, ofg)
 	if err != nil {
 		return err
 	}
@@ -89,11 +91,14 @@ func alignFiles(mets, ofg string, paths [][]string) error {
 			return err
 		}
 		addFileToMETS(fg, ofg, paths[i][0])
-		if err := writeToWS(doc, mets, ofg, paths[i][0]); err != nil {
+		if err := writeToWS(doc, mpath, ofg, paths[i][0]); err != nil {
 			return err
 		}
 	}
-	return ioutil.WriteFile(mets, []byte(mdoc.OutputXML(false)), 0666)
+	if err := mets.AddAgent(mdoc, "recognition/post-correction", "apoco align", internal.Version); err != nil {
+		return err
+	}
+	return ioutil.WriteFile(mpath, []byte(mdoc.OutputXML(false)), 0666)
 }
 
 func alignFile(paths []string) (*xmlquery.Node, error) {
