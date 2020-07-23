@@ -36,7 +36,7 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	paths, err := alignPaths(flags.mets, strings.Split(flags.ifgs, ","))
+	paths, err := getPaths(flags.mets, strings.Split(flags.ifgs, ","))
 	chk(err)
 	chk(alignFiles(flags.mets, flags.ofg, paths))
 }
@@ -138,7 +138,7 @@ func alignLines(paths []string) ([][]region, error) {
 	return linesT, nil
 }
 
-func alignPaths(mets string, ifgs []string) ([][]string, error) {
+func getPaths(mets string, ifgs []string) ([][]string, error) {
 	// Append sorted list of files in the filegroups.
 	var tmp [][]string
 	for _, ifg := range ifgs {
