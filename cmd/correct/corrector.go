@@ -3,13 +3,14 @@ package correct
 import (
 	"encoding/xml"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"github.com/antchfx/xmlquery"
@@ -32,7 +33,10 @@ func (cor *corrector) correct() error {
 			return fmt.Errorf("correct: %v", err)
 		}
 	}
-	if err := writeXML(cor.doc, cor.mets); err != nil {
+	if err := mets.AddAgent(cor.doc, "recognition/post-correction", "apoco correct", internal.Version); err != nil {
+		return fmt.Errorf("correct: %v", err)
+	}
+	if err := ioutil.WriteFile(cor.mets, []byte(cor.doc.OutputXML(false)), 0666); err != nil {
 		return fmt.Errorf("correct: %v", err)
 	}
 	return nil
@@ -168,7 +172,7 @@ func (cor *corrector) write(doc *xmlquery.Node, file string) error {
 	dir := filepath.Join(filepath.Dir(cor.mets), cor.ofg)
 	ofile := filepath.Join(dir, filepath.Base(file))
 	_ = os.MkdirAll(dir, 0777)
-	return writeXML(doc, ofile)
+	return ioutil.WriteFile(ofile, []byte(doc.OutputXML(false)), 0666)
 }
 
 func (cor *corrector) readMETS() error {
@@ -249,21 +253,4 @@ func (cor *corrector) addFileToFileGrp(file string) {
 	// Add nodes to the tree.
 	node.AppendChild(fnode, flocat)
 	node.AppendChild(cor.fileGrp, fnode)
-}
-
-func writeXML(doc *xmlquery.Node, path string) (err error) {
-	out, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("writeXML %s: %v", path, err)
-	}
-	defer func() {
-		if exx := out.Close(); exx != nil && err == nil {
-			err = exx
-		}
-	}()
-	in := strings.NewReader(doc.OutputXML(false))
-	if _, err := io.Copy(out, in); err != nil {
-		return fmt.Errorf("writeXML %s: %v", path, err)
-	}
-	return nil
 }
