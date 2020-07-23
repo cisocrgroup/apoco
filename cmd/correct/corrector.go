@@ -225,7 +225,7 @@ func (cor *corrector) addFileToFileGrp(file string) {
 	})
 	node.SetAttr(fnode, xml.Attr{
 		Name:  xml.Name{Local: "ID"},
-		Value: fmt.Sprintf("%s-%s", cor.ofg, fileid),
+		Value: fmt.Sprintf("%s_%s", cor.ofg, fileid),
 	})
 	// Build child FLocat node.
 	flocat := &xmlquery.Node{

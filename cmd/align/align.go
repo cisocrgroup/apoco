@@ -386,7 +386,7 @@ func addFileToMETS(fg *xmlquery.Node, ofg, path string) {
 	})
 	node.SetAttr(fnode, xml.Attr{
 		Name:  xml.Name{Local: "ID"},
-		Value: fmt.Sprintf("%s-%s", ofg, fileid),
+		Value: fmt.Sprintf("%s_%s", ofg, fileid),
 	})
 	// Build child FLocat node.
 	flocat := &xmlquery.Node{
