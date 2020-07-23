@@ -41,6 +41,43 @@ func run(_ *cobra.Command, args []string) {
 	chk(alignFiles(flags.mets, flags.ofg, paths))
 }
 
+func getPaths(mets string, ifgs []string) ([][]string, error) {
+	// Append sorted list of files in the filegroups.
+	var tmp [][]string
+	for _, ifg := range ifgs {
+		paths, err := pagexml.FilePathsForFileGrp(mets, ifg)
+		sort.Slice(paths, func(i, j int) bool {
+			return filepath.Base(paths[i]) < filepath.Base(paths[j])
+		})
+		if err != nil {
+			return nil, err
+		}
+		tmp = append(tmp, paths)
+	}
+	// Check that we have the same number of files for each input
+	// file group.
+	var n int
+	for i, paths := range tmp {
+		if i == 0 {
+			n = len(paths)
+		}
+		if len(paths) != n {
+			return nil, fmt.Errorf("cannot align files")
+		}
+	}
+	// Transpose the temporary array and return it.
+	ret := make([][]string, n)
+	for i := range ret {
+		ret[i] = make([]string, len(ifgs))
+	}
+	for i := range tmp {
+		for j := range tmp[i] {
+			ret[j][i] = tmp[i][j]
+		}
+	}
+	return ret, nil
+}
+
 func alignFiles(mets, ofg string, paths [][]string) error {
 	mdoc, fg, err := readMETS(mets, ofg)
 	if err != nil {
@@ -70,33 +107,6 @@ func alignFile(paths []string) (*xmlquery.Node, error) {
 		}
 	}
 	return root(lines[0][0].node), nil
-}
-
-func alignWords(lines []region) error {
-	if len(lines) == 0 {
-		return fmt.Errorf("cannot align words: empty")
-	}
-	for i := range lines {
-		log.Printf("line[%s]: %s", lines[i].id(), string(lines[i].text))
-	}
-	lines[0].prepareForAlignment()
-	for i := 1; i < len(lines); i++ {
-		if err := lines[0].alignWith(lines[i]); err != nil {
-			return err
-		}
-	}
-	// if lines[0].id() != "r_1_l_16" {
-	// 	return nil
-	// }
-	for _, word := range lines[0].subregions {
-		for _, u := range word.unicodes {
-			text := u.FirstChild.Data
-			index, _ := node.LookupAttrAsInt(u.Parent, xml.Name{Local: "index"})
-			conf, _ := node.LookupAttrAsFloat(u.Parent, xml.Name{Local: "conf"})
-			log.Printf("word index=%d: %s/%f", index, text, conf)
-		}
-	}
-	return nil
 }
 
 func alignLines(paths []string) ([][]region, error) {
@@ -138,41 +148,31 @@ func alignLines(paths []string) ([][]region, error) {
 	return linesT, nil
 }
 
-func getPaths(mets string, ifgs []string) ([][]string, error) {
-	// Append sorted list of files in the filegroups.
-	var tmp [][]string
-	for _, ifg := range ifgs {
-		paths, err := pagexml.FilePathsForFileGrp(mets, ifg)
-		sort.Slice(paths, func(i, j int) bool {
-			return filepath.Base(paths[i]) < filepath.Base(paths[j])
-		})
-		if err != nil {
-			return nil, err
-		}
-		tmp = append(tmp, paths)
+func alignWords(lines []region) error {
+	if len(lines) == 0 {
+		return fmt.Errorf("cannot align words: empty")
 	}
-	// Check that we have the same number of files for each input
-	// file group.
-	var n int
-	for i, paths := range tmp {
-		if i == 0 {
-			n = len(paths)
-		}
-		if len(paths) != n {
-			return nil, fmt.Errorf("cannot align files")
+	for i := range lines {
+		log.Printf("line[%s]: %s", lines[i].id(), string(lines[i].text))
+	}
+	lines[0].prepareForAlignment()
+	for i := 1; i < len(lines); i++ {
+		if err := lines[0].alignWith(lines[i]); err != nil {
+			return err
 		}
 	}
-	// Transpose the temporary array and return it.
-	ret := make([][]string, n)
-	for i := range ret {
-		ret[i] = make([]string, len(ifgs))
-	}
-	for i := range tmp {
-		for j := range tmp[i] {
-			ret[j][i] = tmp[i][j]
+	// if lines[0].id() != "r_1_l_16" {
+	// 	return nil
+	// }
+	for _, word := range lines[0].subregions {
+		for _, u := range word.unicodes {
+			text := u.FirstChild.Data
+			index, _ := node.LookupAttrAsInt(u.Parent, xml.Name{Local: "index"})
+			conf, _ := node.LookupAttrAsFloat(u.Parent, xml.Name{Local: "conf"})
+			log.Printf("word index=%d: %s/%f", index, text, conf)
 		}
 	}
-	return ret, nil
+	return nil
 }
 
 type region struct {
