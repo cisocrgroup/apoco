@@ -5,10 +5,9 @@ import (
 	"os"
 	"runtime"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
 )
-
-var version = "v0.0.1"
 
 // CMD defines the apoco version command.
 var CMD = &cobra.Command{
@@ -18,5 +17,5 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	fmt.Printf("%s version: %s [%s/%s]\n", os.Args[0], version, runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("%s version: %s [%s/%s]\n", os.Args[0], internal.Version, runtime.GOOS, runtime.GOARCH)
 }

@@ -9,6 +9,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// apoco version
+const Version = "v0.0.1"
+
 // Flags is used to define the standard command-line parameters for
 // apoco sub commands.
 type Flags struct {
