@@ -152,24 +152,24 @@ func alignWords(lines []region) error {
 	if len(lines) == 0 {
 		return fmt.Errorf("cannot align words: empty")
 	}
-	for i := range lines {
-		log.Printf("line[%s]: %s", lines[i].id(), string(lines[i].text))
-	}
 	lines[0].prepareForAlignment()
 	for i := 1; i < len(lines); i++ {
 		if err := lines[0].alignWith(lines[i]); err != nil {
 			return err
 		}
 	}
-	// if lines[0].id() != "r_1_l_16" {
-	// 	return nil
-	// }
+	for _, u := range lines[0].unicodes {
+		text := u.FirstChild.Data
+		index, _ := node.LookupAttrAsInt(u.Parent, xml.Name{Local: "index"})
+		conf, _ := node.LookupAttrAsFloat(u.Parent, xml.Name{Local: "conf"})
+		log.Printf("line[%s] index=%d: %s/%f", lines[0].id(), index, text, conf)
+	}
 	for _, word := range lines[0].subregions {
 		for _, u := range word.unicodes {
 			text := u.FirstChild.Data
 			index, _ := node.LookupAttrAsInt(u.Parent, xml.Name{Local: "index"})
 			conf, _ := node.LookupAttrAsFloat(u.Parent, xml.Name{Local: "conf"})
-			log.Printf("word index=%d: %s/%f", index, text, conf)
+			log.Printf("word[%s] index=%d: %s/%f", word.id(), index, text, conf)
 		}
 	}
 	return nil
@@ -288,6 +288,8 @@ func (r *region) alignWith(o region) error {
 			r.subregions[pi].appendTextEquiv(text, o.subregions[b:si+1]...)
 		}
 	}
+	// Append the secondary line to r.
+	r.appendTextEquiv(string(sstr), o)
 	return nil
 }
 
