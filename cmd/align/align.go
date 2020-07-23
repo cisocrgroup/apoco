@@ -158,20 +158,6 @@ func alignWords(lines []region) error {
 			return err
 		}
 	}
-	for _, u := range lines[0].unicodes {
-		text := u.FirstChild.Data
-		index, _ := node.LookupAttrAsInt(u.Parent, xml.Name{Local: "index"})
-		conf, _ := node.LookupAttrAsFloat(u.Parent, xml.Name{Local: "conf"})
-		log.Printf("line[%s] index=%d: %s/%f", lines[0].id(), index, text, conf)
-	}
-	for _, word := range lines[0].subregions {
-		for _, u := range word.unicodes {
-			text := u.FirstChild.Data
-			index, _ := node.LookupAttrAsInt(u.Parent, xml.Name{Local: "index"})
-			conf, _ := node.LookupAttrAsFloat(u.Parent, xml.Name{Local: "conf"})
-			log.Printf("word[%s] index=%d: %s/%f", word.id(), index, text, conf)
-		}
-	}
 	return nil
 }
 
