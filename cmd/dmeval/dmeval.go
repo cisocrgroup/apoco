@@ -66,7 +66,7 @@ func evaldm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			var xs, ys []float64
 			var tokens []apoco.Token
 			err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				xs = fs.Calculate(t, c.Nocr, xs)
+				xs = fs.Calculate(xs, t, c.Nocr)
 				ys = append(ys, gt(t))
 				tokens = append(tokens, t)
 				return nil

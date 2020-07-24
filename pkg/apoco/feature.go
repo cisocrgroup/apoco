@@ -67,7 +67,7 @@ func NewFeatureSet(names ...string) (FeatureSet, error) {
 // does not apply to the given configuration (and returns false as it
 // second return parameter for the configuration) is omitted and not
 // appended to the resulting feature vector.
-func (fs FeatureSet) Calculate(t Token, n int, xs []float64) []float64 {
+func (fs FeatureSet) Calculate(xs []float64, t Token, n int) []float64 {
 	// ret := make([]float64, 0, n*len(fs))
 	for _, f := range fs {
 		for i := 0; i < n; i++ {

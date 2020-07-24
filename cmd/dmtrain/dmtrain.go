@@ -70,7 +70,7 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 				if !use(t, c.Cautious) {
 					return nil
 				}
-				xs = fs.Calculate(t, c.Nocr, xs)
+				xs = fs.Calculate(xs, t, c.Nocr)
 				ys = append(ys, gt(t))
 				return nil
 			})
