@@ -237,7 +237,7 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 					if err := SendTokens(ctx, out, loader.tokens...); err != nil {
 						return fmt.Errorf("connectLM: %v", err)
 					}
-					loader.tokens = loader.tokens[:]
+					loader.tokens = loader.tokens[0:0]
 					fg = t.Group
 				}
 				loader.tokens = append(loader.tokens, t)
