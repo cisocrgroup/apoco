@@ -34,7 +34,7 @@ var register = map[string]FeatureFunc{
 	"RankingConf":                    RankingConf,
 	"RankingConfDiffToNext":          RankingConfDiffToNext,
 	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
-	"Lexicality":                     Lexicality,
+	"DocumentLexicality":             DocumentLexicality,
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -396,10 +396,10 @@ func RankingCandidateConfDiffToNext(t Token, i, n int) (float64, bool) {
 	return float64(rankings[0].Candidate.Weight) - next, true
 }
 
-// Lexicality returns the (global) lexicality of the given token's
-// document.  Using this feature only makes sense if the training
-// contains at least more than one training document.
-func Lexicality(t Token, i, n int) (float64, bool) {
+// DocumentLexicality returns the (global) lexicality of the given
+// token's document.  Using this feature only makes sense if the
+// training contains at least more than one training document.
+func DocumentLexicality(t Token, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
