@@ -32,7 +32,7 @@ func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
 			defer close(out)
 			// Iterate over the directories and read the tokens from each dir.
 			for _, dir := range dirs {
-				if err := e.readTokensFromDir(ctx, out, dir); err != nil {
+				if err := e.sendTokensFromDir(ctx, out, dir); err != nil {
 					return fmt.Errorf("tokenize: %v", err)
 				}
 			}
@@ -42,7 +42,7 @@ func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
 	}
 }
 
-func (e Extensions) readTokensFromDir(ctx context.Context, out chan<- apoco.Token, bdir string) error {
+func (e Extensions) sendTokensFromDir(ctx context.Context, out chan<- apoco.Token, bdir string) error {
 	if len(e) == 0 {
 		return fmt.Errorf("readTokensFromDir %s: empty file extensions", bdir)
 	}
@@ -72,7 +72,7 @@ func (e Extensions) readTokensFromDir(ctx context.Context, out chan<- apoco.Toke
 				continue
 			}
 			file := filepath.Join(dir, fi.Name())
-			if err := e.readTokensFromSnippets(ctx, out, bdir, file); err != nil {
+			if err := e.sendTokensFromSnippets(ctx, out, bdir, file); err != nil {
 				return fmt.Errorf("readTokensFromDir %s: %v", bdir, err)
 			}
 		}
@@ -80,7 +80,7 @@ func (e Extensions) readTokensFromDir(ctx context.Context, out chan<- apoco.Toke
 	return nil
 }
 
-func (e Extensions) readTokensFromSnippets(ctx context.Context, out chan<- apoco.Token, bdir, file string) error {
+func (e Extensions) sendTokensFromSnippets(ctx context.Context, out chan<- apoco.Token, bdir, file string) error {
 	var lines []apoco.Chars
 	pairs, err := readFile(file)
 	if err != nil {
