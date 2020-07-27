@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 
@@ -59,15 +60,28 @@ func TestNormalize(t *testing.T) {
 	}{
 		{[]float64{1, 2, 3}, []float64{-.5, 0, .5}, 3, 1},
 		{[]float64{1, 10, 2, 20, 3, 30}, []float64{-.5, -.5, 0, 0, .5, .5}, 3, 2},
+		{[]float64{.1, .2, .3}, []float64{(.1 - .2) / 1, (.2 - .2) / 1, (.3 - .2) / 1}, 3, 1},
 	} {
 		t.Run(fmt.Sprintf("%v", tc.test), func(t *testing.T) {
 			xs := mat.NewDense(tc.r, tc.c, tc.test)
 			if err := Normalize(xs); err != nil {
 				t.Fatalf("got error: %v", err)
 			}
-			if !reflect.DeepEqual(tc.test, tc.want) {
+			if !floatArrayEqual(tc.test, tc.want, 1e-5) {
 				t.Fatalf("expected %v; got %v", tc.want, tc.test)
 			}
 		})
 	}
+}
+
+func floatArrayEqual(a, b []float64, tolerance float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if diff := math.Abs(a[i] - b[i]); diff > tolerance {
+			return false
+		}
+	}
+	return true
 }

@@ -130,6 +130,12 @@ func Normalize(xs *mat.Dense) error {
 			}
 			sum += val
 		}
+		// Specifically handle values that are clearly between
+		// [0,1].
+		if max >= 0 && max <= 1 && min >= 0 && min <= 1 {
+			min = 0
+			max = 1
+		}
 		means[j] = sum / float64(r)
 		diff[j] = max - min
 		if diff[j] == 0 {
