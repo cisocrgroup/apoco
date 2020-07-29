@@ -57,7 +57,7 @@ func run(_ *cobra.Command, args []string) {
 func rreval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 		g.Go(func() error {
-			lr, fs, err := m.Load("rr", c.Nocr)
+			lr, fs, err := m.Get("rr", c.Nocr)
 			if err != nil {
 				return fmt.Errorf("rreval: %v", err)
 			}

@@ -44,7 +44,7 @@ func run(_ *cobra.Command, args []string) {
 	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
-	lr, fs, err := m.Load("rr", c.Nocr)
+	lr, fs, err := m.Get("rr", c.Nocr)
 	chk(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
@@ -101,7 +101,7 @@ func traindm(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 
 func load(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
 	if update {
-		return m.Load("dm", c.Nocr)
+		return m.Get("dm", c.Nocr)
 	}
 	fs, err := apoco.NewFeatureSet(c.DMFeatures...)
 	if err != nil {

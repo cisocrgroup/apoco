@@ -110,8 +110,8 @@ func (m Model) Put(mod string, nocr int, lr *ml.LR, fs []string) {
 	}
 }
 
-// Load loads the the model and the according feature set for the given configuration.
-func (m Model) Load(mod string, nocr int) (*ml.LR, FeatureSet, error) {
+// Get loads the the model and the according feature set for the given configuration.
+func (m Model) Get(mod string, nocr int) (*ml.LR, FeatureSet, error) {
 	if _, ok := m.Models[mod]; !ok {
 		return nil, nil, fmt.Errorf("load: cannot find: %s/%d", mod, nocr)
 	}

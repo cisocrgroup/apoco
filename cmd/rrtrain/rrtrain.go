@@ -94,7 +94,7 @@ func rrtrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 
 func load(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
 	if update {
-		return m.Load("rr", c.Nocr)
+		return m.Get("rr", c.Nocr)
 	}
 	fs, err := apoco.NewFeatureSet(c.RRFeatures...)
 	if err != nil {

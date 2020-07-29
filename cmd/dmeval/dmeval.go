@@ -40,7 +40,7 @@ func run(_ *cobra.Command, args []string) {
 	c.Overwrite(flags.model, flags.nocr, false, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
-	lr, fs, err := m.Load("rr", c.Nocr)
+	lr, fs, err := m.Get("rr", c.Nocr)
 	chk(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
@@ -59,7 +59,7 @@ func run(_ *cobra.Command, args []string) {
 func evaldm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 		g.Go(func() error {
-			lr, fs, err := m.Load("dm", c.Nocr)
+			lr, fs, err := m.Get("dm", c.Nocr)
 			if err != nil {
 				return fmt.Errorf("evaldm: %v", err)
 			}
