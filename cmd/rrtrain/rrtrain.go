@@ -19,13 +19,14 @@ func init() {
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "disable caching of profiles (overwrites setting in the configuration file)")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "", "set model path (overwrites setting in the configuration file)")
+	CMD.Flags().BoolVarP(&flags.update, "update", "u", false, "update existing model")
 }
 
 var flags = struct {
 	internal.Flags
-	model string
-	nocr  int
-	cache bool
+	model         string
+	nocr          int
+	cache, update bool
 }{}
 
 // CMD defines the apoco train command.
@@ -50,14 +51,14 @@ func run(_ *cobra.Command, args []string) {
 		apoco.ConnectLM(c, m.Ngrams),
 		apoco.FilterLexiconEntries,
 		apoco.ConnectCandidates,
-		rrtrain(c, m))
+		rrtrain(c, m, flags.update))
 	chk(g.Wait())
 }
 
-func rrtrain(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
+func rrtrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 		g.Go(func() error {
-			fs, err := apoco.NewFeatureSet(c.RRFeatures...)
+			lr, fs, err := load(c, m, update)
 			if err != nil {
 				return fmt.Errorf("rrtrain: %v", err)
 			}
@@ -76,16 +77,12 @@ func rrtrain(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			if err := ml.Normalize(x); err != nil {
 				return fmt.Errorf("rrtrain: %v", err)
 			}
-			lr := ml.LR{
-				LearningRate: c.LearningRate,
-				Ntrain:       c.Ntrain,
-			}
 			log.Printf("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
 				n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 			lr.Fit(x, y)
 			log.Printf("rrtrain: fitted %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
 				len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
-			m.Put("rr", c.Nocr, &lr, c.RRFeatures)
+			m.Put("rr", c.Nocr, lr, c.RRFeatures)
 			if err := m.Write(c.Model); err != nil {
 				return fmt.Errorf("rrtrain: %v", err)
 			}
@@ -93,6 +90,21 @@ func rrtrain(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 		})
 		return nil
 	}
+}
+
+func load(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
+	if update {
+		return m.Load("rr", c.Nocr)
+	}
+	fs, err := apoco.NewFeatureSet(c.RRFeatures...)
+	if err != nil {
+		return nil, nil, err
+	}
+	lr := &ml.LR{
+		LearningRate: c.LearningRate,
+		Ntrain:       c.Ntrain,
+	}
+	return lr, fs, nil
 }
 
 func gt(t apoco.Token) float64 {

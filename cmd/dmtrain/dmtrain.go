@@ -19,6 +19,7 @@ func init() {
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "disable caching of profiles (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cautious, "cautious", "C", false, "cautious dm tranining (overwrites setting in the configuration file)")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "", "set model path (overwrites setting in the configuration file)")
+	CMD.Flags().BoolVarP(&flags.update, "update", "u", false, "update existing model")
 }
 
 var flags = struct {
@@ -27,6 +28,7 @@ var flags = struct {
 	nocr     int
 	cache    bool
 	cautious bool
+	update   bool
 }{}
 
 // CMD defines the apoco train command.
@@ -54,14 +56,14 @@ func run(_ *cobra.Command, args []string) {
 		apoco.FilterLexiconEntries,
 		apoco.ConnectCandidates,
 		apoco.ConnectRankings(lr, fs, c.Nocr),
-		traindm(c, m))
+		traindm(c, m, flags.update))
 	chk(g.Wait())
 }
 
-func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
+func traindm(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 		g.Go(func() error {
-			fs, err := apoco.NewFeatureSet(c.DMFeatures...)
+			lr, fs, err := load(c, m, update)
 			if err != nil {
 				return fmt.Errorf("traindm: %v", err)
 			}
@@ -77,10 +79,6 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			if err != nil {
 				return fmt.Errorf("traindm: %v", err)
 			}
-			lr := ml.LR{
-				LearningRate: c.LearningRate,
-				Ntrain:       c.Ntrain,
-			}
 			x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 			y := mat.NewVecDense(len(ys), ys)
 			if err := ml.Normalize(x); err != nil {
@@ -91,7 +89,7 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			lr.Fit(x, y)
 			log.Printf("dmtrain: fitted %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
 				len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
-			m.Put("dm", c.Nocr, &lr, c.DMFeatures)
+			m.Put("dm", c.Nocr, lr, c.DMFeatures)
 			if err := m.Write(c.Model); err != nil {
 				return fmt.Errorf("traindm: %v", err)
 			}
@@ -99,6 +97,21 @@ func traindm(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 		})
 		return nil
 	}
+}
+
+func load(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
+	if update {
+		return m.Load("dm", c.Nocr)
+	}
+	fs, err := apoco.NewFeatureSet(c.DMFeatures...)
+	if err != nil {
+		return nil, nil, err
+	}
+	lr := &ml.LR{
+		LearningRate: c.LearningRate,
+		Ntrain:       c.Ntrain,
+	}
+	return lr, fs, nil
 }
 
 func gt(t apoco.Token) float64 {
