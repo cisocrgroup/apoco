@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -216,6 +217,7 @@ func (cor *corrector) readMETS() error {
 
 func (cor *corrector) addFileToFileGrp(file string) {
 	fileid := filepath.Base(file[0 : len(file)-len(filepath.Ext(file))])
+	newID := fmt.Sprintf("%s_%s", cor.ofg, fileid)
 	// Build parent file node
 	fnode := &xmlquery.Node{
 		Type:         xmlquery.ElementNode,
@@ -229,7 +231,7 @@ func (cor *corrector) addFileToFileGrp(file string) {
 	})
 	node.SetAttr(fnode, xml.Attr{
 		Name:  xml.Name{Local: "ID"},
-		Value: fmt.Sprintf("%s_%s", cor.ofg, fileid),
+		Value: newID,
 	})
 	// Build child FLocat node.
 	flocat := &xmlquery.Node{
@@ -253,4 +255,42 @@ func (cor *corrector) addFileToFileGrp(file string) {
 	// Add nodes to the tree.
 	node.AppendChild(fnode, flocat)
 	node.AppendChild(cor.fileGrp, fnode)
+	cor.addFileToStructMap(file, newID)
+}
+
+// <mets:structMap TYPE="PHYSICAL">
+//     <mets:div TYPE="physSequence" ID="physroot">
+//       <mets:div TYPE="page" ORDER="1" ID="phys_0001" DMDID="DMDGT_0001">
+//         <mets:fptr FILEID="OCR-D-GT-SEG-PAGE_0001"/>
+//         <mets:fptr FILEID="OCR-D-GT-SEG-BLOCK_0001"/>
+//         <mets:fptr FILEID="OCR-D-GT-SEG-LINE_0001"/>
+//         <mets:fptr FILEID="OCR-D-IMG_0001"/>
+func (cor *corrector) addFileToStructMap(path, newID string) {
+	flocats := mets.FindFlocats(cor.doc, cor.ifg)
+	var oldID string
+	for _, flocat := range flocats {
+		if filepath.Base(path) == filepath.Base(mets.FlocatGetPath(flocat, cor.mets)) {
+			oldID, _ = node.LookupAttr(flocat.Parent, xml.Name{Local: "ID"})
+			break
+		}
+	}
+	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='structMap']"+
+		"/*[local-name()='div']/*[local-name()='div']"+
+		"/*[local-name()='fpr'][@FILEID=%q]", oldID)
+	fptr := xmlquery.FindOne(cor.doc, expr)
+	if fptr == nil {
+		log.Printf("[warning] cannot find fptr for %s", oldID)
+		return
+	}
+	newFptr := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "fptr",
+		Prefix:       fptr.Prefix,
+		NamespaceURI: fptr.NamespaceURI,
+	}
+	node.SetAttr(newFptr, xml.Attr{
+		Name:  xml.Name{Local: "FILEID"},
+		Value: newID,
+	})
+	node.AppendChild(fptr.Parent, newFptr)
 }
