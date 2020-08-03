@@ -19,11 +19,12 @@ func init() {
 	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
 	CMD.Flags().BoolVarP(&flags.simple, "simple", "s", false, "read simple input")
 	CMD.Flags().BoolVarP(&flags.verbose, "verbose", "v", false, "verbose output of stats")
+	CMD.Flags().BoolVarP(&flags.csv, "csv", "c", false, "verbose output of stats")
 }
 
 var flags = struct {
-	mets, inputFileGrp string
-	simple, verbose    bool
+	mets, inputFileGrp   string
+	simple, verbose, csv bool
 }{}
 
 // CMD runs the apoco stats command.
@@ -40,7 +41,11 @@ func run(_ *cobra.Command, args []string) {
 	} else {
 		chk(eachWord(flags.mets, flags.inputFileGrp, s.stat))
 	}
-	s.write()
+	if flags.csv {
+		s.csv()
+	} else {
+		s.write()
+	}
 }
 
 func eachLine(in io.Reader, f func(string) error) error {
@@ -205,7 +210,6 @@ func (s *stats) stat(dtd string) error {
 	return nil
 }
 
-// skipped, short, nocands, lex, falsef int
 func (s *stats) write() {
 	errb := float64(s.totalerrbefore) / float64(s.total)
 	erra := float64(s.totalerrafter) / float64(s.total)
@@ -244,6 +248,46 @@ func (s *stats) write() {
 	fmt.Printf("      └─ ocr not correct            = %d\n", s.ocrincorrectNR)
 	fmt.Printf("         ├─ missed opportunity      = %d\n", s.missedopportunity)
 	fmt.Printf("         └─ candidate not correct   = %d\n", s.donotcareNR)
+}
+
+func (s *stats) csv() {
+	errb := float64(s.totalerrbefore) / float64(s.total)
+	erra := float64(s.totalerrafter) / float64(s.total)
+	accb := 1.0 - errb
+	acca := 1.0 - erra
+	impr := float64(s.totalerrbefore-s.totalerrafter) / float64(s.totalerrafter)
+	fmt.Printf("error rate (before),%f\n", errb)
+	fmt.Printf("error rate (after),%f\n", erra)
+	fmt.Printf("accuracy (before),%f\n", accb)
+	fmt.Printf("accuracy (after),%f\n", acca)
+	fmt.Printf("improvement,%f\n", impr)
+	fmt.Printf("missing correction candidate,%d\n", s.missingcorrection)
+	fmt.Printf("bad rank,%d\n", s.badrank)
+	fmt.Printf("total errors (before),%d\n", s.totalerrbefore)
+	fmt.Printf("total errors (after),%d\n", s.totalerrafter)
+	fmt.Printf("total tokens,%d\n", s.total)
+	fmt.Printf("skipped,%d\n", s.skipped)
+	fmt.Printf("short,%d\n", s.short)
+	fmt.Printf("skipped errors,%d\n", s.shorterr)
+	fmt.Printf("no candidate,%d\n", s.nocands)
+	fmt.Printf("no candidate errors,%d\n", s.nocandserr)
+	fmt.Printf("lexicon entries,%d\n", s.lex)
+	fmt.Printf("false friends,%d\n", s.lexerr)
+	fmt.Printf("suspicious,%d\n", s.suspicious)
+	fmt.Printf("replaced,%d\n", s.replaced)
+	fmt.Printf("ocr correct,%d\n", s.ocrcorrect)
+	fmt.Printf("redundant correction,%d\n", s.ocraccept)
+	fmt.Printf("infelicitous correction,%d\n", s.disimprovement)
+	fmt.Printf("ocr not correct,%d\n", s.ocrincorrect)
+	fmt.Printf("successful correction,%d\n", s.successfulcorrection)
+	fmt.Printf("do not care,%d\n", s.donotcare)
+	fmt.Printf("not replaced,%d\n", s.notreplaced)
+	fmt.Printf("ocr correct,%d\n", s.ocrcorrectNR)
+	fmt.Printf("ocr accept,%d\n", s.ocracceptNR)
+	fmt.Printf("dodged bullets,%d\n", s.disimprovementNR)
+	fmt.Printf("ocr not correct,%d\n", s.ocrincorrectNR)
+	fmt.Printf("missed opportunity,%d\n", s.missedopportunity)
+	fmt.Printf("candidate not correct,%d\n", s.donotcareNR)
 }
 
 const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
