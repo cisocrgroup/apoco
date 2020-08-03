@@ -274,10 +274,7 @@ func (cor *corrector) addFileToStructMap(path, newID string) {
 			break
 		}
 	}
-	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='structMap']"+
-		"/*[local-name()='div']/*[local-name()='div']"+
-		"/*[local-name()='fpr'][@FILEID=%q]", oldID)
-	fptr := xmlquery.FindOne(cor.doc, expr)
+	fptr := mets.FindFptr(cor.doc, oldID)
 	if fptr == nil {
 		log.Printf("[warning] cannot find fptr for %s", oldID)
 		return

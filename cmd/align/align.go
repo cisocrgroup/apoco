@@ -438,10 +438,7 @@ func addFileToMETS(doc, fg *xmlquery.Node, ofg string, f file) {
 //         <mets:fptr FILEID="OCR-D-GT-SEG-LINE_0001"/>
 //         <mets:fptr FILEID="OCR-D-IMG_0001"/>
 func addFileToStructMap(doc *xmlquery.Node, id, newID string) {
-	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='structMap']"+
-		"/*[local-name()='div']/*[local-name()='div']"+
-		"/*[local-name()='fpr'][@FILEID=%q]", id)
-	fptr := xmlquery.FindOne(doc, expr)
+	fptr := mets.FindFptr(doc, id)
 	if fptr == nil {
 		log.Printf("[warning] cannot find fptr for %s", id)
 		return

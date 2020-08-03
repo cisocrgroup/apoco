@@ -77,3 +77,11 @@ func FlocatGetPath(flocat *xmlquery.Node, metsPath string) string {
 	link, _ := node.LookupAttr(flocat, xml.Name{Space: "xlink", Local: "href"})
 	return filepath.Join(filepath.Dir(metsPath), link)
 }
+
+// FindFptr returns the Fptr node for the given (unique) id.
+func FindFptr(doc *xmlquery.Node, id string) *xmlquery.Node {
+	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='structMap']"+
+		"/*[local-name()='div']/*[local-name()='div']"+
+		"/*[local-name()='fpr'][@FILEID=%q]", id)
+	return xmlquery.FindOne(doc, expr)
+}
