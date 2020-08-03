@@ -19,15 +19,17 @@ var root = &cobra.Command{
 }
 
 func init() {
-	root.AddCommand(align.CMD)
-	root.AddCommand(cat.CMD)
-	root.AddCommand(correct.CMD)
-	root.AddCommand(dmeval.CMD)
-	root.AddCommand(dmtrain.CMD)
-	root.AddCommand(rreval.CMD)
-	root.AddCommand(rrtrain.CMD)
-	root.AddCommand(stats.CMD)
-	root.AddCommand(version.CMD)
+	root.AddCommand(
+		align.CMD,
+		cat.CMD,
+		correct.CMD,
+		dmeval.CMD,
+		dmtrain.CMD,
+		rreval.CMD,
+		rrtrain.CMD,
+		stats.CMD,
+		version.CMD,
+	)
 }
 
 func main() {
