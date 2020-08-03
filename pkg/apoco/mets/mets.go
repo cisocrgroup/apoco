@@ -3,6 +3,7 @@ package mets
 import (
 	"encoding/xml"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
@@ -60,4 +61,19 @@ func addHdr(mets *xmlquery.Node) (*xmlquery.Node, error) {
 	})
 	node.PrependChild(root, hdr)
 	return hdr, nil
+}
+
+// FindFlocats returns the Flocat nodes for the given file group.
+func FindFlocats(doc *xmlquery.Node, fg string) []*xmlquery.Node {
+	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='fileSec']"+
+		"/*[local-name()='fileGrp'][@USE=%q]/*[local-name()='file']"+
+		"/*[local-name()='FLocat']", fg)
+	return xmlquery.Find(doc, expr)
+}
+
+// FlocatGetPath returns the path of the flocat's link relative to the
+// given mets file's base directory.
+func FlocatGetPath(flocat *xmlquery.Node, metsPath string) string {
+	link, _ := node.LookupAttr(flocat, xml.Name{Space: "xlink", Local: "href"})
+	return filepath.Join(filepath.Dir(metsPath), link)
 }

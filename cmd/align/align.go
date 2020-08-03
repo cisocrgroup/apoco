@@ -38,23 +38,30 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	paths, err := getPaths(flags.mets, strings.Split(flags.ifgs, ","))
-	chk(err)
-	chk(alignFiles(flags.mets, flags.ofg, paths))
+	chk(alignFiles(flags.mets, flags.ofg, strings.Split(flags.ifgs, ",")))
 }
 
-func getPaths(mets string, ifgs []string) ([][]string, error) {
+type file struct {
+	path, id string
+}
+
+func getPaths(doc *xmlquery.Node, mpath string, ifgs []string) ([][]file, error) {
 	// Append sorted list of files in the filegroups.
-	var tmp [][]string
+	var tmp [][]file
 	for _, ifg := range ifgs {
-		paths, err := pagexml.FilePathsForFileGrp(mets, ifg)
-		sort.Slice(paths, func(i, j int) bool {
-			return filepath.Base(paths[i]) < filepath.Base(paths[j])
-		})
-		if err != nil {
-			return nil, err
+		flocats := mets.FindFlocats(doc, ifg)
+		files := make([]file, len(flocats))
+		for i := range flocats {
+			id, _ := node.LookupAttr(flocats[i].Parent, xml.Name{Local: "ID"})
+			files[i] = file{
+				path: mets.FlocatGetPath(flocats[i], mpath),
+				id:   id,
+			}
 		}
-		tmp = append(tmp, paths)
+		sort.Slice(files, func(i, j int) bool {
+			return filepath.Base(files[i].path) < filepath.Base(files[j].path)
+		})
+		tmp = append(tmp, files)
 	}
 	// Check that we have the same number of files for each input
 	// file group.
@@ -68,9 +75,9 @@ func getPaths(mets string, ifgs []string) ([][]string, error) {
 		}
 	}
 	// Transpose the temporary array and return it.
-	ret := make([][]string, n)
+	ret := make([][]file, n)
 	for i := range ret {
-		ret[i] = make([]string, len(ifgs))
+		ret[i] = make([]file, len(ifgs))
 	}
 	for i := range tmp {
 		for j := range tmp[i] {
@@ -80,18 +87,22 @@ func getPaths(mets string, ifgs []string) ([][]string, error) {
 	return ret, nil
 }
 
-func alignFiles(mpath, ofg string, paths [][]string) error {
+func alignFiles(mpath, ofg string, ifgs []string) error {
 	mdoc, fg, err := readMETS(mpath, ofg)
 	if err != nil {
 		return err
 	}
-	for i := range paths {
-		doc, err := alignFile(paths[i])
+	files, err := getPaths(mdoc, mpath, ifgs)
+	if err != nil {
+		return err
+	}
+	for i := range files {
+		doc, err := alignFile(files[i])
 		if err != nil {
 			return err
 		}
-		addFileToMETS(fg, ofg, paths[i][0])
-		if err := writeToWS(doc, mpath, ofg, paths[i][0]); err != nil {
+		addFileToMETS(mdoc, fg, ofg, files[i][0])
+		if err := writeToWS(doc, mpath, ofg, files[i][0].path); err != nil {
 			return err
 		}
 	}
@@ -101,8 +112,8 @@ func alignFiles(mpath, ofg string, paths [][]string) error {
 	return ioutil.WriteFile(mpath, []byte(mdoc.OutputXML(false)), 0666)
 }
 
-func alignFile(paths []string) (*xmlquery.Node, error) {
-	lines, err := alignLines(paths)
+func alignFile(files []file) (*xmlquery.Node, error) {
+	lines, err := alignLines(files)
 	if err != nil {
 		return nil, err
 	}
@@ -114,18 +125,18 @@ func alignFile(paths []string) (*xmlquery.Node, error) {
 	return root(lines[0][0].node), nil
 }
 
-func alignLines(paths []string) ([][]region, error) {
+func alignLines(files []file) ([][]region, error) {
 	// Load xml files from paths.
-	docs := make([]*xmlquery.Node, len(paths))
-	for i, path := range paths {
-		doc, err := readXML(path)
+	docs := make([]*xmlquery.Node, len(files))
+	for i, f := range files {
+		doc, err := readXML(f.path)
 		if err != nil {
 			return nil, err
 		}
 		docs[i] = doc
 	}
 	// Read lines from documents nodes.
-	lines := make([][]region, len(paths))
+	lines := make([][]region, len(files))
 	var n int
 	for i, node := range docs {
 		tmp, err := getLines(node)
@@ -143,7 +154,7 @@ func alignLines(paths []string) ([][]region, error) {
 	// Transpose lines
 	linesT := make([][]region, n)
 	for i := range linesT {
-		linesT[i] = make([]region, len(paths))
+		linesT[i] = make([]region, len(files))
 	}
 	for i := range lines {
 		for j := range lines[i] {
@@ -375,9 +386,10 @@ func readMETS(mets, ofg string) (*xmlquery.Node, *xmlquery.Node, error) {
 	return doc, fileGrp, nil
 }
 
-func addFileToMETS(fg *xmlquery.Node, ofg, path string) {
-	path = filepath.Base(path)
+func addFileToMETS(doc, fg *xmlquery.Node, ofg string, f file) {
+	path := filepath.Base(f.path)
 	fileid := path[0 : len(path)-len(filepath.Ext(path))]
+	newID := fmt.Sprintf("%s_%s", ofg, fileid)
 	// Build parent file node
 	fnode := &xmlquery.Node{
 		Type:         xmlquery.ElementNode,
@@ -391,7 +403,7 @@ func addFileToMETS(fg *xmlquery.Node, ofg, path string) {
 	})
 	node.SetAttr(fnode, xml.Attr{
 		Name:  xml.Name{Local: "ID"},
-		Value: fmt.Sprintf("%s_%s", ofg, fileid),
+		Value: newID,
 	})
 	// Build child FLocat node.
 	flocat := &xmlquery.Node{
@@ -415,6 +427,36 @@ func addFileToMETS(fg *xmlquery.Node, ofg, path string) {
 	// Add nodes to the tree.
 	node.AppendChild(fnode, flocat)
 	node.AppendChild(fg, fnode)
+	addFileToStructMap(doc, f.id, newID)
+}
+
+// <mets:structMap TYPE="PHYSICAL">
+//     <mets:div TYPE="physSequence" ID="physroot">
+//       <mets:div TYPE="page" ORDER="1" ID="phys_0001" DMDID="DMDGT_0001">
+//         <mets:fptr FILEID="OCR-D-GT-SEG-PAGE_0001"/>
+//         <mets:fptr FILEID="OCR-D-GT-SEG-BLOCK_0001"/>
+//         <mets:fptr FILEID="OCR-D-GT-SEG-LINE_0001"/>
+//         <mets:fptr FILEID="OCR-D-IMG_0001"/>
+func addFileToStructMap(doc *xmlquery.Node, id, newID string) {
+	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='structMap']"+
+		"/*[local-name()='div']/*[local-name()='div']"+
+		"/*[local-name()='fpr'][@FILEID=%q]", id)
+	fptr := xmlquery.FindOne(doc, expr)
+	if fptr == nil {
+		log.Printf("[warning] cannot find fptr for %s", id)
+		return
+	}
+	newFptr := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "fptr",
+		Prefix:       fptr.Prefix,
+		NamespaceURI: fptr.NamespaceURI,
+	}
+	node.SetAttr(newFptr, xml.Attr{
+		Name:  xml.Name{Local: "FILEID"},
+		Value: newID,
+	})
+	node.AppendChild(fptr.Parent, newFptr)
 }
 
 func writeToWS(doc *xmlquery.Node, mets, ofg, path string) error {
