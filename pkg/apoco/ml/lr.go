@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat"
 )
 
 // Predefined values for true and false.
@@ -109,6 +110,10 @@ func (lr *LR) UnmarshalJSON(data []byte) error {
 
 // Normalize normalizes the the given feature vectors.
 func Normalize(xs *mat.Dense) error {
+	return meanNormalization(xs)
+}
+
+func meanNormalization(xs *mat.Dense) error {
 	r, c := xs.Dims()
 	if r == 0 || c == 0 {
 		return fmt.Errorf("normalize: zero length")
@@ -131,19 +136,36 @@ func Normalize(xs *mat.Dense) error {
 			sum += val
 		}
 		// Specifically handle values that are clearly between
-		// [0,1].
-		if max >= 0 && max <= 1 && min >= 0 && min <= 1 {
+		// [0,1] and have a diff of 0.
+		if max-min == 0 && max >= 0 && max <= 1 && min >= 0 && min <= 1 {
 			min = 0
 			max = 1
+		} else if max-min == 0 {
+			return fmt.Errorf("normalize[%d]: max - min = %f - %f cannot be 0", j, max, min)
 		}
 		means[j] = sum / float64(r)
 		diff[j] = max - min
-		if diff[j] == 0 {
-			return fmt.Errorf("normalize[%d]: max - min = %f - %f cannot be 0", j, max, min)
-		}
 		for i := 0; i < r; i++ {
 			val := (xs.At(i, j) - means[j]) / diff[j]
 			xs.Set(i, j, val)
+		}
+	}
+	return nil
+}
+
+func zScoreNormalization(xs *mat.Dense) error {
+	r, c := xs.Dims()
+	tmp := make([]float64, r)
+	for j := 0; j < c; j++ {
+		cols := xs.ColView(j)
+		for i := range tmp {
+			tmp[i] = cols.AtVec(i)
+		}
+		xbar, sigma := stat.MeanStdDev(tmp, nil)
+		for i := range tmp {
+			x := tmp[i]
+			xp := (x - xbar) / sigma
+			xs.Set(i, j, xp)
 		}
 	}
 	return nil
