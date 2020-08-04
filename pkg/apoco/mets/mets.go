@@ -101,6 +101,6 @@ func FlocatGetPath(flocat *xmlquery.Node, metsPath string) string {
 func FindFptr(doc *xmlquery.Node, id string) *xmlquery.Node {
 	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='structMap']"+
 		"/*[local-name()='div']/*[local-name()='div']"+
-		"/*[local-name()='fpr'][@FILEID=%q]", id)
+		"/*[local-name()='fptr'][@FILEID=%q]", id)
 	return xmlquery.FindOne(doc, expr)
 }
