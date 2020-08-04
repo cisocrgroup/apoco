@@ -101,8 +101,8 @@ func alignFiles(mpath, ofg string, ifgs []string) error {
 		if err != nil {
 			return err
 		}
-		addFileToMETS(mdoc, fg, ofg, files[i][0])
-		if err := writeToWS(doc, mpath, ofg, files[i][0].path); err != nil {
+		opath := addFileToMETS(mdoc, fg, ofg, files[i][0])
+		if err := writeToWS(doc, mpath, ofg, opath); err != nil {
 			return err
 		}
 	}
@@ -205,18 +205,18 @@ func getLines(doc *xmlquery.Node) ([]region, error) {
 	return ret, nil
 }
 
-func newLine(node *xmlquery.Node) (region, error) {
-	unicodes := pagexml.FindUnicodesInRegionSorted(node)
+func newLine(r *xmlquery.Node) (region, error) {
+	unicodes := pagexml.FindUnicodesInRegionSorted(r)
 	if len(unicodes) == 0 {
 		return region{}, fmt.Errorf("missing unicode for line")
 	}
-	words, err := getWords(node)
+	words, err := getWords(r)
 	if err != nil {
 		return region{}, err
 	}
 	return region{
-		node:       node,
-		text:       []rune(unicodes[0].FirstChild.Data),
+		node:       r,
+		text:       []rune(node.Data(node.FirstChild(unicodes[0]))),
 		subregions: words,
 		unicodes:   unicodes,
 	}, nil
@@ -283,12 +283,14 @@ func (r *region) alignWith(o region) error {
 		pi := pepos[pos[i][0].E]
 		si := sepos[pos[i][1].E]
 		text := string(pos[i][1].Slice(sstr))
-		if i == 0 {
-			r.subregions[pi].appendTextEquiv(text, o.subregions[0:si+1]...)
-		} else {
-			b := sepos[pos[i-1][1].E]
-			r.subregions[pi].appendTextEquiv(text, o.subregions[b:si+1]...)
+		var b int
+		if i > 0 {
+			b = sepos[pos[i-1][1].E]
 		}
+		for len(r.subregions) <= pi {
+			r.appendEmptyWord()
+		}
+		r.subregions[pi].appendTextEquiv(text, o.subregions[b:si+1]...)
 	}
 	// Append the secondary line to r.
 	r.appendTextEquiv(string(sstr), o)
@@ -312,6 +314,43 @@ func (r *region) eposMap() ([]rune, map[int]int) {
 		pmap[epos] = i
 	}
 	return str, pmap
+}
+
+func (r *region) appendEmptyWord() {
+	w := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "Word",
+		Prefix:       r.node.Prefix,
+		NamespaceURI: r.node.NamespaceURI,
+	}
+	te := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "TextEquiv",
+		Prefix:       r.node.Prefix,
+		NamespaceURI: r.node.NamespaceURI,
+	}
+	node.SetAttr(te, xml.Attr{
+		Name:  xml.Name{Local: "conf"},
+		Value: "0",
+	})
+	u := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "Unicode",
+		Prefix:       r.node.Prefix,
+		NamespaceURI: r.node.NamespaceURI,
+	}
+	t := &xmlquery.Node{
+		Type: xmlquery.TextNode,
+		Data: "",
+	}
+	node.AppendChild(u, t)
+	node.AppendChild(te, u)
+	node.AppendChild(w, te)
+	node.AppendChild(r.node, w)
+	r.subregions = append(r.subregions, region{
+		node:     w,
+		unicodes: []*xmlquery.Node{u},
+	})
 }
 
 func (r *region) appendTextEquiv(text string, others ...region) {
@@ -386,10 +425,9 @@ func readMETS(mets, ofg string) (*xmlquery.Node, *xmlquery.Node, error) {
 	return doc, fileGrp, nil
 }
 
-func addFileToMETS(doc, fg *xmlquery.Node, ofg string, f file) {
-	path := filepath.Base(f.path)
-	fileid := path[0 : len(path)-len(filepath.Ext(path))]
-	newID := fmt.Sprintf("%s_%s", ofg, fileid)
+func addFileToMETS(doc, fg *xmlquery.Node, ofg string, f file) string {
+	newID := internal.IDFromFilePath(f.path, ofg)
+	filePath := newID + ".xml"
 	// Build parent file node
 	fnode := &xmlquery.Node{
 		Type:         xmlquery.ElementNode,
@@ -422,23 +460,24 @@ func addFileToMETS(doc, fg *xmlquery.Node, ofg string, f file) {
 	})
 	node.SetAttr(flocat, xml.Attr{
 		Name:  xml.Name{Local: "href", Space: "xlink"},
-		Value: filepath.Join(ofg, path),
+		Value: filepath.Join(ofg, filePath),
 	})
 	// Add nodes to the tree.
 	node.AppendChild(fnode, flocat)
 	node.AppendChild(fg, fnode)
 	addFileToStructMap(doc, f.id, newID)
+	return filePath
 }
 
-// <mets:structMap TYPE="PHYSICAL">
-//     <mets:div TYPE="physSequence" ID="physroot">
-//       <mets:div TYPE="page" ORDER="1" ID="phys_0001" DMDID="DMDGT_0001">
-//         <mets:fptr FILEID="OCR-D-GT-SEG-PAGE_0001"/>
-//         <mets:fptr FILEID="OCR-D-GT-SEG-BLOCK_0001"/>
-//         <mets:fptr FILEID="OCR-D-GT-SEG-LINE_0001"/>
-//         <mets:fptr FILEID="OCR-D-IMG_0001"/>
 func addFileToStructMap(doc *xmlquery.Node, id, newID string) {
-	fptr := mets.FindFptr(doc, id)
+	// Check if the according fptr already exists and skip
+	// inserting a fptr already exists.
+	fptr := mets.FindFptr(doc, newID)
+	if fptr != nil {
+		return
+	}
+	// Find fptr for the aligned id and append the new id.
+	fptr = mets.FindFptr(doc, id)
 	if fptr == nil {
 		log.Printf("[warning] cannot find fptr for %s", id)
 		return
