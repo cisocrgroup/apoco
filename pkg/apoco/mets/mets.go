@@ -12,6 +12,10 @@ import (
 
 // AddAgent adds an agent to the metsHdr of the mets tree.
 func AddAgent(mets *xmlquery.Node, pstep, processor, version string) error {
+	// Check if the according agent is already registered.
+	if checkAgent(mets, pstep, processor, version) {
+		return nil
+	}
 	// Get metsHdr node or create it if it does not exist, yet.
 	hdr := xmlquery.FindOne(mets, "/*[local-name()='mets']/*[local-name()='metsHdr']")
 	if hdr == nil {
@@ -61,6 +65,21 @@ func addHdr(mets *xmlquery.Node) (*xmlquery.Node, error) {
 	})
 	node.PrependChild(root, hdr)
 	return hdr, nil
+}
+
+func checkAgent(mets *xmlquery.Node, pstep, processor, version string) bool {
+	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='metsHdr']"+
+		"/*[local-name()='agent'][@OTHERROLE=%q]", pstep)
+	search := fmt.Sprintf("%s %s", processor, version)
+	agents := xmlquery.Find(mets, expr)
+	for _, agent := range agents {
+		for c := agent.FirstChild; c != nil; c = c.NextSibling {
+			if node.Data(node.FirstChild(c)) == search {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // FindFlocats returns the Flocat nodes for the given file group.
