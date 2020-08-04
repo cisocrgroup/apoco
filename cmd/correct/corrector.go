@@ -169,9 +169,9 @@ func (cor *corrector) write(doc *xmlquery.Node, file string) error {
 			return err
 		}
 	}
-	cor.addFileToFileGrp(file)
+	ofile := cor.addFileToFileGrp(file)
 	dir := filepath.Join(filepath.Dir(cor.mets), cor.ofg)
-	ofile := filepath.Join(dir, filepath.Base(file))
+	ofile = filepath.Join(dir, ofile)
 	_ = os.MkdirAll(dir, 0777)
 	return ioutil.WriteFile(ofile, []byte(doc.OutputXML(false)), 0666)
 }
@@ -215,9 +215,9 @@ func (cor *corrector) readMETS() error {
 	return nil
 }
 
-func (cor *corrector) addFileToFileGrp(file string) {
-	fileid := filepath.Base(file[0 : len(file)-len(filepath.Ext(file))])
-	newID := fmt.Sprintf("%s_%s", cor.ofg, fileid)
+func (cor *corrector) addFileToFileGrp(file string) string {
+	newID := internal.IDFromFilePath(file, cor.ofg)
+	filePath := newID + ".xml"
 	// Build parent file node
 	fnode := &xmlquery.Node{
 		Type:         xmlquery.ElementNode,
@@ -250,12 +250,13 @@ func (cor *corrector) addFileToFileGrp(file string) {
 	})
 	node.SetAttr(flocat, xml.Attr{
 		Name:  xml.Name{Local: "href", Space: "xlink"},
-		Value: filepath.Join(cor.ofg, filepath.Base(file)),
+		Value: filepath.Join(cor.ofg, filePath),
 	})
 	// Add nodes to the tree.
 	node.AppendChild(fnode, flocat)
 	node.AppendChild(cor.fileGrp, fnode)
 	cor.addFileToStructMap(file, newID)
+	return filePath
 }
 
 // <mets:structMap TYPE="PHYSICAL">
@@ -266,6 +267,13 @@ func (cor *corrector) addFileToFileGrp(file string) {
 //         <mets:fptr FILEID="OCR-D-GT-SEG-LINE_0001"/>
 //         <mets:fptr FILEID="OCR-D-IMG_0001"/>
 func (cor *corrector) addFileToStructMap(path, newID string) {
+	// Check if the according new id already exists.
+	fptr := mets.FindFptr(cor.doc, newID)
+	if fptr != nil {
+		return
+	}
+	// Search for the flocat with the according file path and use
+	// its id.
 	flocats := mets.FindFlocats(cor.doc, cor.ifg)
 	var oldID string
 	for _, flocat := range flocats {
@@ -274,7 +282,7 @@ func (cor *corrector) addFileToStructMap(path, newID string) {
 			break
 		}
 	}
-	fptr := mets.FindFptr(cor.doc, oldID)
+	fptr = mets.FindFptr(cor.doc, oldID)
 	if fptr == nil {
 		log.Printf("[warning] cannot find fptr for %s", oldID)
 		return
