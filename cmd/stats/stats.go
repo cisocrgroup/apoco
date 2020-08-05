@@ -213,13 +213,11 @@ func (s *stats) stat(dtd string) error {
 func (s *stats) write() {
 	errb := float64(s.totalerrbefore) / float64(s.total)
 	erra := float64(s.totalerrafter) / float64(s.total)
-	accb := 1.0 - errb
-	acca := 1.0 - erra
 	impr := float64(s.totalerrbefore-s.totalerrafter) / float64(s.totalerrafter) * 100
 	fmt.Printf("error rate (before)                 = %f\n", errb)
 	fmt.Printf("error rate (after)                  = %f\n", erra)
-	fmt.Printf("accuracy (before)                   = %f\n", accb)
-	fmt.Printf("accuracy (after)                    = %f\n", acca)
+	fmt.Printf("accuracy (before)                   = %f\n", 1.0-errb)
+	fmt.Printf("accuracy (after)                    = %f\n", 1.0-erra)
 	fmt.Printf("improvement                         = %f%%\n", impr)
 	fmt.Printf("missing correction candidate        = %d\n", s.missingcorrection)
 	fmt.Printf("bad rank                            = %d\n", s.badrank)
@@ -255,13 +253,11 @@ func (s *stats) write() {
 func (s *stats) csv() {
 	errb := float64(s.totalerrbefore) / float64(s.total)
 	erra := float64(s.totalerrafter) / float64(s.total)
-	accb := 1.0 - errb
-	acca := 1.0 - erra
 	impr := float64(s.totalerrbefore-s.totalerrafter) / float64(s.totalerrafter)
 	fmt.Printf("error rate (before),%f\n", errb)
 	fmt.Printf("error rate (after),%f\n", erra)
-	fmt.Printf("accuracy (before),%f\n", accb)
-	fmt.Printf("accuracy (after),%f\n", acca)
+	fmt.Printf("accuracy (before),%f\n", 1.0-errb)
+	fmt.Printf("accuracy (after),%f\n", 1.0-erra)
 	fmt.Printf("improvement,%f\n", impr)
 	fmt.Printf("missing correction candidate,%d\n", s.missingcorrection)
 	fmt.Printf("bad rank,%d\n", s.badrank)
