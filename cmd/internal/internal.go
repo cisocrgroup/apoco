@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"fmt"
+	"path/filepath"
 	"strings"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -45,4 +47,15 @@ func (flags *Flags) Tokenize() apoco.StreamFunc {
 	dirs := strings.Split(flags.Dirs, ",")
 	e := snippets.Extensions(exts)
 	return e.Tokenize(dirs...)
+}
+
+// IDFromFilePath returns the proper id given a file path and a file
+// group.
+func IDFromFilePath(path, fg string) string {
+	// Use base path and remove file extensions.
+	path = filepath.Base(path)
+	path = path[0 : len(path)-len(filepath.Ext(path))]
+	// Split everything after the last `_`.
+	splits := strings.Split(path, "_")
+	return fmt.Sprintf("%s_%s", fg, splits[len(splits)-1])
 }

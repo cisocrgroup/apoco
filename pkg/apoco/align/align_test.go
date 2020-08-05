@@ -11,6 +11,9 @@ func Test(t *testing.T) {
 		want          []string
 	}{
 		{"", "", []string{"", ""}},
+		{"", "T", []string{"", "T"}},
+		{"", "A B", []string{"", "A B"}},
+		{"T", "", []string{"T", ""}},
 		{"ab cd", "ab cd", []string{"ab", "ab", "cd", "cd"}},
 		{"ab cd", "abcd", []string{"ab", "abcd", "cd", "abcd"}},
 		{"abcd", "ab cd", []string{"abcd", "ab cd"}},
