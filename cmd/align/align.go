@@ -330,6 +330,10 @@ func (r *region) appendEmptyWord() {
 		NamespaceURI: r.node.NamespaceURI,
 	}
 	node.SetAttr(te, xml.Attr{
+		Name:  xml.Name{Local: "index"},
+		Value: strconv.Itoa(len(r.subregions) + 1),
+	})
+	node.SetAttr(te, xml.Attr{
 		Name:  xml.Name{Local: "conf"},
 		Value: "0",
 	})
