@@ -3,6 +3,7 @@ package main
 import (
 	"git.sr.ht/~flobar/apoco/cmd/align"
 	"git.sr.ht/~flobar/apoco/cmd/cat"
+	"git.sr.ht/~flobar/apoco/cmd/catprot"
 	"git.sr.ht/~flobar/apoco/cmd/correct"
 	"git.sr.ht/~flobar/apoco/cmd/dmeval"
 	"git.sr.ht/~flobar/apoco/cmd/dmtrain"
@@ -22,6 +23,7 @@ func init() {
 	root.AddCommand(
 		align.CMD,
 		cat.CMD,
+		catprot.CMD,
 		correct.CMD,
 		dmeval.CMD,
 		dmtrain.CMD,
