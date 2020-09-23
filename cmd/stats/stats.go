@@ -17,6 +17,7 @@ import (
 func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set mets file")
 	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
+	CMD.Flags().IntVarP(&flags.limit, "limit", "l", 0, "set limit for the profiler's candidate set")
 	CMD.Flags().BoolVarP(&flags.simple, "simple", "s", false, "read simple input")
 	CMD.Flags().BoolVarP(&flags.verbose, "verbose", "v", false, "verbose output of stats")
 	CMD.Flags().BoolVarP(&flags.csv, "csv", "c", false, "verbose output of stats")
@@ -24,6 +25,7 @@ func init() {
 
 var flags = struct {
 	mets, inputFileGrp   string
+	limit                int
 	simple, verbose, csv bool
 }{}
 
@@ -104,16 +106,16 @@ func eachTokenInFile(path string, f func(string) error) error {
 }
 
 type stats struct {
-	skipped, short, nocands, lex              int
-	shorterr, nocandserr, lexerr              int
-	replaced, ocrcorrect, ocrincorrect        int
-	suspicious, ocraccept, disimprovement     int
-	successfulcorrection, donotcare           int
-	notreplaced, ocrcorrectNR, ocrincorrectNR int
-	ocracceptNR, disimprovementNR             int
-	missedopportunity, donotcareNR            int
-	total, badrank, missingcorrection         int
-	totalerrbefore, totalerrafter             int
+	skipped, short, nocands, lex                int
+	shorterr, nocandserr, lexerr                int
+	replaced, ocrcorrect, ocrincorrect          int
+	suspicious, ocraccept, disimprovement       int
+	successfulcorrection, donotcare             int
+	notreplaced, ocrcorrectNR, ocrincorrectNR   int
+	ocracceptNR, disimprovementNR               int
+	missedopportunity, donotcareNR              int
+	total, badrank, badlimit, missingcorrection int
+	totalerrbefore, totalerrafter               int
 }
 
 func (s *stats) stat(dtd string) error {
@@ -196,7 +198,13 @@ func (s *stats) stat(dtd string) error {
 	if !skipped && rank == 0 {
 		s.missingcorrection++
 	}
-	if !skipped && rank > 1 {
+	if !skipped && flags.limit > 0 && rank > 1 && rank > flags.limit {
+		s.badlimit++
+	}
+	if !skipped && flags.limit > 0 && rank > 1 && rank <= flags.limit {
+		s.badrank++
+	}
+	if !skipped && flags.limit <= 0 && rank > 1 {
 		s.badrank++
 	}
 	if ocr != gt {
@@ -221,6 +229,7 @@ func (s *stats) write() {
 	fmt.Printf("improvement                         = %f%%\n", impr)
 	fmt.Printf("missing correction candidate        = %d\n", s.missingcorrection)
 	fmt.Printf("bad rank                            = %d\n", s.badrank)
+	fmt.Printf("bad limit                           = %d\n", s.badlimit)
 	fmt.Printf("total errors (before)               = %d\n", s.totalerrbefore)
 	fmt.Printf("total errors (after)                = %d\n", s.totalerrafter)
 	fmt.Printf("correct (before)                    = %d\n", s.total-s.totalerrbefore)
@@ -261,6 +270,7 @@ func (s *stats) csv() {
 	fmt.Printf("improvement,%f\n", impr)
 	fmt.Printf("missing correction candidate,%d\n", s.missingcorrection)
 	fmt.Printf("bad rank,%d\n", s.badrank)
+	fmt.Printf("bad limit,%d\n", s.badlimit)
 	fmt.Printf("total errors (before),%d\n", s.totalerrbefore)
 	fmt.Printf("total errors (after),%d\n", s.totalerrafter)
 	fmt.Printf("correct (before),%d\n", s.total-s.totalerrbefore)
