@@ -32,16 +32,16 @@ func run(_ *cobra.Command, args []string) {
 }
 
 type data struct {
-	Corrections map[string]correction `json:"corrections"`
+	Tokens map[string]correction `json:"tokens"`
 }
 
 type correction struct {
-	Rankings []ranking `json:"rankings"`
-	GT       gt        `json:"gt"`
-	OCR      string    `json:"ocrNormalized"`
-	Cor      string    `json:"corNormalized"`
-	Conf     float64   `json:"confidence"`
-	Taken    bool      `json:"taken"`
+	Candidates []candidate `json:"candidates"`
+	GT         gt          `json:"gt"`
+	OCR        string      `json:"ocrNormalized"`
+	Cor        string      `json:"corNormalized"`
+	Conf       float64     `json:"confidence"`
+	Taken      bool        `json:"taken"`
 }
 
 type gt struct {
@@ -49,30 +49,25 @@ type gt struct {
 	Present bool   `json:"present"`
 }
 
-type ranking struct {
-	Candidate candidate `json:"candidate"`
-	Ranking   float64   `json:"ranking"`
-}
-
 type candidate struct {
-	HistPatterns []struct{}
-	Suggestion   string
-	Distance     int
+	HistDistance int    `json:"histDistance"`
+	OCRDistance  int    `json:"ocrDistance"`
+	Suggestion   string `json:"suggestion"`
 }
 
-func (c *correction) rank() int {
-	for i, r := range c.Rankings {
-		if r.Candidate.Suggestion == e(c.GT.GT) {
+func (cor *correction) rank() int {
+	for i, c := range cor.Candidates {
+		if c.Suggestion == e(cor.GT.GT) {
 			return i + 1
 		}
 	}
 	return 0
 }
 
-func (c *correction) lex() bool {
-	return len(c.Rankings) == 1 &&
-		c.Rankings[0].Candidate.Distance == 0 &&
-		len(c.Rankings[0].Candidate.HistPatterns) == 0
+func (cor *correction) lex() bool {
+	return len(cor.Candidates) == 1 &&
+		cor.Candidates[0].OCRDistance == 0 &&
+		cor.Candidates[0].HistDistance == 0
 }
 
 func cat(name string) {
@@ -81,11 +76,13 @@ func cat(name string) {
 	defer is.Close()
 	var d data
 	chk(json.NewDecoder(is).Decode(&d))
-	for _, cor := range d.Corrections {
+	for _, cor := range d.Tokens {
+		nosuggs := len(cor.Candidates) == 0
 		short := utf8.RuneCountInString(cor.OCR) <= 3
 		lex := cor.lex()
 		_, err := fmt.Printf("skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s\n",
-			lex || short, short, lex, cor.Taken, cor.rank(), e(cor.OCR), e(cor.Cor), e(cor.GT.GT))
+			lex || short || nosuggs, short, lex, cor.Taken,
+			cor.rank(), e(cor.OCR), e(cor.Cor), e(cor.GT.GT))
 		chk(err)
 	}
 }
