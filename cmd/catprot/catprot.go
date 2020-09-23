@@ -12,11 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var flags = internal.Flags{}
+
 func init() {
 	flags.Init(CMD)
 }
-
-var flags internal.Flags
 
 // CMD defines the apoco catprot command.
 var CMD = &cobra.Command{
@@ -55,8 +55,9 @@ type ranking struct {
 }
 
 type candidate struct {
-	Suggestion string
-	Distance   int
+	HistPatterns []struct{}
+	Suggestion   string
+	Distance     int
 }
 
 func (c *correction) rank() int {
@@ -69,7 +70,9 @@ func (c *correction) rank() int {
 }
 
 func (c *correction) lex() bool {
-	return len(c.Rankings) == 1 && c.Rankings[0].Candidate.Distance == 0
+	return len(c.Rankings) == 1 &&
+		c.Rankings[0].Candidate.Distance == 0 &&
+		len(c.Rankings[0].Candidate.HistPatterns) == 0
 }
 
 func cat(name string) {
