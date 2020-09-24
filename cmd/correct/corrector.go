@@ -148,7 +148,7 @@ func (cor *corrector) makeTextEquiv(unicodes []*xmlquery.Node) *xmlquery.Node {
 	if cor.protocol {
 		node.SetAttr(newTE, xml.Attr{
 			Name:  xml.Name{Local: "dataType"},
-			Value: "apoco-correct",
+			Value: "OCR-D-CIS-POST-CORRECTION",
 		})
 	}
 	return newTE
