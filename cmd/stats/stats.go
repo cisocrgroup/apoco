@@ -284,6 +284,12 @@ func (s *stats) write() {
 	fmt.Printf("total errors (after)                = %d\n", s.totalerrafter)
 	fmt.Printf("correct (before)                    = %d\n", s.total-s.totalerrbefore)
 	fmt.Printf("correct (after)                     = %d\n", s.total-s.totalerrafter)
+	fmt.Printf("missing correction                  = %d\n",
+		s.disimprovementNRMC+s.disimprovementMC+s.donotcareMC+s.donotcareNRMC)
+	fmt.Printf("bad rank                            = %d\n",
+		s.disimprovementNRBR+s.disimprovementBR+s.donotcareBR+s.donotcareNRBR)
+	fmt.Printf("bad limit                           = %d\n",
+		s.disimprovementNRBL+s.disimprovementBL+s.donotcareBL+s.donotcareNRBL)
 	fmt.Printf("total tokens                        = %d\n", s.total)
 	fmt.Printf("├─ skipped                          = %d\n", s.skipped)
 	fmt.Printf("│  ├─ short                         = %d\n", s.short)
