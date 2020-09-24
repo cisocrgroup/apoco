@@ -106,16 +106,21 @@ func eachTokenInFile(path string, f func(string) error) error {
 }
 
 type stats struct {
-	skipped, short, nocands, lex                int
-	shorterr, nocandserr, lexerr                int
-	replaced, ocrcorrect, ocrincorrect          int
-	suspicious, ocraccept, disimprovement       int
-	successfulcorrection, donotcare             int
-	notreplaced, ocrcorrectNR, ocrincorrectNR   int
-	ocracceptNR, disimprovementNR               int
-	missedopportunity, donotcareNR              int
-	total, badrank, badlimit, missingcorrection int
-	totalerrbefore, totalerrafter               int
+	skipped, short, nocands, lex              int
+	shorterr, nocandserr, lexerr              int
+	replaced, ocrcorrect, ocrincorrect        int
+	suspicious, ocraccept, disimprovement     int
+	disimprovementMC, disimprovementBL        int
+	successfulcorrection, donotcare           int
+	donotcareMC, donotcareBL                  int
+	notreplaced, ocrcorrectNR, ocrincorrectNR int
+	ocracceptNR, disimprovementNR             int
+	disimprovementNRMC, disimprovementNRBL    int
+	disimprovementBR, disimprovementNRBR      int
+	missedopportunity, donotcareNR            int
+	donotcareNRMC, donotcareNRBL              int
+	donotcareBR, donotcareNRBR                int
+	totalerrbefore, totalerrafter, total      int
 }
 
 func (s *stats) stat(dtd string) error {
@@ -164,6 +169,21 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && cor && gt == ocr && sug != gt {
 		s.disimprovement++
+		if 0 < flags.limit {
+			if rank == 0 {
+				s.disimprovementMC++
+			} else if flags.limit < rank {
+				s.disimprovementBL++
+			} else {
+				s.disimprovementBR++
+			}
+		} else {
+			if rank == 0 {
+				s.disimprovementMC++
+			} else if 1 < rank {
+				s.disimprovementBR++
+			}
+		}
 	}
 	if !skipped && cor && gt != ocr {
 		s.ocrincorrect++
@@ -173,6 +193,21 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && cor && gt != ocr && sug != gt {
 		s.donotcare++
+		if 0 < flags.limit {
+			if rank == 0 {
+				s.donotcareMC++
+			} else if flags.limit < rank {
+				s.donotcareBL++
+			} else {
+				s.donotcareBR++
+			}
+		} else {
+			if rank == 0 {
+				s.donotcareMC++
+			} else if 1 < rank {
+				s.donotcareBR++
+			}
+		}
 	}
 	if !skipped && !cor {
 		s.notreplaced++
@@ -185,6 +220,21 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && !cor && ocr == gt && sug != gt {
 		s.disimprovementNR++
+		if 0 < flags.limit {
+			if rank == 0 {
+				s.disimprovementNRMC++
+			} else if flags.limit < rank {
+				s.disimprovementNRBL++
+			} else {
+				s.disimprovementNRBR++
+			}
+		} else {
+			if rank == 0 {
+				s.disimprovementNRMC++
+			} else if 1 < rank {
+				s.disimprovementNRBR++
+			}
+		}
 	}
 	if !skipped && !cor && ocr != gt {
 		s.ocrincorrectNR++
@@ -194,18 +244,21 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && !cor && ocr != gt && sug != gt {
 		s.donotcareNR++
-	}
-	if !skipped && rank == 0 {
-		s.missingcorrection++
-	}
-	if !skipped && flags.limit > 0 && rank > 1 && rank > flags.limit {
-		s.badlimit++
-	}
-	if !skipped && flags.limit > 0 && rank > 1 && rank <= flags.limit {
-		s.badrank++
-	}
-	if !skipped && flags.limit <= 0 && rank > 1 {
-		s.badrank++
+		if 0 < flags.limit {
+			if rank == 0 {
+				s.donotcareNRMC++
+			} else if flags.limit < rank {
+				s.donotcareNRBL++
+			} else {
+				s.donotcareNRBR++
+			}
+		} else {
+			if rank == 0 {
+				s.donotcareNRMC++
+			} else if 1 < rank {
+				s.donotcareNRBR++
+			}
+		}
 	}
 	if ocr != gt {
 		s.totalerrbefore++
@@ -227,9 +280,6 @@ func (s *stats) write() {
 	fmt.Printf("accuracy (before)                   = %f\n", 1.0-errb)
 	fmt.Printf("accuracy (after)                    = %f\n", 1.0-erra)
 	fmt.Printf("improvement                         = %f%%\n", impr)
-	fmt.Printf("missing correction candidate        = %d\n", s.missingcorrection)
-	fmt.Printf("bad rank                            = %d\n", s.badrank)
-	fmt.Printf("bad limit                           = %d\n", s.badlimit)
 	fmt.Printf("total errors (before)               = %d\n", s.totalerrbefore)
 	fmt.Printf("total errors (after)                = %d\n", s.totalerrafter)
 	fmt.Printf("correct (before)                    = %d\n", s.total-s.totalerrbefore)
@@ -247,16 +297,28 @@ func (s *stats) write() {
 	fmt.Printf("   │  ├─ ocr correct                = %d\n", s.ocrcorrect)
 	fmt.Printf("   │  │  ├─ redundant correction    = %d\n", s.ocraccept)
 	fmt.Printf("   │  │  └─ infelicitous correction = %d\n", s.disimprovement)
+	fmt.Printf("   │  │     ├─ bad rank             = %d\n", s.disimprovementBR)
+	fmt.Printf("   │  │     ├─ bad limit            = %d\n", s.disimprovementBL)
+	fmt.Printf("   │  │     └─ missing correction   = %d\n", s.disimprovementMC)
 	fmt.Printf("   │  └─ ocr not correct            = %d\n", s.ocrincorrect)
 	fmt.Printf("   │     ├─ successful correction   = %d\n", s.successfulcorrection)
 	fmt.Printf("   │     └─ do not care             = %d\n", s.donotcare)
+	fmt.Printf("   │        ├─ bad rank             = %d\n", s.donotcareBR)
+	fmt.Printf("   │        ├─ bad limit            = %d\n", s.donotcareBL)
+	fmt.Printf("   │        └─ missing correction   = %d\n", s.donotcareMC)
 	fmt.Printf("   └─ not replaced                  = %d\n", s.notreplaced)
 	fmt.Printf("      ├─ ocr correct                = %d\n", s.ocrcorrectNR)
 	fmt.Printf("      │  ├─ ocr accept              = %d\n", s.ocracceptNR)
 	fmt.Printf("      │  └─ dodged bullets          = %d\n", s.disimprovementNR)
+	fmt.Printf("      │     ├─ bad rank             = %d\n", s.disimprovementNRBR)
+	fmt.Printf("      │     ├─ bad limit            = %d\n", s.disimprovementNRBL)
+	fmt.Printf("      │     └─ missing correction   = %d\n", s.disimprovementNRMC)
 	fmt.Printf("      └─ ocr not correct            = %d\n", s.ocrincorrectNR)
 	fmt.Printf("         ├─ missed opportunity      = %d\n", s.missedopportunity)
 	fmt.Printf("         └─ candidate not correct   = %d\n", s.donotcareNR)
+	fmt.Printf("            ├─ bad rank             = %d\n", s.donotcareNRBR)
+	fmt.Printf("            ├─ bad limit            = %d\n", s.donotcareNRBL)
+	fmt.Printf("            └─ missing correction   = %d\n", s.donotcareNRMC)
 }
 
 func (s *stats) csv() {
@@ -268,9 +330,6 @@ func (s *stats) csv() {
 	fmt.Printf("accuracy (before),%f\n", 1.0-errb)
 	fmt.Printf("accuracy (after),%f\n", 1.0-erra)
 	fmt.Printf("improvement,%f\n", impr)
-	fmt.Printf("missing correction candidate,%d\n", s.missingcorrection)
-	fmt.Printf("bad rank,%d\n", s.badrank)
-	fmt.Printf("bad limit,%d\n", s.badlimit)
 	fmt.Printf("total errors (before),%d\n", s.totalerrbefore)
 	fmt.Printf("total errors (after),%d\n", s.totalerrafter)
 	fmt.Printf("correct (before),%d\n", s.total-s.totalerrbefore)
