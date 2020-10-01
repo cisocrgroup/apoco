@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -37,7 +38,9 @@ func (cor *corrector) correct() error {
 	if err := mets.AddAgent(cor.doc, "recognition/post-correction", "apoco correct", internal.Version); err != nil {
 		return fmt.Errorf("correct: %v", err)
 	}
-	if err := ioutil.WriteFile(cor.mets, []byte(cor.doc.OutputXML(false)), 0666); err != nil {
+	xmlData := cor.doc.OutputXML(false)
+	xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
+	if err := ioutil.WriteFile(cor.mets, []byte(xmlData), 0666); err != nil {
 		return fmt.Errorf("correct: %v", err)
 	}
 	return nil
@@ -173,7 +176,9 @@ func (cor *corrector) write(doc *xmlquery.Node, file string) error {
 	dir := filepath.Join(filepath.Dir(cor.mets), cor.ofg)
 	ofile = filepath.Join(dir, ofile)
 	_ = os.MkdirAll(dir, 0777)
-	return ioutil.WriteFile(ofile, []byte(doc.OutputXML(false)), 0666)
+	xmlData := doc.OutputXML(false)
+	xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
+	return ioutil.WriteFile(ofile, []byte(xmlData), 0666)
 }
 
 func (cor *corrector) readMETS() error {
