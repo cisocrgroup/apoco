@@ -214,6 +214,7 @@ func readCachedProfile(fg string) (gofiler.Profile, bool) {
 	if err := json.NewDecoder(gz).Decode(&profile); err != nil {
 		return nil, false
 	}
+	log.Printf("read %d profile tokens from %s", len(profile), path)
 	return profile, true
 }
 
@@ -233,6 +234,7 @@ func cacheProfile(fg string, profile gofiler.Profile) {
 	gz := gzip.NewWriter(out)
 	defer gz.Close()
 	_ = json.NewEncoder(gz).Encode(profile)
+	log.Printf("cached %d profile tokens to %s", len(profile), path)
 }
 
 type logger struct {
