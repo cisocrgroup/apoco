@@ -92,6 +92,8 @@ func (c *correction) rank(gt string) int {
 }
 
 func cat(name string) {
+	_, err := fmt.Printf("#filename=%s\n", name)
+	chk(err)
 	is, err := os.Open(name)
 	chk(err)
 	defer is.Close()
@@ -120,7 +122,7 @@ func e(str string) string {
 	if str == "" {
 		return "ε"
 	}
-	return strings.ToLower(str)
+	return strings.ToLower(strings.Replace(str, " ", "_", -1))
 }
 
 func chk(err error) {

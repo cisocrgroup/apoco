@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
-	"io"
 	"log"
 	"os"
+	"strings"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
@@ -20,13 +20,13 @@ func init() {
 	CMD.Flags().IntVarP(&flags.limit, "limit", "l", 0, "set limit for the profiler's candidate set")
 	CMD.Flags().BoolVarP(&flags.simple, "simple", "s", false, "read simple input")
 	CMD.Flags().BoolVarP(&flags.verbose, "verbose", "v", false, "verbose output of stats")
-	CMD.Flags().BoolVarP(&flags.csv, "csv", "c", false, "verbose output of stats")
+	CMD.Flags().BoolVarP(&flags.dat, "dat", "d", false, "output as gnuplot dat format")
 }
 
 var flags = struct {
 	mets, inputFileGrp   string
 	limit                int
-	simple, verbose, csv bool
+	simple, verbose, dat bool
 }{}
 
 // CMD runs the apoco stats command.
@@ -37,30 +37,61 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	var s stats
 	if flags.simple {
-		chk(eachLine(os.Stdin, s.stat))
+		handleSimple()
 	} else {
-		chk(eachWord(flags.mets, flags.inputFileGrp, s.stat))
-	}
-	if flags.csv {
-		s.csv()
-	} else {
-		s.write()
+		handleIFGs()
 	}
 }
 
-func eachLine(in io.Reader, f func(string) error) error {
-	scanner := bufio.NewScanner(in)
+func handleSimple() {
+	scanner := bufio.NewScanner(os.Stdin)
+	var s stats
+	var filename string
+	if flags.dat {
+		s.datHeader()
+	}
 	for scanner.Scan() {
-		if err := f(scanner.Text()); err != nil {
-			return fmt.Errorf("eachLine: %v", err)
+		dtd := scanner.Text()
+		if dtd != "" && dtd[0] == '#' {
+			var tmp string
+			if _, err := fmt.Sscanf(dtd, "#filename=%s", &tmp); err != nil {
+				continue
+			}
+			if filename != "" {
+				if flags.dat {
+					s.dat(filename)
+				} else {
+					s.write(filename)
+				}
+			}
+			filename = tmp
+			s = stats{}
+			continue
+		}
+		chk(s.stat(dtd))
+	}
+	if flags.dat {
+		s.dat(filename)
+	} else {
+		s.write(filename)
+	}
+}
+
+func handleIFGs() {
+	if flags.dat {
+		var s stats
+		s.datHeader()
+	}
+	for _, ifg := range strings.Split(flags.inputFileGrp, ",") {
+		var s stats
+		chk(eachWord(flags.mets, flags.inputFileGrp, s.stat))
+		if flags.dat {
+			s.dat(ifg)
+		} else {
+			s.write(ifg)
 		}
 	}
-	if scanner.Err() != nil {
-		return fmt.Errorf("eachLine: %v", scanner.Err())
-	}
-	return nil
 }
 
 func eachWord(mets, inputFileGrp string, f func(string) error) error {
@@ -106,7 +137,10 @@ func eachTokenInFile(path string, f func(string) error) error {
 }
 
 type stats struct {
+	lastGT                                    string
 	skipped, short, nocands, lex              int
+	skippedMerges, skippedSplits              int
+	merges, splits                            int
 	shorterr, nocandserr, lexerr              int
 	replaced, ocrcorrect, ocrincorrect        int
 	suspicious, ocraccept, disimprovement     int
@@ -154,6 +188,18 @@ func (s *stats) stat(dtd string) error {
 	}
 	if skipped && !short && lex && ocr != gt {
 		s.lexerr++
+	}
+	if skipped && strings.Index(gt, "_") != -1 {
+		s.skippedMerges++
+	}
+	if !skipped && strings.Index(gt, "_") == 0 {
+		s.merges++
+	}
+	if skipped && gt != ocr && gt == s.lastGT {
+		s.skippedSplits++
+	}
+	if !skipped && gt != ocr && gt == s.lastGT {
+		s.splits++
 	}
 	if !skipped {
 		s.suspicious++
@@ -268,13 +314,15 @@ func (s *stats) stat(dtd string) error {
 		(!skipped && !cor && ocr != gt) { // not corrected and false
 		s.totalerrafter++
 	}
+	s.lastGT = gt
 	return nil
 }
 
-func (s *stats) write() {
+func (s *stats) write(name string) {
 	errb := float64(s.totalerrbefore) / float64(s.total)
 	erra := float64(s.totalerrafter) / float64(s.total)
 	impr := float64(s.totalerrbefore-s.totalerrafter) / float64(s.totalerrafter) * 100
+	fmt.Printf("name                                = %s\n", name)
 	fmt.Printf("improvement (percent)               = %f\n", impr)
 	fmt.Printf("error rate (before/after)           = %f/%f\n", errb, erra)
 	fmt.Printf("accuracy (before/after)             = %f/%f\n", 1.0-errb, 1.0-erra)
@@ -286,6 +334,8 @@ func (s *stats) write() {
 		s.disimprovementNRBR+s.disimprovementBR+s.donotcareBR+s.donotcareNRBR)
 	fmt.Printf("bad limit                           = %d\n",
 		s.disimprovementNRBL+s.disimprovementBL+s.donotcareBL+s.donotcareNRBL)
+	fmt.Printf("merges                              = %d\n", s.skippedMerges+s.merges)
+	fmt.Printf("splits                              = %d\n", s.skippedSplits+s.splits)
 	fmt.Printf("total tokens                        = %d\n", s.total)
 	fmt.Printf("├─ skipped                          = %d\n", s.skipped)
 	fmt.Printf("│  ├─ short                         = %d\n", s.short)
@@ -323,42 +373,24 @@ func (s *stats) write() {
 	fmt.Printf("            └─ missing correction   = %d\n", s.donotcareNRMC)
 }
 
-func (s *stats) csv() {
-	errb := float64(s.totalerrbefore) / float64(s.total)
-	erra := float64(s.totalerrafter) / float64(s.total)
-	impr := float64(s.totalerrbefore-s.totalerrafter) / float64(s.totalerrafter)
-	fmt.Printf("error rate (before),%f\n", errb)
-	fmt.Printf("error rate (after),%f\n", erra)
-	fmt.Printf("accuracy (before),%f\n", 1.0-errb)
-	fmt.Printf("accuracy (after),%f\n", 1.0-erra)
-	fmt.Printf("improvement,%f\n", impr)
-	fmt.Printf("total errors (before),%d\n", s.totalerrbefore)
-	fmt.Printf("total errors (after),%d\n", s.totalerrafter)
-	fmt.Printf("correct (before),%d\n", s.total-s.totalerrbefore)
-	fmt.Printf("correct (after),%d\n", s.total-s.totalerrafter)
-	fmt.Printf("total tokens,%d\n", s.total)
-	fmt.Printf("skipped,%d\n", s.skipped)
-	fmt.Printf("short,%d\n", s.short)
-	fmt.Printf("skipped errors,%d\n", s.shorterr)
-	fmt.Printf("no candidate,%d\n", s.nocands)
-	fmt.Printf("no candidate errors,%d\n", s.nocandserr)
-	fmt.Printf("lexicon entries,%d\n", s.lex)
-	fmt.Printf("false friends,%d\n", s.lexerr)
-	fmt.Printf("suspicious,%d\n", s.suspicious)
-	fmt.Printf("replaced,%d\n", s.replaced)
-	fmt.Printf("ocr correct,%d\n", s.ocrcorrect)
-	fmt.Printf("redundant correction,%d\n", s.ocraccept)
-	fmt.Printf("infelicitous correction,%d\n", s.disimprovement)
-	fmt.Printf("ocr not correct,%d\n", s.ocrincorrect)
-	fmt.Printf("successful correction,%d\n", s.successfulcorrection)
-	fmt.Printf("do not care,%d\n", s.donotcare)
-	fmt.Printf("not replaced,%d\n", s.notreplaced)
-	fmt.Printf("ocr correct,%d\n", s.ocrcorrectNR)
-	fmt.Printf("ocr accept,%d\n", s.ocracceptNR)
-	fmt.Printf("dodged bullets,%d\n", s.disimprovementNR)
-	fmt.Printf("ocr not correct,%d\n", s.ocrincorrectNR)
-	fmt.Printf("missed opportunity,%d\n", s.missedopportunity)
-	fmt.Printf("candidate not correct,%d\n", s.donotcareNR)
+func (s *stats) datHeader() {
+	fmt.Printf("# %q %q %q %q %q %q %q %q %q %q\n",
+		"filename", "total", "total errors (before)", "total errors (after)",
+		"missing candidate", "bad limit", "false friends", "bad rank",
+		"missed opportunity", "infelicitous correction",
+	)
+}
+
+func (s *stats) dat(name string) {
+	a1 := s.disimprovementNRMC + s.disimprovementMC + s.donotcareMC + s.donotcareNRMC
+	a2 := s.disimprovementNRBL + s.disimprovementBL + s.donotcareBL + s.donotcareNRBL
+	a3 := s.lexerr
+	b1 := s.disimprovementNRBR + s.disimprovementBR + s.donotcareBR + s.donotcareNRBR
+	b2 := s.missedopportunity
+	b3 := s.disimprovement
+	fmt.Printf("%q %d %d %d %d %d %d %d %d %d\n",
+		name, s.total, s.totalerrbefore, s.totalerrafter, a1, a2, a3, b1, b2, b3,
+	)
 }
 
 const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
