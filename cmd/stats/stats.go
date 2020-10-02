@@ -276,14 +276,10 @@ func (s *stats) write() {
 	erra := float64(s.totalerrafter) / float64(s.total)
 	impr := float64(s.totalerrbefore-s.totalerrafter) / float64(s.totalerrafter) * 100
 	fmt.Printf("improvement (percent)               = %f\n", impr)
-	fmt.Printf("error rate (before)                 = %f\n", errb)
-	fmt.Printf("error rate (after)                  = %f\n", erra)
-	fmt.Printf("accuracy (before)                   = %f\n", 1.0-errb)
-	fmt.Printf("accuracy (after)                    = %f\n", 1.0-erra)
-	fmt.Printf("total errors (before)               = %d\n", s.totalerrbefore)
-	fmt.Printf("total errors (after)                = %d\n", s.totalerrafter)
-	fmt.Printf("correct (before)                    = %d\n", s.total-s.totalerrbefore)
-	fmt.Printf("correct (after)                     = %d\n", s.total-s.totalerrafter)
+	fmt.Printf("error rate (before/after)           = %f/%f\n", errb, erra)
+	fmt.Printf("accuracy (before/after)             = %f/%f\n", 1.0-errb, 1.0-erra)
+	fmt.Printf("total errors (before/after)         = %d/%d\n", s.totalerrbefore, s.totalerrafter)
+	fmt.Printf("correct (before/after)              = %d/%d\n", s.total-s.totalerrbefore, s.total-s.totalerrafter)
 	fmt.Printf("missing correction                  = %d\n",
 		s.disimprovementNRMC+s.disimprovementMC+s.donotcareMC+s.donotcareNRMC)
 	fmt.Printf("bad rank                            = %d\n",
