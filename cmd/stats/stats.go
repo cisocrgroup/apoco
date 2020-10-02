@@ -321,7 +321,7 @@ func (s *stats) write() {
 	fmt.Printf("      │     └─ missing correction   = %d\n", s.disimprovementNRMC)
 	fmt.Printf("      └─ ocr not correct            = %d\n", s.ocrincorrectNR)
 	fmt.Printf("         ├─ missed opportunity      = %d\n", s.missedopportunity)
-	fmt.Printf("         └─ candidate not correct   = %d\n", s.donotcareNR)
+	fmt.Printf("         └─ skipped do not care     = %d\n", s.donotcareNR)
 	fmt.Printf("            ├─ bad rank             = %d\n", s.donotcareNRBR)
 	fmt.Printf("            ├─ bad limit            = %d\n", s.donotcareNRBL)
 	fmt.Printf("            └─ missing correction   = %d\n", s.donotcareNRMC)
