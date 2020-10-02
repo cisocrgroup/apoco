@@ -26,7 +26,7 @@ var CMD = &cobra.Command{
 
 func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
-	_ = apoco.Pipe(ctx, g, flags.Tokenize(), apoco.Normalize, cat)
+	_ = apoco.Pipe(ctx, g, flags.Tokenize(args), apoco.Normalize, cat)
 	chk(g.Wait())
 }
 

@@ -50,7 +50,7 @@ func run(_ *cobra.Command, args []string) {
 	infoMap := make(infoMap)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		flags.Flags.Tokenize(),
+		flags.Flags.Tokenize(args),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		register(infoMap),
