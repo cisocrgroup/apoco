@@ -18,29 +18,30 @@ func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set mets file")
 	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
 	CMD.Flags().IntVarP(&flags.limit, "limit", "l", 0, "set limit for the profiler's candidate set")
-	CMD.Flags().BoolVarP(&flags.simple, "simple", "s", false, "read simple input")
 	CMD.Flags().BoolVarP(&flags.verbose, "verbose", "v", false, "verbose output of stats")
 	CMD.Flags().BoolVarP(&flags.dat, "dat", "d", false, "output as gnuplot dat format")
 }
 
 var flags = struct {
-	mets, inputFileGrp   string
-	limit                int
-	simple, verbose, dat bool
+	mets, inputFileGrp string
+	limit              int
+	verbose, dat       bool
 }{}
 
 // CMD runs the apoco stats command.
 var CMD = &cobra.Command{
-	Use:   "stats",
+	Use:   "stats [INPUT...]",
 	Short: "Extract correction stats",
 	Run:   run,
 }
 
 func run(_ *cobra.Command, args []string) {
-	if flags.simple {
+	if flags.inputFileGrp == "" && len(args) == 0 {
 		handleSimple()
 	} else {
-		handleIFGs()
+		handleIFGs(append(args, strings.FieldsFunc(flags.inputFileGrp, func(r rune) bool {
+			return r == ','
+		})...))
 	}
 }
 
@@ -78,14 +79,14 @@ func handleSimple() {
 	}
 }
 
-func handleIFGs() {
+func handleIFGs(ifgs []string) {
 	if flags.dat {
 		var s stats
 		s.datHeader()
 	}
-	for _, ifg := range strings.Split(flags.inputFileGrp, ",") {
+	for _, ifg := range ifgs {
 		var s stats
-		chk(eachWord(flags.mets, flags.inputFileGrp, s.stat))
+		chk(eachWord(flags.mets, ifg, s.stat))
 		if flags.dat {
 			s.dat(ifg)
 		} else {
