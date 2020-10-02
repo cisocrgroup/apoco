@@ -33,8 +33,8 @@ func run(_ *cobra.Command, args []string) {
 func cat(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 	g.Go(func() error {
 		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-			fmt.Printf("%s\n", t)
-			return nil
+			_, err := fmt.Printf("%s\n", t)
+			return err
 		})
 	})
 	return nil
