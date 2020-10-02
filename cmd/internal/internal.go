@@ -20,7 +20,6 @@ type Flags struct {
 	METS   string // METS file path
 	IFGs   string // Comma-separated list of input file groups
 	Exts   string // Comma-separated list of file extensions
-	Dirs   string // Commands-separated list of input directories
 	Params string // Path to the configuration file
 }
 
@@ -30,23 +29,25 @@ func (flags *Flags) Init(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&flags.METS, "mets", "m", "mets.xml", "set path to mets file")
 	cmd.Flags().StringVarP(&flags.IFGs, "input-file-grp", "I", "", "set input file groups")
 	cmd.Flags().StringVarP(&flags.Exts, "extensions", "E", "", "set snippet file extensions")
-	cmd.Flags().StringVarP(&flags.Dirs, "dirs", "D", "", "set input directories")
 	cmd.Flags().StringVarP(&flags.Params, "parameters", "P", "config.json", "set path to configuration file")
 }
 
-// Tokenize tokenizes input.  If len(Exts) == 0, tokens are read from
-// the according file groups files from the mets file.  Otherwise if
-// len(Exts) > 0, tokens are read from the snippets with the given
-// extensions from the files withtin the given directories.
-func (flags *Flags) Tokenize() apoco.StreamFunc {
+// Tokenize tokenizes input.  The directories or input file groups are
+// read from the args and in the case of input file groups
+// additionally from the comma seperated list of the
+// -I/--input-file-grp command line argument.  If len(Exts) == 0,
+// tokens are read from the according input file groups from the mets
+// file.  Otherwise if len(Exts) > 0, tokens are read from the
+// snippets with the given extensions from the files withtin the given
+// input directories.
+func (flags *Flags) Tokenize(args []string) apoco.StreamFunc {
 	if len(flags.Exts) == 0 {
-		ifgs := strings.Split(flags.IFGs, ",")
+		ifgs := append(args, strings.Split(flags.IFGs, ",")...)
 		return pagexml.Tokenize(flags.METS, ifgs...)
 	}
 	exts := strings.Split(flags.Exts, ",")
-	dirs := strings.Split(flags.Dirs, ",")
 	e := snippets.Extensions(exts)
-	return e.Tokenize(dirs...)
+	return e.Tokenize(args...)
 }
 
 // IDFromFilePath returns the proper id given a file path and a file

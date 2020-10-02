@@ -32,7 +32,7 @@ var flags = struct {
 
 // CMD runs the apoco correct command.
 var CMD = &cobra.Command{
-	Use:   "correct",
+	Use:   "correct [INPUT...]",
 	Short: "Automatically correct documents",
 	Run:   run,
 }
@@ -50,7 +50,7 @@ func run(_ *cobra.Command, args []string) {
 	infoMap := make(infoMap)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		flags.Flags.Tokenize(),
+		flags.Flags.Tokenize(args),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		register(infoMap),

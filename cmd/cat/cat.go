@@ -19,14 +19,14 @@ var flags internal.Flags
 
 // CMD defines the apoco cat command.
 var CMD = &cobra.Command{
-	Use:   "cat",
+	Use:   "cat [INPUT...]",
 	Short: "Output tokens",
 	Run:   run,
 }
 
 func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
-	_ = apoco.Pipe(ctx, g, flags.Tokenize(), apoco.Normalize, cat)
+	_ = apoco.Pipe(ctx, g, flags.Tokenize(args), apoco.Normalize, cat)
 	chk(g.Wait())
 }
 

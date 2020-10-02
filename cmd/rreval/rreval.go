@@ -30,7 +30,7 @@ var flags = struct {
 
 // CMD defines the apoco train command.
 var CMD = &cobra.Command{
-	Use:   "rreval",
+	Use:   "rreval [INPUT...]",
 	Short: "Evaluate an apoco re-ranking model",
 	Run:   run,
 }
@@ -43,7 +43,7 @@ func run(_ *cobra.Command, args []string) {
 	chk(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		flags.Flags.Tokenize(),
+		flags.Flags.Tokenize(args),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		apoco.FilterShort,
