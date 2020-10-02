@@ -42,7 +42,9 @@ func (flags *Flags) Init(cmd *cobra.Command) {
 // input directories.
 func (flags *Flags) Tokenize(args []string) apoco.StreamFunc {
 	if len(flags.Exts) == 0 {
-		ifgs := append(args, strings.Split(flags.IFGs, ",")...)
+		ifgs := append(args, strings.FieldsFunc(flags.IFGs, func(r rune) bool {
+			return r == ','
+		})...)
 		return pagexml.Tokenize(flags.METS, ifgs...)
 	}
 	exts := strings.Split(flags.Exts, ",")
