@@ -31,7 +31,7 @@ var flags = struct {
 
 // CMD defines the apoco train command.
 var CMD = &cobra.Command{
-	Use:   "rrtrain",
+	Use:   "rrtrain [INPUT...]",
 	Short: "Train an apoco re-ranking model",
 	Run:   run,
 }

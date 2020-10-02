@@ -32,7 +32,7 @@ var flags = struct {
 
 // CMD runs the apoco correct command.
 var CMD = &cobra.Command{
-	Use:   "correct",
+	Use:   "correct [INPUT...]",
 	Short: "Automatically correct documents",
 	Run:   run,
 }

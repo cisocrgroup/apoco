@@ -19,7 +19,7 @@ var flags internal.Flags
 
 // CMD defines the apoco cat command.
 var CMD = &cobra.Command{
-	Use:   "cat",
+	Use:   "cat [INPUT...]",
 	Short: "Output tokens",
 	Run:   run,
 }

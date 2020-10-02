@@ -29,7 +29,7 @@ var flags = struct {
 
 // CMD defines the apoco train command.
 var CMD = &cobra.Command{
-	Use:   "dmeval",
+	Use:   "dmeval  [INPUT...]",
 	Short: "Evaluate a decision maker model",
 	Run:   run,
 }
