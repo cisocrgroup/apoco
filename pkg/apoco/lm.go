@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/finkf/gofiler"
 )
@@ -241,5 +242,11 @@ type logger struct {
 }
 
 func (logger) Log(str string) {
-	log.Print(str)
+	const prefix = "profiler: "
+	if strings.Index(str, "additional lexicon entries") != -1 {
+		log.Print(prefix, str)
+	}
+	if strings.Index(str, "iteration") != -1 {
+		log.Print(prefix, str)
+	}
 }
