@@ -70,7 +70,8 @@ func SendTokens(ctx context.Context, out chan<- Token, tokens ...Token) error {
 }
 
 // Normalize trims all leading and subsequent punctionation from the
-// tokens and converts them to lowercase.
+// tokens, converts them to lowercase and replaces any whitespace
+// (in the case of merges due to the alignment) with a '_'.
 func Normalize(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
 	out := make(chan Token)
 	g.Go(func() error {
@@ -83,7 +84,7 @@ func Normalize(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan T
 				t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
 					return unicode.IsPunct(r) || unicode.IsSpace(r)
 				})
-				t.Tokens[i] = strings.ToLower(t.Tokens[i])
+				t.Tokens[i] = strings.ReplaceAll(strings.ToLower(t.Tokens[i]), " ", "_")
 			}
 			if err := SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("normalize: %v", err)
