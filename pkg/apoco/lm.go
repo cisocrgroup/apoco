@@ -6,9 +6,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"log"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -187,13 +187,17 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 	return nil
 }
 
-func cachePath(group string) (string, bool) {
+func cachePath(dir string) (string, bool) {
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
 		return "", false
 	}
-	base := url.PathEscape(group)
-	return filepath.Join(cacheDir, "apoco", base+"-profile.json.gz"), true
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return "", false
+	}
+	name := fmt.Sprintf("%x", fnv.New128a().Sum([]byte(abs)))
+	return filepath.Join(cacheDir, "apoco", name), true
 }
 
 func readCachedProfile(fg string) (gofiler.Profile, bool) {
