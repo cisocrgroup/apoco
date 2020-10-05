@@ -34,6 +34,14 @@ var infoMapLock sync.Mutex
 
 type infoMap map[string]map[string]*info // file -> id -> info
 
+func (m infoMap) numberOfTokens() int {
+	sum := 0
+	for _, x := range m {
+		sum += len(x)
+	}
+	return sum
+}
+
 func (m infoMap) get(t apoco.Token) *info {
 	infoMapLock.Lock()
 	defer infoMapLock.Unlock()

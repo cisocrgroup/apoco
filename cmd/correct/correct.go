@@ -64,6 +64,7 @@ func run(_ *cobra.Command, args []string) {
 		correct(infoMap),
 	)
 	chk(g.Wait())
+	log.Printf("correction %d pages (%d tokens)", len(infoMap), infoMap.numberOfTokens())
 	if flags.simple {
 		for _, ids := range infoMap {
 			for _, info := range ids {
@@ -74,7 +75,7 @@ func run(_ *cobra.Command, args []string) {
 		cor := corrector{
 			info:     infoMap,
 			mets:     flags.METS,
-			ifg:      flags.IFGs,
+			ifgs:     append(args, flags.IFGs()...),
 			ofg:      flags.outputFileGrp,
 			protocol: flags.protocol,
 		}

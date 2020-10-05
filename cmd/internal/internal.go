@@ -11,15 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// apoco version
+// Version defines the version of apoco.
 const Version = "v0.0.1"
 
 // Flags is used to define the standard command-line parameters for
 // apoco sub commands.
 type Flags struct {
+	ifgs   string // Comma-separated list of input file groups
+	exts   string // Comma-separated list of file extensions
 	METS   string // METS file path
-	IFGs   string // Comma-separated list of input file groups
-	Exts   string // Comma-separated list of file extensions
 	Params string // Path to the configuration file
 }
 
@@ -27,9 +27,19 @@ type Flags struct {
 // subcommand.
 func (flags *Flags) Init(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&flags.METS, "mets", "m", "mets.xml", "set path to mets file")
-	cmd.Flags().StringVarP(&flags.IFGs, "input-file-grp", "I", "", "set input file groups")
-	cmd.Flags().StringVarP(&flags.Exts, "extensions", "E", "", "set snippet file extensions")
+	cmd.Flags().StringVarP(&flags.ifgs, "input-file-grp", "I", "", "set input file groups")
+	cmd.Flags().StringVarP(&flags.exts, "extensions", "E", "", "set snippet file extensions")
 	cmd.Flags().StringVarP(&flags.Params, "parameters", "P", "config.json", "set path to configuration file")
+}
+
+// IFGs returns the list of input file groups.
+func (flags *Flags) IFGs() []string {
+	return strings.FieldsFunc(flags.ifgs, func(r rune) bool { return r == ',' })
+}
+
+// Extensions return sthe list of file extensions.
+func (flags *Flags) Extensions() []string {
+	return strings.FieldsFunc(flags.exts, func(r rune) bool { return r == ',' })
 }
 
 // Tokenize tokenizes input.  The directories or input file groups are
@@ -41,14 +51,10 @@ func (flags *Flags) Init(cmd *cobra.Command) {
 // snippets with the given extensions from the files withtin the given
 // input directories.
 func (flags *Flags) Tokenize(args []string) apoco.StreamFunc {
-	if len(flags.Exts) == 0 {
-		ifgs := append(args, strings.FieldsFunc(flags.IFGs, func(r rune) bool {
-			return r == ','
-		})...)
-		return pagexml.Tokenize(flags.METS, ifgs...)
+	if flags.exts == "" {
+		return pagexml.Tokenize(flags.METS, append(args, flags.IFGs()...)...)
 	}
-	exts := strings.Split(flags.Exts, ",")
-	e := snippets.Extensions(exts)
+	e := snippets.Extensions(flags.Extensions())
 	return e.Tokenize(args...)
 }
 

@@ -19,34 +19,37 @@ import (
 )
 
 type corrector struct {
-	info           infoMap
-	mets, ofg, ifg string
-	doc, fileGrp   *xmlquery.Node
-	protocol       bool
+	info         infoMap
+	mets, ofg    string
+	ifgs         []string
+	doc, fileGrp *xmlquery.Node
+	protocol     bool
 }
 
 func (cor *corrector) correct() error {
-	files, err := pagexml.FilePathsForFileGrp(cor.mets, cor.ifg)
-	if err != nil {
-		return fmt.Errorf("correct: %v", err)
-	}
-	for _, file := range files {
-		if err := cor.correctFile(file); err != nil {
+	for _, ifg := range cor.ifgs {
+		files, err := pagexml.FilePathsForFileGrp(cor.mets, ifg)
+		if err != nil {
 			return fmt.Errorf("correct: %v", err)
 		}
-	}
-	if err := mets.AddAgent(cor.doc, "recognition/post-correction", "apoco correct", internal.Version); err != nil {
-		return fmt.Errorf("correct: %v", err)
-	}
-	xmlData := cor.doc.OutputXML(false)
-	xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
-	if err := ioutil.WriteFile(cor.mets, []byte(xmlData), 0666); err != nil {
-		return fmt.Errorf("correct: %v", err)
+		for _, file := range files {
+			if err := cor.correctFile(file, ifg); err != nil {
+				return fmt.Errorf("correct: %v", err)
+			}
+		}
+		if err := mets.AddAgent(cor.doc, "recognition/post-correction", "apoco correct", internal.Version); err != nil {
+			return fmt.Errorf("correct: %v", err)
+		}
+		xmlData := cor.doc.OutputXML(false)
+		xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
+		if err := ioutil.WriteFile(cor.mets, []byte(xmlData), 0666); err != nil {
+			return fmt.Errorf("correct: %v", err)
+		}
 	}
 	return nil
 }
 
-func (cor *corrector) correctFile(file string) error {
+func (cor *corrector) correctFile(file, ifg string) error {
 	is, err := os.Open(file)
 	if err != nil {
 		return fmt.Errorf("writeCorrections: %v", err)
@@ -65,7 +68,7 @@ func (cor *corrector) correctFile(file string) error {
 			return fmt.Errorf("correct %s: %v", file, err)
 		}
 	}
-	if err := cor.write(doc, file); err != nil {
+	if err := cor.write(doc, file, ifg); err != nil {
 		return fmt.Errorf("correct %s: %v", file, err)
 	}
 	return nil
@@ -166,13 +169,13 @@ func (cor *corrector) makeUnicode(unicodes []*xmlquery.Node) *xmlquery.Node {
 	}
 }
 
-func (cor *corrector) write(doc *xmlquery.Node, file string) error {
+func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
 	if cor.doc == nil || cor.fileGrp == nil {
 		if err := cor.readMETS(); err != nil {
 			return err
 		}
 	}
-	ofile := cor.addFileToFileGrp(file)
+	ofile := cor.addFileToFileGrp(file, ifg)
 	dir := filepath.Join(filepath.Dir(cor.mets), cor.ofg)
 	ofile = filepath.Join(dir, ofile)
 	_ = os.MkdirAll(dir, 0777)
@@ -220,7 +223,7 @@ func (cor *corrector) readMETS() error {
 	return nil
 }
 
-func (cor *corrector) addFileToFileGrp(file string) string {
+func (cor *corrector) addFileToFileGrp(file, ifg string) string {
 	newID := internal.IDFromFilePath(file, cor.ofg)
 	filePath := newID + ".xml"
 	// Build parent file node
@@ -260,7 +263,7 @@ func (cor *corrector) addFileToFileGrp(file string) string {
 	// Add nodes to the tree.
 	node.AppendChild(fnode, flocat)
 	node.AppendChild(cor.fileGrp, fnode)
-	cor.addFileToStructMap(file, newID)
+	cor.addFileToStructMap(file, newID, ifg)
 	return filePath
 }
 
@@ -271,7 +274,7 @@ func (cor *corrector) addFileToFileGrp(file string) string {
 //         <mets:fptr FILEID="OCR-D-GT-SEG-BLOCK_0001"/>
 //         <mets:fptr FILEID="OCR-D-GT-SEG-LINE_0001"/>
 //         <mets:fptr FILEID="OCR-D-IMG_0001"/>
-func (cor *corrector) addFileToStructMap(path, newID string) {
+func (cor *corrector) addFileToStructMap(path, newID, ifg string) {
 	// Check if the according new id already exists.
 	fptr := mets.FindFptr(cor.doc, newID)
 	if fptr != nil {
@@ -279,7 +282,7 @@ func (cor *corrector) addFileToStructMap(path, newID string) {
 	}
 	// Search for the flocat with the according file path and use
 	// its id.
-	flocats := mets.FindFlocats(cor.doc, cor.ifg)
+	flocats := mets.FindFlocats(cor.doc, ifg)
 	var oldID string
 	for _, flocat := range flocats {
 		if filepath.Base(path) == filepath.Base(mets.FlocatGetPath(flocat, cor.mets)) {
