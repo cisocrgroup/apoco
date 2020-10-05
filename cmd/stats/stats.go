@@ -36,12 +36,11 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	if flags.inputFileGrp == "" && len(args) == 0 {
+	ifgs := append(args, strings.FieldsFunc(flags.inputFileGrp, func(r rune) bool { return r == ',' })...)
+	if len(ifgs) == 0 {
 		handleSimple()
 	} else {
-		handleIFGs(append(args, strings.FieldsFunc(flags.inputFileGrp, func(r rune) bool {
-			return r == ','
-		})...))
+		handleIFGs(ifgs)
 	}
 }
 
