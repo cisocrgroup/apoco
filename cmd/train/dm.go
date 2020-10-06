@@ -59,7 +59,7 @@ func dmTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 					return nil
 				}
 				xs = fs.Calculate(xs, t, c.Nocr)
-				ys = append(ys, gt(t))
+				ys = append(ys, dmGT(t))
 				return nil
 			})
 			if err != nil {
@@ -110,4 +110,11 @@ func useTokenForDMTraining(t apoco.Token, cautious bool) bool {
 		return t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion == gt
 	}
 	return true
+}
+
+func dmGT(t apoco.Token) float64 {
+	candidate := t.Payload.([]apoco.Ranking)[0].Candidate
+	gt := t.Tokens[len(t.Tokens)-1]
+	//return ml.Bool(candidate.Suggestion == gt && t.Tokens[0] != gt)
+	return ml.Bool(candidate.Suggestion == gt)
 }

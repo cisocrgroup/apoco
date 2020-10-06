@@ -5,10 +5,8 @@ import (
 	"strings"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
-	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 )
 
@@ -48,11 +46,6 @@ func tokenize(ext string, dirs ...string) apoco.StreamFunc {
 	}
 	e := snippets.Extensions(strings.FieldsFunc(ext, func(r rune) bool { return r == ',' }))
 	return e.Tokenize(dirs...)
-}
-
-func gt(t apoco.Token) float64 {
-	candidate := t.Payload.(*gofiler.Candidate)
-	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
 }
 
 func chk(err error) {

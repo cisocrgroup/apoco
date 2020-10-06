@@ -7,6 +7,7 @@ import (
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
+	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"gonum.org/v1/gonum/mat"
@@ -48,7 +49,7 @@ func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			var xs, ys []float64
 			err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
 				xs = fs.Calculate(xs, t, c.Nocr)
-				ys = append(ys, gt(t))
+				ys = append(ys, rrGT(t))
 				return nil
 			})
 			if err != nil {
@@ -88,4 +89,9 @@ func loadRRModel(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.Fea
 		Ntrain:       c.Ntrain,
 	}
 	return lr, fs, nil
+}
+
+func rrGT(t apoco.Token) float64 {
+	candidate := t.Payload.(*gofiler.Candidate)
+	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
 }
