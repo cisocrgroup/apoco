@@ -24,7 +24,7 @@ var flags = struct {
 
 func init() {
 	// Train flags
-	CMD.PersistentFlags().StringVarP(&flags.parameters, "parameters", "p", "config.toml",
+	CMD.PersistentFlags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
 		"set the path to configuration file")
 	CMD.PersistentFlags().StringVarP(&flags.extensions, "extensions", "e", ".xml",
 		"set the input file extensions")
