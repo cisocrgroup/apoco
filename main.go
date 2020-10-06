@@ -5,8 +5,7 @@ import (
 	"git.sr.ht/~flobar/apoco/cmd/cat"
 	"git.sr.ht/~flobar/apoco/cmd/catprot"
 	"git.sr.ht/~flobar/apoco/cmd/correct"
-	"git.sr.ht/~flobar/apoco/cmd/dmeval"
-	"git.sr.ht/~flobar/apoco/cmd/rreval"
+	"git.sr.ht/~flobar/apoco/cmd/eval"
 	"git.sr.ht/~flobar/apoco/cmd/stats"
 	"git.sr.ht/~flobar/apoco/cmd/train"
 	"git.sr.ht/~flobar/apoco/cmd/version"
@@ -24,8 +23,7 @@ func init() {
 		cat.CMD,
 		catprot.CMD,
 		correct.CMD,
-		dmeval.CMD,
-		rreval.CMD,
+		eval.CMD,
 		stats.CMD,
 		train.CMD,
 		version.CMD,
