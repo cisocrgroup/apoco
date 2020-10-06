@@ -1,3 +1,4 @@
 apoco
+!pkg/apoco
 *.exe
 *.out
