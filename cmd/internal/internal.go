@@ -12,7 +12,7 @@ import (
 )
 
 // Version defines the version of apoco.
-const Version = "v0.0.1"
+const Version = "v0.0.2"
 
 // Flags is used to define the standard command-line parameters for
 // apoco sub commands.
@@ -58,8 +58,8 @@ func (flags *Flags) Tokenize(args []string) apoco.StreamFunc {
 	return e.Tokenize(args...)
 }
 
-// IDFromFilePath returns the proper id given a file path and a file
-// group.
+// IDFromFilePath generates an id based on the file group and the file
+// path.
 func IDFromFilePath(path, fg string) string {
 	// Use base path and remove file extensions.
 	path = filepath.Base(path)
