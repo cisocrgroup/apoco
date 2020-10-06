@@ -2,7 +2,6 @@ package eval
 
 import (
 	"log"
-	"strings"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
@@ -18,16 +17,17 @@ var CMD = &cobra.Command{
 }
 
 var flags = struct {
-	parameters, extensions, model string
-	nocr                          int
-	cache, cautious, update       bool
+	extensions              []string
+	parameters, model       string
+	nocr                    int
+	cache, cautious, update bool
 }{}
 
 func init() {
 	// Eval flags
 	CMD.PersistentFlags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
-		"set the path to configuration file")
-	CMD.PersistentFlags().StringVarP(&flags.extensions, "extensions", "e", ".xml",
+		"set the path to the configuration file")
+	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
 		"set the input file extensions")
 	CMD.PersistentFlags().StringVarP(&flags.model, "model", "m", "",
 		"set the model path (overwrites the setting in the configuration file)")
@@ -39,11 +39,11 @@ func init() {
 	CMD.AddCommand(rrCMD, dmCMD)
 }
 
-func tokenize(ext string, dirs ...string) apoco.StreamFunc {
-	if ext == ".xml" {
-		return pagexml.TokenizeDirs(ext, dirs...)
+func tokenize(exts, dirs []string) apoco.StreamFunc {
+	if len(exts) == 0 && exts[0] == ".xml" {
+		return pagexml.TokenizeDirs(exts[0], dirs...)
 	}
-	e := snippets.Extensions(strings.FieldsFunc(ext, func(r rune) bool { return r == ',' }))
+	e := snippets.Extensions(exts)
 	return e.Tokenize(dirs...)
 }
 

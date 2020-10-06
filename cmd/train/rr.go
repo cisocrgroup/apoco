@@ -28,7 +28,7 @@ func rrRun(_ *cobra.Command, args []string) {
 	chk(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		tokenize(flags.extensions, args...),
+		tokenize(flags.extensions, args),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		apoco.FilterShort,
