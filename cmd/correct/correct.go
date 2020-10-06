@@ -17,6 +17,7 @@ var flags = struct {
 	ifgs, extensions             []string
 	ofg, mets, model, parameters string
 	nocr                         int
+	cache                        bool
 }{}
 
 // CMD runs the apoco correct command.
@@ -36,15 +37,17 @@ func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
 	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
 		"set path to the configuration file")
-	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0, "set nocr (overwrites setting in the configuration file)")
+	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0,
+		"set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "",
 		"set model path (overwrites setting in the configuration file)")
+	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
 }
 
 func run(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameters)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, false, false)
+	c.Overwrite(flags.model, flags.nocr, false, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	rrlr, rrfs, err := m.Get("rr", c.Nocr)
