@@ -193,6 +193,7 @@ func cachePath(dir string) (string, bool) {
 		return "", false
 	}
 	abs, err := filepath.Abs(dir)
+	log.Printf("abs path = %s", abs)
 	if err != nil {
 		return "", false
 	}
