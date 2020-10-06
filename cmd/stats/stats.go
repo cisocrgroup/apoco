@@ -14,33 +14,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set mets file")
-	CMD.Flags().StringVarP(&flags.inputFileGrp, "input-file-grp", "I", "", "set input file group")
-	CMD.Flags().IntVarP(&flags.limit, "limit", "l", 0, "set limit for the profiler's candidate set")
-	CMD.Flags().BoolVarP(&flags.verbose, "verbose", "v", false, "verbose output of stats")
-	CMD.Flags().BoolVarP(&flags.dat, "dat", "d", false, "output as gnuplot dat format")
-}
-
 var flags = struct {
-	mets, inputFileGrp string
-	limit              int
-	verbose, dat       bool
+	ifgs          []string
+	mets          string
+	limit         int
+	verbose, json bool
 }{}
 
 // CMD runs the apoco stats command.
 var CMD = &cobra.Command{
-	Use:   "stats [INPUT...]",
+	Use:   "stats [DIRS...]",
 	Short: "Extract correction stats",
 	Run:   run,
 }
 
+func init() {
+	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
+	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
+	CMD.Flags().IntVarP(&flags.limit, "limit", "l", 0, "set limit for the profiler's candidate set")
+	CMD.Flags().BoolVarP(&flags.verbose, "verbose", "v", false, "verbose output of stats")
+	CMD.Flags().BoolVarP(&flags.json, "json", "j", false, "output as gnuplot dat format [ignored]")
+}
+
 func run(_ *cobra.Command, args []string) {
-	ifgs := append(args, strings.FieldsFunc(flags.inputFileGrp, func(r rune) bool { return r == ',' })...)
-	if len(ifgs) == 0 {
+	if len(flags.ifgs) == 0 {
 		handleSimple()
 	} else {
-		handleIFGs(ifgs)
+		handleIFGs(flags.ifgs)
 	}
 }
 
@@ -48,9 +48,6 @@ func handleSimple() {
 	scanner := bufio.NewScanner(os.Stdin)
 	var s stats
 	var filename string
-	if flags.dat {
-		s.datHeader()
-	}
 	for scanner.Scan() {
 		dtd := scanner.Text()
 		if dtd != "" && dtd[0] == '#' {
@@ -59,11 +56,7 @@ func handleSimple() {
 				continue
 			}
 			if filename != "" {
-				if flags.dat {
-					s.dat(filename)
-				} else {
-					s.write(filename)
-				}
+				s.write(filename)
 			}
 			filename = tmp
 			s = stats{}
@@ -71,26 +64,14 @@ func handleSimple() {
 		}
 		chk(s.stat(dtd))
 	}
-	if flags.dat {
-		s.dat(filename)
-	} else {
-		s.write(filename)
-	}
+	s.write(filename)
 }
 
 func handleIFGs(ifgs []string) {
-	if flags.dat {
-		var s stats
-		s.datHeader()
-	}
 	for _, ifg := range ifgs {
 		var s stats
 		chk(eachWord(flags.mets, ifg, s.stat))
-		if flags.dat {
-			s.dat(ifg)
-		} else {
-			s.write(ifg)
-		}
+		s.write(ifg)
 	}
 }
 
@@ -371,26 +352,6 @@ func (s *stats) write(name string) {
 	fmt.Printf("            ├─ bad rank             = %d\n", s.donotcareNRBR)
 	fmt.Printf("            ├─ bad limit            = %d\n", s.donotcareNRBL)
 	fmt.Printf("            └─ missing correction   = %d\n", s.donotcareNRMC)
-}
-
-func (s *stats) datHeader() {
-	fmt.Printf("# %q %q %q %q %q %q %q %q %q %q\n",
-		"filename", "total", "total errors (before)", "total errors (after)",
-		"missing candidate", "bad limit", "false friends", "bad rank",
-		"missed opportunity", "infelicitous correction",
-	)
-}
-
-func (s *stats) dat(name string) {
-	a1 := s.disimprovementNRMC + s.disimprovementMC + s.donotcareMC + s.donotcareNRMC
-	a2 := s.disimprovementNRBL + s.disimprovementBL + s.donotcareBL + s.donotcareNRBL
-	a3 := s.lexerr
-	b1 := s.disimprovementNRBR + s.disimprovementBR + s.donotcareBR + s.donotcareNRBR
-	b2 := s.missedopportunity
-	b3 := s.disimprovement
-	fmt.Printf("%q %d %d %d %d %d %d %d %d %d\n",
-		name, s.total, s.totalerrbefore, s.totalerrafter, a1, a2, a3, b1, b2, b3,
-	)
 }
 
 const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
