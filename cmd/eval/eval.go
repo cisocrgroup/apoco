@@ -40,7 +40,7 @@ func init() {
 }
 
 func tokenize(exts, dirs []string) apoco.StreamFunc {
-	if len(exts) == 0 && exts[0] == ".xml" {
+	if len(exts) == 1 && exts[0] == ".xml" {
 		return pagexml.TokenizeDirs(exts[0], dirs...)
 	}
 	e := snippets.Extensions(exts)

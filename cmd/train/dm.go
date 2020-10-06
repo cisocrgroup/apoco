@@ -115,6 +115,5 @@ func useTokenForDMTraining(t apoco.Token, cautious bool) bool {
 func dmGT(t apoco.Token) float64 {
 	candidate := t.Payload.([]apoco.Ranking)[0].Candidate
 	gt := t.Tokens[len(t.Tokens)-1]
-	//return ml.Bool(candidate.Suggestion == gt && t.Tokens[0] != gt)
 	return ml.Bool(candidate.Suggestion == gt)
 }
