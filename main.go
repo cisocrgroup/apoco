@@ -6,10 +6,9 @@ import (
 	"git.sr.ht/~flobar/apoco/cmd/catprot"
 	"git.sr.ht/~flobar/apoco/cmd/correct"
 	"git.sr.ht/~flobar/apoco/cmd/dmeval"
-	"git.sr.ht/~flobar/apoco/cmd/dmtrain"
 	"git.sr.ht/~flobar/apoco/cmd/rreval"
-	"git.sr.ht/~flobar/apoco/cmd/rrtrain"
 	"git.sr.ht/~flobar/apoco/cmd/stats"
+	"git.sr.ht/~flobar/apoco/cmd/train"
 	"git.sr.ht/~flobar/apoco/cmd/version"
 	"github.com/spf13/cobra"
 )
@@ -26,10 +25,9 @@ func init() {
 		catprot.CMD,
 		correct.CMD,
 		dmeval.CMD,
-		dmtrain.CMD,
 		rreval.CMD,
-		rrtrain.CMD,
 		stats.CMD,
+		train.CMD,
 		version.CMD,
 	)
 }

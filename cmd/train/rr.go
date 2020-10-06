@@ -1,64 +1,47 @@
-package rrtrain
+package train
 
 import (
 	"context"
 	"fmt"
 	"log"
 
-	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
-	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"gonum.org/v1/gonum/mat"
 )
 
-func init() {
-	flags.Flags.Init(CMD)
-	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0, "set nocr (overwrites setting in the configuration file)")
-	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "disable caching of profiles (overwrites setting in the configuration file)")
-	CMD.Flags().StringVarP(&flags.model, "model", "M", "", "set model path (overwrites setting in the configuration file)")
-	CMD.Flags().BoolVarP(&flags.update, "update", "u", false, "update existing model")
-}
-
-var flags = struct {
-	internal.Flags
-	model         string
-	nocr          int
-	cache, update bool
-}{}
-
-// CMD defines the apoco train command.
-var CMD = &cobra.Command{
-	Use:   "rrtrain [INPUT...]",
+// rrCMD defines the apoco train rr command.
+var rrCMD = &cobra.Command{
+	Use:   "rr [DIRS...]",
 	Short: "Train an apoco re-ranking model",
-	Run:   run,
+	Run:   rrRun,
 }
 
-func run(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.Params)
+func rrRun(_ *cobra.Command, args []string) {
+	c, err := apoco.ReadConfig(flags.parameters)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, false, flags.cache)
+	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	g, ctx := errgroup.WithContext(context.Background())
 	_ = apoco.Pipe(ctx, g,
-		flags.Flags.Tokenize(args),
+		tokenize(flags.extensions, args...),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		apoco.FilterShort,
 		apoco.ConnectLM(c, m.Ngrams),
 		apoco.FilterLexiconEntries,
 		apoco.ConnectCandidates,
-		rrtrain(c, m, flags.update))
+		rrTrain(c, m, flags.update))
 	chk(g.Wait())
 }
 
-func rrtrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 		g.Go(func() error {
-			lr, fs, err := load(c, m, update)
+			lr, fs, err := loadRRModel(c, m, update)
 			if err != nil {
 				return fmt.Errorf("rrtrain: %v", err)
 			}
@@ -92,7 +75,7 @@ func rrtrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	}
 }
 
-func load(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
+func loadRRModel(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
 	if update {
 		return m.Get("rr", c.Nocr)
 	}
@@ -105,15 +88,4 @@ func load(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet
 		Ntrain:       c.Ntrain,
 	}
 	return lr, fs, nil
-}
-
-func gt(t apoco.Token) float64 {
-	candidate := t.Payload.(*gofiler.Candidate)
-	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
-}
-
-func chk(err error) {
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
 }

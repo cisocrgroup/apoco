@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
@@ -42,6 +43,49 @@ func Tokenize(mets string, fgs ...string) apoco.StreamFunc {
 		})
 		return out
 	}
+}
+
+// TokenizeDirs returns a function that reads page xml files with a
+// matching file extension from the given directories.  The returned
+// function ignores the input stream.  It only writes tokens to the
+// output stream.
+func TokenizeDirs(ext string, dirs ...string) apoco.StreamFunc {
+	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
+		out := make(chan apoco.Token)
+		g.Go(func() error {
+			defer close(out)
+			for _, dir := range dirs {
+				files, err := gatherFilesInDir(dir, ext)
+				if err != nil {
+					return fmt.Errorf("tokenize dir %s: %v", dir, err)
+				}
+				for _, file := range files {
+					if err := tokenizePageXML(ctx, dir, file, out); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		})
+		return out
+	}
+}
+
+func gatherFilesInDir(dir, ext string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(dir, func(p string, i os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if i.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(p, ext) {
+			files = append(files, p)
+		}
+		return nil
+	})
+	return files, err
 }
 
 // FilePathsForFileGrp returns the list of file paths for the given
