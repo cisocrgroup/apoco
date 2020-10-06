@@ -23,7 +23,6 @@ type corrector struct {
 	mets, ofg    string
 	ifgs         []string
 	doc, fileGrp *xmlquery.Node
-	protocol     bool
 }
 
 func (cor *corrector) correct() error {
@@ -92,12 +91,10 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	}
 	if info.skipped {
 		newStr.Data = ocr
-		if cor.protocol {
-			node.SetAttr(newTE, xml.Attr{
-				Name:  xml.Name{Local: "dataTypeDetails"},
-				Value: info.String(),
-			})
-		}
+		node.SetAttr(newTE, xml.Attr{
+			Name:  xml.Name{Local: "dataTypeDetails"},
+			Value: info.String(),
+		})
 	} else {
 		if info.cor {
 			newStr.Data = apoco.ApplyOCRToCorrection(ocr, info.sug)
@@ -108,12 +105,10 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 			Name:  xml.Name{Local: "conf"},
 			Value: strconv.FormatFloat(info.conf, 'e', -1, 64),
 		})
-		if cor.protocol {
-			node.SetAttr(newTE, xml.Attr{
-				Name:  xml.Name{Local: "dataTypeDetails"},
-				Value: info.String(),
-			})
-		}
+		node.SetAttr(newTE, xml.Attr{
+			Name:  xml.Name{Local: "dataTypeDetails"},
+			Value: info.String(),
+		})
 	}
 	newTE.FirstChild = newU
 	newU.Parent = newTE
@@ -151,12 +146,10 @@ func (cor *corrector) makeTextEquiv(unicodes []*xmlquery.Node) *xmlquery.Node {
 		Name:  xml.Name{Local: "conf"},
 		Value: conf,
 	})
-	if cor.protocol {
-		node.SetAttr(newTE, xml.Attr{
-			Name:  xml.Name{Local: "dataType"},
-			Value: "OCR-D-CIS-POST-CORRECTION",
-		})
-	}
+	node.SetAttr(newTE, xml.Attr{
+		Name:  xml.Name{Local: "dataType"},
+		Value: "OCR-D-CIS-POST-CORRECTION",
+	})
 	return newTE
 }
 
