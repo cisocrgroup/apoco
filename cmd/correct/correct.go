@@ -30,7 +30,8 @@ func init() {
 	var loglevel string
 	CMD.Flags().StringVarP(&loglevel, "log-level", "l", "INFO", "set log level [ignored]")
 	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
-	CMD.Flags().StringSliceVarP(&flags.ifgs, "extensions", "e", nil, "set input file extensions")
+	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
+		"set input file extensions")
 	CMD.Flags().StringVarP(&flags.ofg, "output-file-grp", "O", "", "set output file group")
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
 	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
@@ -74,15 +75,15 @@ func run(_ *cobra.Command, args []string) {
 				fmt.Printf("%s\n", info)
 			}
 		}
-	} else {
-		cor := corrector{
-			info: infoMap,
-			mets: flags.mets,
-			ifgs: append(args, flags.ifgs...),
-			ofg:  flags.ofg,
-		}
-		chk(cor.correct())
+		return
 	}
+	cor := corrector{
+		info: infoMap,
+		mets: flags.mets,
+		ifgs: append(args, flags.ifgs...),
+		ofg:  flags.ofg,
+	}
+	chk(cor.correct())
 }
 
 func correct(m infoMap) apoco.StreamFunc {
