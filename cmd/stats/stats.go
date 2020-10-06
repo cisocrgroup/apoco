@@ -15,10 +15,10 @@ import (
 )
 
 var flags = struct {
-	ifgs          []string
-	mets          string
-	limit         int
-	verbose, json bool
+	ifgs       []string
+	mets       string
+	limit      int
+	info, json bool
 }{}
 
 // CMD runs the apoco stats command.
@@ -31,8 +31,8 @@ var CMD = &cobra.Command{
 func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
 	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
-	CMD.Flags().IntVarP(&flags.limit, "limit", "l", 0, "set limit for the profiler's candidate set")
-	CMD.Flags().BoolVarP(&flags.verbose, "verbose", "v", false, "verbose output of stats")
+	CMD.Flags().IntVarP(&flags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
+	CMD.Flags().BoolVarP(&flags.info, "info", "i", false, "print out correction information")
 	CMD.Flags().BoolVarP(&flags.json, "json", "j", false, "output as gnuplot dat format [ignored]")
 }
 
@@ -55,7 +55,7 @@ func handleSimple() {
 			if _, err := fmt.Sscanf(dtd, "#filename=%s", &tmp); err != nil {
 				continue
 			}
-			if filename != "" {
+			if filename != "" && !flags.info {
 				s.write(filename)
 			}
 			filename = tmp
@@ -64,14 +64,18 @@ func handleSimple() {
 		}
 		chk(s.stat(dtd))
 	}
-	s.write(filename)
+	if !flags.info {
+		s.write(filename)
+	}
 }
 
 func handleIFGs(ifgs []string) {
 	for _, ifg := range ifgs {
 		var s stats
 		chk(eachWord(flags.mets, ifg, s.stat))
-		s.write(ifg)
+		if !flags.info {
+			s.write(ifg)
+		}
 	}
 }
 
@@ -145,8 +149,9 @@ func (s *stats) stat(dtd string) error {
 	if err := parseDTD(dtd, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
 		return fmt.Errorf("stat: %v", err)
 	}
-	if flags.verbose {
-		verbose(skipped, short, lex, cor, rank, ocr, sug, gt)
+	if flags.info {
+		printErrors(skipped, short, lex, cor, rank, ocr, sug, gt)
+		return nil
 	}
 	s.total++
 	if skipped {
@@ -356,7 +361,7 @@ func (s *stats) write(name string) {
 
 const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
 
-func verbose(skipped, short, lex, cor bool, rank int, ocr, sug, gt string) {
+func printErrors(skipped, short, lex, cor bool, rank int, ocr, sug, gt string) {
 	write := func(pre string) {
 		fmt.Printf(pre+dtdFormat+"\n", skipped, short, lex, cor, rank, ocr, sug, gt)
 	}
