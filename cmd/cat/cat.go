@@ -5,39 +5,57 @@ import (
 	"fmt"
 	"log"
 
-	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
 
-func init() {
-	flags.Init(CMD)
-}
-
-var flags internal.Flags
+var flags = struct {
+	ifgs, extensions []string
+	mets             string
+}{}
 
 // CMD defines the apoco cat command.
 var CMD = &cobra.Command{
-	Use:   "cat [INPUT...]",
-	Short: "Output tokens",
+	Use:   "cat [DIRS...]",
+	Short: "Output tokens to stdout",
 	Run:   run,
+}
+
+func init() {
+	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
+	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
+		"set input file extensions")
+	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
 }
 
 func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
-	_ = apoco.Pipe(ctx, g, flags.Tokenize(args), apoco.Normalize, cat)
+	_ = apoco.Pipe(ctx, g, tokenize(flags.mets, flags.ifgs, flags.extensions, args), apoco.Normalize, cat)
 	chk(g.Wait())
 }
 
 func cat(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
 	g.Go(func() error {
 		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-			_, err := fmt.Printf("%s\n", t)
+			_, err := fmt.Printf("%s@%s\n", t.File, t)
 			return err
 		})
 	})
 	return nil
+}
+
+func tokenize(mets string, ifgs, exts, args []string) apoco.StreamFunc {
+	if len(ifgs) != 0 {
+		return pagexml.Tokenize(mets, ifgs...)
+	}
+	if len(exts) == 1 && exts[0] == ".xml" {
+		return pagexml.TokenizeDirs(exts[0], args...)
+	}
+	e := snippets.Extensions(exts)
+	return e.Tokenize(args...)
 }
 
 func chk(err error) {
