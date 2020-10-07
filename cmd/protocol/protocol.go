@@ -1,4 +1,4 @@
-package catprot
+package protocol
 
 import (
 	"encoding/json"
@@ -8,20 +8,13 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
 )
 
-var flags = internal.Flags{}
-
-func init() {
-	flags.Init(CMD)
-}
-
 // CMD defines the apoco catprot command.
 var CMD = &cobra.Command{
-	Use:   "catprot",
-	Short: "Output stats from a-i-pocoto protocols",
+	Use:   "protocol [INPUT...]",
+	Short: "Output stats from a-i-pocoto protocol files",
 	Run:   run,
 }
 
