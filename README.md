@@ -10,3 +10,6 @@
 # Automatic post-correction
 Apoco implements simple automatic post-correction of (historical)
 OCR-ed documents.
+
+## Installation
+`go get git.sr.ht/~flobal/apoco`
