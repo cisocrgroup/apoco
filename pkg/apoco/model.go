@@ -26,6 +26,7 @@ type modelData struct {
 // model does not contain a valid ngram frequency list, the list is
 // loaded from the given path.
 func ReadModel(model, ngrams string) (Model, error) {
+	log.Printf("reading model from %s", model)
 	in, err := os.Open(model)
 	if os.IsNotExist(err) {
 		m := Model{Models: make(map[string]map[int]modelData)}
@@ -57,7 +58,7 @@ func ReadModel(model, ngrams string) (Model, error) {
 }
 
 func (m *Model) readGzippedNgrams(path string) error {
-	log.Printf("readGzippedNgrams(%q)", path)
+	log.Printf("reading ngrams from %s", path)
 	is, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("readGzippedNGrams %s: %v", path, err)

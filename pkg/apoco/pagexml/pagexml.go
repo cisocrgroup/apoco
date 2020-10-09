@@ -34,7 +34,7 @@ func Tokenize(mets string, fgs ...string) apoco.StreamFunc {
 					return fmt.Errorf("tokenize %s: %v", mets, err)
 				}
 				for _, file := range files {
-					if err := tokenizePageXML(ctx, fg, file, out); err != nil {
+					if err := tokenizePageXML(ctx, filepath.Dir(file), file, out); err != nil {
 						return err
 					}
 				}

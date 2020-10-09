@@ -84,19 +84,19 @@ func (e Extensions) sendTokensFromSnippets(ctx context.Context, out chan<- apoco
 	var lines []apoco.Chars
 	pairs, err := readFile(file)
 	if err != nil {
-		return fmt.Errorf("readTokensFromSnippets: %v", err)
+		return fmt.Errorf("sendTokensFromSnippets: %v", err)
 	}
 	lines = append(lines, pairs)
 	for i := 1; i < len(e); i++ {
 		path := file[0:len(file)-len(e[0])] + e[i]
 		pairs, err := readFile(path)
 		if err != nil {
-			return fmt.Errorf("readTokensFromSnippets: %v", err)
+			return fmt.Errorf("sendTokensFromSnippets %s: %v", file, err)
 		}
 		lines = append(lines, pairs)
 	}
 	if err := sendTokens(ctx, out, bdir, file, lines); err != nil {
-		return fmt.Errorf("readTokensFromSnippets: %v", err)
+		return fmt.Errorf("sendTokensFromSnippets: %v", err)
 	}
 	return nil
 }

@@ -198,7 +198,7 @@ func cachePath(dir string) (string, bool) {
 		return "", false
 	}
 	name := fmt.Sprintf("%x", fnv.New128a().Sum([]byte(abs)))
-	return filepath.Join(cacheDir, "apoco", name), true
+	return filepath.Join(cacheDir, "apoco", name+".json.gz"), true
 }
 
 func readCachedProfile(fg string) (gofiler.Profile, bool) {

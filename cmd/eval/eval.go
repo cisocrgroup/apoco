@@ -29,7 +29,7 @@ func init() {
 		"set the path to the configuration file")
 	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
 		"set the input file extensions")
-	CMD.PersistentFlags().StringVarP(&flags.model, "model", "m", "",
+	CMD.PersistentFlags().StringVarP(&flags.model, "model", "M", "",
 		"set the model path (overwrites the setting in the configuration file)")
 	CMD.PersistentFlags().IntVarP(&flags.nocr, "nocr", "n", 0,
 		"set the number of parallel OCRs (overwrites the setting in the configuration file)")
