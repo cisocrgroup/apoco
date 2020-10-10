@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"log"
 	"os"
@@ -193,12 +192,12 @@ func cachePath(dir string) (string, bool) {
 		return "", false
 	}
 	abs, err := filepath.Abs(dir)
-	log.Printf("abs path = %s", abs)
 	if err != nil {
 		return "", false
 	}
-	name := fmt.Sprintf("%x", fnv.New128a().Sum([]byte(abs)))
-	return filepath.Join(cacheDir, "apoco", name+".json.gz"), true
+	log.Printf("absolute path = %s", abs)
+	name := strings.ReplaceAll(abs, "/", "-")[1:] + ".json.gz"
+	return filepath.Join(cacheDir, "apoco", name), true
 }
 
 func readCachedProfile(fg string) (gofiler.Profile, bool) {
