@@ -195,7 +195,6 @@ func cachePath(dir string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	log.Printf("absolute path = %s", abs)
 	name := strings.ReplaceAll(abs, "/", "-")[1:]
 	return filepath.Join(cacheDir, "apoco", name), true
 }
