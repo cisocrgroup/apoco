@@ -232,10 +232,7 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 					fg = t.Group
 				}
 				if fg != t.Group { // new file group
-					if err := loader.load(ctx); err != nil {
-						return fmt.Errorf("connectLM: %v", err)
-					}
-					if err := SendTokens(ctx, out, loader.tokens...); err != nil {
+					if err := loader.loadAndSend(ctx, out); err != nil {
 						return fmt.Errorf("connectLM: %v", err)
 					}
 					loader.tokens = loader.tokens[0:0]
@@ -249,10 +246,7 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 				return fmt.Errorf("connectLM: %v", err)
 			}
 			if len(loader.tokens) > 0 {
-				if err := loader.load(ctx); err != nil {
-					return fmt.Errorf("connectLM: %v", err)
-				}
-				if err := SendTokens(ctx, out, loader.tokens...); err != nil {
+				if err := loader.loadAndSend(ctx, out); err != nil {
 					return fmt.Errorf("connectLM: %v", err)
 				}
 			}
@@ -266,6 +260,16 @@ type lmLoader struct {
 	lm     *LanguageModel
 	tokens []Token
 	config *Config
+}
+
+func (l lmLoader) loadAndSend(ctx context.Context, out chan<- Token) error {
+	if err := l.load(ctx); err != nil {
+		return fmt.Errorf("loadAndSend: %v", err)
+	}
+	if err := SendTokens(ctx, out, l.tokens...); err != nil {
+		return fmt.Errorf("loadAndSend: %v", err)
+	}
+	return nil
 }
 
 func (l lmLoader) load(ctx context.Context) error {
