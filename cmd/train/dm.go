@@ -19,11 +19,6 @@ var dmCMD = &cobra.Command{
 	Run:   dmRun,
 }
 
-func init() {
-	dmCMD.Flags().BoolVarP(&flags.cautious, "cautious", "a", false,
-		"use cautious training (overwrites the setting in the configuration file)")
-}
-
 func dmRun(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameters)
 	chk(err)
