@@ -141,6 +141,8 @@ type stats struct {
 	SkippedDoNotCareMC, SkippedDoNotCareBL          int
 	DoNotCareBR, SkippedDoNotCareBR                 int
 	TotalErrBefore, TotalErrAfter, Total            int
+	Improvement, ErrorRateBefore, ErrorRateAfter    float64
+	AccuracyBefore, AccuracyAfter                   float64
 }
 
 func (s *stats) stat(dtd string) error {
@@ -306,63 +308,65 @@ func (s *stats) stat(dtd string) error {
 }
 
 func (s *stats) write(name string) {
+	s.ErrorRateBefore = float64(s.TotalErrBefore) / float64(s.Total)
+	s.ErrorRateAfter = float64(s.TotalErrAfter) / float64(s.Total)
+	s.Improvement = float64(s.TotalErrBefore-s.TotalErrAfter) / float64(s.TotalErrAfter) * 100
+	s.AccuracyBefore = 1.0 - s.ErrorRateBefore
+	s.AccuracyAfter = 1.0 - s.ErrorRateAfter
 	if flags.json {
 		chk(json.NewEncoder(os.Stdout).Encode(s))
 		return
 	}
-	errb := float64(s.TotalErrBefore) / float64(s.Total)
-	erra := float64(s.TotalErrAfter) / float64(s.Total)
-	impr := float64(s.TotalErrBefore-s.TotalErrAfter) / float64(s.TotalErrAfter) * 100
-	fmt.Printf("name                                = %s\n", name)
-	fmt.Printf("improvement (percent)               = %f\n", impr)
-	fmt.Printf("error rate (before/after)           = %f/%f\n", errb, erra)
-	fmt.Printf("accuracy (before/after)             = %f/%f\n", 1.0-errb, 1.0-erra)
-	fmt.Printf("Total errors (before/after)         = %d/%d\n", s.TotalErrBefore, s.TotalErrAfter)
-	fmt.Printf("correct (before/after)              = %d/%d\n",
+	fmt.Printf("name                              = %s\n", name)
+	fmt.Printf("improvement (percent)             = %f\n", s.Improvement)
+	fmt.Printf("error rate (before/after)         = %f/%f\n", s.ErrorRateBefore, s.ErrorRateAfter)
+	fmt.Printf("accuracy (before/after)           = %f/%f\n", s.AccuracyBefore, s.AccuracyAfter)
+	fmt.Printf("Total errors (before/after)       = %d/%d\n", s.TotalErrBefore, s.TotalErrAfter)
+	fmt.Printf("correct (before/after)            = %d/%d\n",
 		s.Total-s.TotalErrBefore, s.Total-s.TotalErrAfter)
-	fmt.Printf("missing correction                  = %d\n",
+	fmt.Printf("missing correction                = %d\n",
 		s.DodgedBulletsMC+s.DisimprovementMC+s.DoNotCareMC+s.SkippedDoNotCareMC)
-	fmt.Printf("bad rank                            = %d\n",
+	fmt.Printf("bad rank                          = %d\n",
 		s.DodgedBulletsBR+s.DisimprovementBR+s.DoNotCareBR+s.SkippedDoNotCareBR)
-	fmt.Printf("bad limit                           = %d\n",
+	fmt.Printf("bad limit                         = %d\n",
 		s.DodgedBulletsBL+s.DisimprovementBL+s.DoNotCareBL+s.SkippedDoNotCareBL)
-	fmt.Printf("merges                              = %d\n", s.SkippedMerges+s.Merges)
-	fmt.Printf("splits                              = %d\n", s.SkippedSplits+s.Splits)
-	fmt.Printf("Total tokens                        = %d\n", s.Total)
-	fmt.Printf("├─ skipped                          = %d\n", s.Skipped)
-	fmt.Printf("│  ├─ short                         = %d\n", s.Short)
-	fmt.Printf("│  │  └─ errors                     = %d\n", s.ShortErr)
-	fmt.Printf("│  ├─ no candidate                  = %d\n", s.NoCands)
-	fmt.Printf("│  │  └─ errors                     = %d\n", s.NoCandsErr)
-	fmt.Printf("│  └─ lexicon entries               = %d\n", s.Lex)
-	fmt.Printf("│     └─ false friends              = %d\n", s.LexErr)
-	fmt.Printf("└─ suspicious                       = %d\n", s.Suspicious)
-	fmt.Printf("   ├─ replaced                      = %d\n", s.Replaced)
-	fmt.Printf("   │  ├─ ocr correct                = %d\n", s.OCRCorrect)
-	fmt.Printf("   │  │  ├─ redundant correction    = %d\n", s.RedundandCorrection)
-	fmt.Printf("   │  │  └─ infelicitous correction = %d\n", s.Disimprovement)
-	fmt.Printf("   │  │     ├─ bad rank             = %d\n", s.DisimprovementBR)
-	fmt.Printf("   │  │     ├─ bad limit            = %d\n", s.DisimprovementBL)
-	fmt.Printf("   │  │     └─ missing correction   = %d\n", s.DisimprovementMC)
-	fmt.Printf("   │  └─ ocr not correct            = %d\n", s.OCRIncorrect)
-	fmt.Printf("   │     ├─ successful correction   = %d\n", s.SuccessfulCorrection)
-	fmt.Printf("   │     └─ do not care             = %d\n", s.DoNotCare)
-	fmt.Printf("   │        ├─ bad rank             = %d\n", s.DoNotCareBR)
-	fmt.Printf("   │        ├─ bad limit            = %d\n", s.DoNotCareBL)
-	fmt.Printf("   │        └─ missing correction   = %d\n", s.DoNotCareMC)
-	fmt.Printf("   └─ not replaced                  = %d\n", s.NotReplaced)
-	fmt.Printf("      ├─ ocr correct                = %d\n", s.OCRCorrectNR)
-	fmt.Printf("      │  ├─ ocr accept              = %d\n", s.OCRAccept)
-	fmt.Printf("      │  └─ dodged bullets          = %d\n", s.DodgedBullets)
-	fmt.Printf("      │     ├─ bad rank             = %d\n", s.DodgedBulletsBR)
-	fmt.Printf("      │     ├─ bad limit            = %d\n", s.DodgedBulletsBL)
-	fmt.Printf("      │     └─ missing correction   = %d\n", s.DodgedBulletsMC)
-	fmt.Printf("      └─ ocr not correct            = %d\n", s.OCRIncorrectNR)
-	fmt.Printf("         ├─ missed opportunity      = %d\n", s.MissedOpportunity)
-	fmt.Printf("         └─ skipped do not care     = %d\n", s.SkippedDoNotCare)
-	fmt.Printf("            ├─ bad rank             = %d\n", s.SkippedDoNotCareBR)
-	fmt.Printf("            ├─ bad limit            = %d\n", s.SkippedDoNotCareBL)
-	fmt.Printf("            └─ missing correction   = %d\n", s.SkippedDoNotCareMC)
+	fmt.Printf("merges                            = %d\n", s.SkippedMerges+s.Merges)
+	fmt.Printf("splits                            = %d\n", s.SkippedSplits+s.Splits)
+	fmt.Printf("Total tokens                      = %d\n", s.Total)
+	fmt.Printf("├─ skipped                        = %d\n", s.Skipped)
+	fmt.Printf("│  ├─ short                       = %d\n", s.Short)
+	fmt.Printf("│  │  └─ errors                   = %d\n", s.ShortErr)
+	fmt.Printf("│  ├─ no candidate                = %d\n", s.NoCands)
+	fmt.Printf("│  │  └─ errors                   = %d\n", s.NoCandsErr)
+	fmt.Printf("│  └─ lexicon entries             = %d\n", s.Lex)
+	fmt.Printf("│     └─ false friends            = %d\n", s.LexErr)
+	fmt.Printf("└─ suspicious                     = %d\n", s.Suspicious)
+	fmt.Printf("   ├─ replaced                    = %d\n", s.Replaced)
+	fmt.Printf("   │  ├─ ocr correct              = %d\n", s.OCRCorrect)
+	fmt.Printf("   │  │  ├─ redundant correction  = %d\n", s.RedundandCorrection)
+	fmt.Printf("   │  │  └─ disimprovement        = %d\n", s.Disimprovement)
+	fmt.Printf("   │  │     ├─ bad rank           = %d\n", s.DisimprovementBR)
+	fmt.Printf("   │  │     ├─ bad limit          = %d\n", s.DisimprovementBL)
+	fmt.Printf("   │  │     └─ missing correction = %d\n", s.DisimprovementMC)
+	fmt.Printf("   │  └─ ocr not correct          = %d\n", s.OCRIncorrect)
+	fmt.Printf("   │     ├─ successful correction = %d\n", s.SuccessfulCorrection)
+	fmt.Printf("   │     └─ do not care           = %d\n", s.DoNotCare)
+	fmt.Printf("   │        ├─ bad rank           = %d\n", s.DoNotCareBR)
+	fmt.Printf("   │        ├─ bad limit          = %d\n", s.DoNotCareBL)
+	fmt.Printf("   │        └─ missing correction = %d\n", s.DoNotCareMC)
+	fmt.Printf("   └─ not replaced                = %d\n", s.NotReplaced)
+	fmt.Printf("      ├─ ocr correct              = %d\n", s.OCRCorrectNR)
+	fmt.Printf("      │  ├─ ocr accept            = %d\n", s.OCRAccept)
+	fmt.Printf("      │  └─ dodged bullets        = %d\n", s.DodgedBullets)
+	fmt.Printf("      │     ├─ bad rank           = %d\n", s.DodgedBulletsBR)
+	fmt.Printf("      │     ├─ bad limit          = %d\n", s.DodgedBulletsBL)
+	fmt.Printf("      │     └─ missing correction = %d\n", s.DodgedBulletsMC)
+	fmt.Printf("      └─ ocr not correct          = %d\n", s.OCRIncorrectNR)
+	fmt.Printf("         ├─ missed opportunity    = %d\n", s.MissedOpportunity)
+	fmt.Printf("         └─ skipped do not care   = %d\n", s.SkippedDoNotCare)
+	fmt.Printf("            ├─ bad rank           = %d\n", s.SkippedDoNotCareBR)
+	fmt.Printf("            ├─ bad limit          = %d\n", s.SkippedDoNotCareBL)
+	fmt.Printf("            └─ missing correction = %d\n", s.SkippedDoNotCareMC)
 }
 
 const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
