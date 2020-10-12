@@ -7,7 +7,7 @@ import (
 )
 
 // Version defines the version of apoco.
-const Version = "v0.0.4"
+const Version = "v0.0.5"
 
 // IDFromFilePath generates an id based on the file group and the file
 // path.
