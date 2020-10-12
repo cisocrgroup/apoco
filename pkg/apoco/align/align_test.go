@@ -26,9 +26,9 @@ func Test(t *testing.T) {
 			for i := range pos {
 				for j := range pos[i] {
 					if j == 0 {
-						got = append(got, string(pos[i][j].Slice([]rune(tc.master))))
+						got = append(got, string(pos[i][j].Slice()))
 					} else {
-						got = append(got, string(pos[i][j].Slice([]rune(tc.other))))
+						got = append(got, string(pos[i][j].Slice()))
 					}
 				}
 			}

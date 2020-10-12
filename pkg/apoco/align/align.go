@@ -7,11 +7,12 @@ import (
 // Pos represents the start and end position of an alignment.
 type Pos struct {
 	B, E int
+	str  []rune
 }
 
 // Slice returns the slice of base for the position.
-func (p Pos) Slice(base []rune) []rune {
-	return base[p.B:p.E]
+func (p Pos) Slice() []rune {
+	return p.str[p.B:p.E]
 }
 
 // Do aligns the words in master pairwise with the words in other.
@@ -22,11 +23,11 @@ func Do(master []rune, other ...[]rune) [][]Pos {
 	for i := range master {
 		if unicode.IsSpace(master[i]) {
 			spaces = append(spaces, i)
-			words = append(words, []Pos{{B: b + 1, E: i}})
+			words = append(words, []Pos{{B: b + 1, E: i, str: master}})
 			b = i
 		}
 	}
-	words = append(words, []Pos{{B: b + 1, E: len(master)}})
+	words = append(words, []Pos{{B: b + 1, E: len(master), str: master}})
 	for i := 0; i < len(other); i++ {
 		alignments := alignAt(spaces, other[i])
 		for j := range words {
@@ -52,13 +53,13 @@ func alignAt(spaces []int, str []rune) []Pos {
 		if e <= b { // (e <= b) -> (b>=0) -> len(ret) > 0
 			b = ret[len(ret)-1].B
 		}
-		ret = append(ret, Pos{B: b, E: e})
+		ret = append(ret, Pos{B: b, E: e, str: str})
 		b = e
 	}
 	if len(str) <= b { // see above
-		ret = append(ret, Pos{B: ret[len(ret)-1].B, E: len(str)})
+		ret = append(ret, Pos{B: ret[len(ret)-1].B, E: len(str), str: str})
 	} else {
-		ret = append(ret, Pos{B: b + 1, E: len(str)})
+		ret = append(ret, Pos{B: b + 1, E: len(str), str: str})
 	}
 	return ret
 }

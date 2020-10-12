@@ -113,7 +113,7 @@ func sendTokens(ctx context.Context, out chan<- apoco.Token, bdir, file string, 
 			if j == 0 {
 				t.Chars = lines[j][p.B:p.E]
 			}
-			t.Tokens = append(t.Tokens, string(p.Slice(runes(lines[j])))) //lines[j][p.b:p.e])))
+			t.Tokens = append(t.Tokens, string(p.Slice())) //lines[j][p.b:p.e])))
 		}
 		if err := apoco.SendTokens(ctx, out, t); err != nil {
 			return fmt.Errorf("sendTokens: %v", err)

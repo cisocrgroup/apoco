@@ -284,7 +284,7 @@ func (r *region) alignWith(o region) error {
 		// Since we align two things, len(pos[i]) = 2.
 		pi := pepos[pos[i][0].E]
 		si := sepos[pos[i][1].E]
-		text := string(pos[i][1].Slice(sstr))
+		text := string(pos[i][1].Slice())
 		var b int
 		if i > 0 {
 			b = sepos[pos[i-1][1].E]
