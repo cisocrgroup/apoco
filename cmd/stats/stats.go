@@ -34,7 +34,7 @@ func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
 	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
 	CMD.Flags().IntVarP(&flags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
-	CMD.Flags().BoolVarP(&flags.info, "skip-short", "s", false,
+	CMD.Flags().BoolVarP(&flags.skipShort, "skip-short", "s", false,
 		"exclude short tokens (len<3) from the evaluation")
 	CMD.Flags().BoolVarP(&flags.info, "info", "i", false, "print out correction information")
 	CMD.Flags().BoolVarP(&flags.json, "json", "j", false, "output as json")
