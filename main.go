@@ -3,6 +3,7 @@ package main
 import (
 	"git.sr.ht/~flobar/apoco/cmd/align"
 	"git.sr.ht/~flobar/apoco/cmd/cat"
+	"git.sr.ht/~flobar/apoco/cmd/charset"
 	"git.sr.ht/~flobar/apoco/cmd/correct"
 	"git.sr.ht/~flobar/apoco/cmd/eval"
 	"git.sr.ht/~flobar/apoco/cmd/protocol"
@@ -21,6 +22,7 @@ func init() {
 	root.AddCommand(
 		align.CMD,
 		cat.CMD,
+		charset.CMD,
 		correct.CMD,
 		eval.CMD,
 		protocol.CMD,
