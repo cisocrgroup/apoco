@@ -78,15 +78,15 @@ func charset(gt, ocr, cor cset) apoco.StreamFunc {
 }
 
 func output(gt, ocr, cor cset) {
-	fmt.Printf("gt:      %s\n", gt)
-	fmt.Printf("ocr:     %s\n", ocr)
-	fmt.Printf("cor:     %s\n", cor)
-	fmt.Printf("gt\\ocr:  %s\n", gt.dif(ocr))
-	fmt.Printf("gt\\cor:  %s\n", gt.dif(cor))
-	fmt.Printf("ocr\\gt:  %s\n", ocr.dif(gt))
-	fmt.Printf("ocr\\cor: %s\n", ocr.dif(cor))
-	fmt.Printf("cor\\gt:  %s\n", cor.dif(gt))
-	fmt.Printf("cor\\ocr: %s\n", cor.dif(ocr))
+	fmt.Printf("gt:      %q\n", gt)
+	fmt.Printf("ocr:     %q\n", ocr)
+	fmt.Printf("cor:     %q\n", cor)
+	fmt.Printf("gt\\ocr:  %q\n", gt.dif(ocr))
+	fmt.Printf("gt\\cor:  %q\n", gt.dif(cor))
+	fmt.Printf("ocr\\gt:  %q\n", ocr.dif(gt))
+	fmt.Printf("ocr\\cor: %q\n", ocr.dif(cor))
+	fmt.Printf("cor\\gt:  %q\n", cor.dif(gt))
+	fmt.Printf("cor\\ocr: %q\n", cor.dif(ocr))
 }
 
 func tokenize(mets string, ifgs, exts, args []string) apoco.StreamFunc {
