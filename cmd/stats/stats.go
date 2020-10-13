@@ -20,6 +20,7 @@ var flags = struct {
 	mets       string
 	limit      int
 	info, json bool
+	skipShort  bool
 }{}
 
 // CMD runs the apoco stats command.
@@ -33,6 +34,8 @@ func init() {
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
 	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
 	CMD.Flags().IntVarP(&flags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
+	CMD.Flags().BoolVarP(&flags.info, "skip-short", "s", false,
+		"exclude short tokens (len<3) from the evaluation")
 	CMD.Flags().BoolVarP(&flags.info, "info", "i", false, "print out correction information")
 	CMD.Flags().BoolVarP(&flags.json, "json", "j", false, "output as json")
 }
@@ -156,6 +159,12 @@ func (s *stats) stat(dtd string) error {
 		printErrors(skipped, short, lex, cor, rank, ocr, sug, gt)
 		return nil
 	}
+	// Exclude short tokens from the complete evaluation if
+	// the flags.skipShort option is set.
+	if flags.skipShort && skipped && short {
+		return nil
+	}
+	// Update counts.
 	s.Total++
 	if skipped {
 		s.Skipped++
