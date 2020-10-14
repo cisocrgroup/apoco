@@ -30,7 +30,7 @@ func init() {
 	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
 		"set input file extensions")
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
-	CMD.Flags().BoolVarP(&flags.normalize, "normalize", "n", false, "normalize tokens")
+	CMD.Flags().BoolVarP(&flags.normalize, "normalize", "N", false, "normalize tokens")
 	CMD.Flags().BoolVarP(&flags.file, "file", "f", false, "print file path of tokens")
 }
 
