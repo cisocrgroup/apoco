@@ -15,6 +15,7 @@ import (
 var flags = struct {
 	ifgs, extensions []string
 	mets             string
+	normalize, file  bool
 }{}
 
 // CMD defines the apoco cat command.
@@ -29,22 +30,36 @@ func init() {
 	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
 		"set input file extensions")
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
+	CMD.Flags().BoolVarP(&flags.normalize, "normalize", "n", false, "normalize tokens")
+	CMD.Flags().BoolVarP(&flags.normalize, "file", "f", false, "print file path of tokens")
 }
 
 func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
-	_ = apoco.Pipe(ctx, g, tokenize(flags.mets, flags.ifgs, flags.extensions, args), apoco.Normalize, cat)
+	if flag.normalize {
+		_ = apoco.Pipe(ctx, g,
+			tokenize(flags.mets, flags.ifgs, flags.extensions, args), apoco.Normalize, cat(flags.file))
+	} else {
+		_ = apoco.Pipe(ctx, g, tokenize(flags.mets, flags.ifgs, flags.extensions, args), cat(flags.file))
+	}
 	chk(g.Wait())
 }
 
-func cat(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-	g.Go(func() error {
-		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-			_, err := fmt.Printf("%s@%s\n", t.File, t)
-			return err
+func cat(file bool) apoco.StreamFunc {
+	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
+		g.Go(func() error {
+			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+				if file {
+					_, err := fmt.Printf("%s@%s\n", t.File, t)
+					return err
+				} else {
+					_, err := fmt.Printf("%s\n", t)
+					return err
+				}
+			})
 		})
-	})
-	return nil
+		return nil
+	}
 }
 
 func tokenize(mets string, ifgs, exts, args []string) apoco.StreamFunc {
