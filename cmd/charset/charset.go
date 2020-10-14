@@ -119,6 +119,8 @@ func (s cset) add(str string) {
 		// Combine combining characters with their
 		// predecessors.
 		if unicode.In(r, unicode.M) {
+			// Put a base character in front of the
+			// combining character.
 			if b.String() == "" {
 				b.WriteRune('◌')
 			}
