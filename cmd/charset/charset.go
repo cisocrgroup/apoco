@@ -20,7 +20,7 @@ var flags = struct {
 	ifgs, extensions []string
 	mets, parameters string
 	nocr             int
-	cache            bool
+	cache, normalize bool
 }{}
 
 // CMD runs the apoco charset command.
@@ -40,6 +40,7 @@ func init() {
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0,
 		"set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
+	CMD.Flags().BoolVarP(&flags.normalize, "normalize", "N", false, "normalize tokens")
 }
 
 func run(_ *cobra.Command, args []string) {
@@ -48,14 +49,24 @@ func run(_ *cobra.Command, args []string) {
 	c.Overwrite("", flags.nocr, false, flags.cache)
 	g, ctx := errgroup.WithContext(context.Background())
 	gt, ocr, cor := make(cset), make(cset), make(cset)
-	_ = apoco.Pipe(ctx, g,
-		tokenize(flags.mets, flags.ifgs, flags.extensions, args),
-		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
-		// apoco.Normalize,
-		apoco.ConnectLM(c, apoco.FreqList{}),
-		apoco.ConnectCandidates,
-		charset(gt, ocr, cor),
-	)
+	if flags.normalize {
+		_ = apoco.Pipe(ctx, g,
+			tokenize(flags.mets, flags.ifgs, flags.extensions, args),
+			apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
+			apoco.Normalize,
+			apoco.ConnectLM(c, apoco.FreqList{}),
+			apoco.ConnectCandidates,
+			charset(gt, ocr, cor),
+		)
+	} else {
+		_ = apoco.Pipe(ctx, g,
+			tokenize(flags.mets, flags.ifgs, flags.extensions, args),
+			apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
+			apoco.ConnectLM(c, apoco.FreqList{}),
+			apoco.ConnectCandidates,
+			charset(gt, ocr, cor),
+		)
+	}
 	chk(g.Wait())
 	output(gt, ocr, cor)
 }
