@@ -30,28 +30,37 @@ func run(_ *cobra.Command, args []string) {
 	s := bufio.NewScanner(os.Stdin)
 	gtset := make(cset)
 	var corrs []struct {
-		gt, sug string
-		taken   bool
+		ocr, sug, gt string
+		taken        bool
 	}
 	for s.Scan() {
+		line := s.Text()
+		if line == "" || line[0] == '#' {
+			continue
+		}
 		var skip, short, lex, cor bool
 		var rank int
 		var ocr, sug, gt string
-		chk(parseDTD(s.Text(), &skip, &short, &lex, &cor, &rank, &ocr, &sug, &gt))
+		chk(parseDTD(line, &skip, &short, &lex, &cor, &rank, &ocr, &sug, &gt))
 		gtset.add(gt)
+		if skip {
+			continue
+		}
 		if sug == gt {
 			continue
 		}
 		corrs = append(corrs, struct {
-			gt, sug string
-			taken   bool
-		}{gt, sug, cor})
+			ocr, sug, gt string
+			taken        bool
+		}{ocr, sug, gt, cor})
 	}
 	chk(s.Err())
 	for _, cor := range corrs {
-		bad := gtset.extractNotInSet(cor.sug)
-		fmt.Printf("bad=%q taken=%t %s %s", bad, cor.taken, cor.gt, cor.sug)
+		chars := gtset.extractNotInSet(cor.sug)
+		bad := chars != ""
+		fmt.Printf("badchars=%t taken=%t ocr=%s sug=%s gt=%s\n", bad, cor.taken, cor.ocr, cor.sug, cor.gt)
 	}
+	fmt.Printf("gtcharset=%q\n", gtset)
 }
 
 type cset map[string]struct{}
