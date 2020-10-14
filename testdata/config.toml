@@ -1,0 +1,45 @@
+##############################
+# Post-correction parameters #
+##############################
+
+# Path to the model.
+model = "model.gz"
+
+# Number of parallel OCRs.
+nocr = 2
+
+# Settings for the profiler.
+profilerBin = "/usr/share/bin/profiler"
+profilerConfig = "/etc/profiler/german.ini"
+
+# Set caching of profiler suggestions.
+cache = false
+
+#######################
+# Training parameters #
+#######################
+
+# Cautious or courageous decision maker training
+cautious = true
+
+# Path to the 3-gram model csv file.
+ngrams = "/etc/profiler/german/3gs.csv.gz"
+
+# Settings for the training variables.
+learningRate = 0.01
+ntrain = 1000
+
+# Features for the reranker training.
+rrFeatures = [
+"CandidateOCRPatternConf",
+"CandidateLevenshteinDist",
+"CandidateMatchesOCR",
+]
+
+# Features for the decision maker training.
+dmFeatures = [
+"RankingConf",
+"CandidateOCRPatternConf",
+"CandidateLevenshteinDist",
+"CandidateMatchesOCR",
+]
