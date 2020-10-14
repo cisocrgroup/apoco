@@ -1,19 +1,15 @@
 package charset
 
 import (
-	"context"
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strings"
 	"unicode"
 
-	"git.sr.ht/~flobar/apoco/pkg/apoco"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
-	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
 var flags = struct {
@@ -25,114 +21,68 @@ var flags = struct {
 
 // CMD runs the apoco charset command.
 var CMD = &cobra.Command{
-	Use:   "charset [DIRS...]",
-	Short: "Extract different character sets",
+	Use:   "charset",
+	Short: "Extract differences in character sets",
 	Run:   run,
 }
 
-func init() {
-	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
-	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
-	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
-		"set input file extensions")
-	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
-		"set path to the configuration file")
-	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0,
-		"set nocr (overwrites setting in the configuration file)")
-	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
-	CMD.Flags().BoolVarP(&flags.normalize, "normalize", "N", false, "normalize tokens")
-}
-
 func run(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameters)
-	chk(err)
-	c.Overwrite("", flags.nocr, false, flags.cache)
-	g, ctx := errgroup.WithContext(context.Background())
-	gt, ocr, cor := make(cset), make(cset), make(cset)
-	if flags.normalize {
-		_ = apoco.Pipe(ctx, g,
-			tokenize(flags.mets, flags.ifgs, flags.extensions, args),
-			apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
-			apoco.Normalize,
-			apoco.ConnectLM(c, apoco.FreqList{}),
-			apoco.ConnectCandidates,
-			charset(gt, ocr, cor),
-		)
-	} else {
-		_ = apoco.Pipe(ctx, g,
-			tokenize(flags.mets, flags.ifgs, flags.extensions, args),
-			apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
-			apoco.ConnectLM(c, apoco.FreqList{}),
-			apoco.ConnectCandidates,
-			charset(gt, ocr, cor),
-		)
+	s := bufio.NewScanner(os.Stdin)
+	gtset := make(cset)
+	var corrs []struct {
+		gt, sug string
+		taken   bool
 	}
-	chk(g.Wait())
-	output(gt, ocr, cor)
-}
-
-func charset(gt, ocr, cor cset) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		g.Go(func() error {
-			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				n := len(t.Tokens)
-				gt.add(t.Tokens[n-1])
-				for i := 0; i < n-1; i++ {
-					ocr.add(t.Tokens[i])
-				}
-				cor.add(t.Payload.(*gofiler.Candidate).Suggestion)
-				return nil
-			})
-		})
-		return nil
+	for s.Scan() {
+		var skip, short, lex, cor bool
+		var rank int
+		var ocr, sug, gt string
+		chk(parseDTD(s.Text(), &skip, &short, &lex, &cor, &rank, &ocr, &sug, &gt))
+		gtset.add(gt)
+		if sug == gt {
+			continue
+		}
+		corrs = append(corrs, struct {
+			gt, sug string
+			taken   bool
+		}{gt, sug, cor})
 	}
-}
-
-func output(gt, ocr, cor cset) {
-	fmt.Printf("gt:      %q\n", gt)
-	fmt.Printf("ocr:     %q\n", ocr)
-	fmt.Printf("cor:     %q\n", cor)
-	fmt.Printf("gt\\ocr:  %q\n", gt.dif(ocr))
-	fmt.Printf("gt\\cor:  %q\n", gt.dif(cor))
-	fmt.Printf("ocr\\gt:  %q\n", ocr.dif(gt))
-	fmt.Printf("ocr\\cor: %q\n", ocr.dif(cor))
-	fmt.Printf("cor\\gt:  %q\n", cor.dif(gt))
-	fmt.Printf("cor\\ocr: %q\n", cor.dif(ocr))
-}
-
-func tokenize(mets string, ifgs, exts, args []string) apoco.StreamFunc {
-	if len(ifgs) != 0 {
-		return pagexml.Tokenize(mets, ifgs...)
+	chk(s.Err())
+	for _, cor := range corrs {
+		bad := gtset.extractNotInSet(cor.sug)
+		fmt.Printf("bad=%q taken=%t %s %s", bad, cor.taken, cor.gt, cor.sug)
 	}
-	if len(exts) == 1 && exts[0] == ".xml" {
-		return pagexml.TokenizeDirs(exts[0], args...)
-	}
-	e := snippets.Extensions(exts)
-	return e.Tokenize(args...)
 }
 
 type cset map[string]struct{}
 
 func (s cset) add(str string) {
+	for g, r := nextGlyph(str); r != ""; g, r = nextGlyph(r) {
+		s[g] = struct{}{}
+	}
+}
+
+func nextGlyph(str string) (string, string) {
+	if str == "" {
+		return "", ""
+	}
 	var b strings.Builder
-	for _, r := range str {
-		// Combine combining characters with their
-		// predecessors.
-		if unicode.In(r, unicode.M) {
-			// Put a base character in front of the
-			// combining character.
-			if b.String() == "" {
+	for i, r := range str {
+		isComb := unicode.In(r, unicode.M)
+		if i == 0 {
+			if isComb {
 				b.WriteRune('◌')
 			}
 			b.WriteRune(r)
 			continue
 		}
-		s[b.String()] = struct{}{}
-		b.Reset()
-		b.WriteRune(r)
+		if isComb {
+			b.WriteRune(r)
+			continue
+		}
+		return b.String(), str[i:]
 	}
-	// Handle last rune(s).
-	s[b.String()] = struct{}{}
+	return b.String(), ""
 }
 
 func (s cset) sort() []string {
@@ -148,14 +98,14 @@ func (s cset) sort() []string {
 	return ret
 }
 
-func (s cset) dif(o cset) cset {
-	ret := make(cset)
-	for str := range s {
-		if _, ok := o[str]; !ok {
-			ret[str] = struct{}{}
+func (s cset) extractNotInSet(str string) string {
+	var b strings.Builder
+	for g, r := nextGlyph(str); r != ""; g, r = nextGlyph(r) {
+		if _, ok := s[g]; !ok {
+			b.WriteString(g)
 		}
 	}
-	return ret
+	return b.String()
 }
 
 func (s cset) String() string {
@@ -164,6 +114,15 @@ func (s cset) String() string {
 		b.WriteString(str)
 	}
 	return b.String()
+}
+
+func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
+	const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
+	_, err := fmt.Sscanf(dtd, dtdFormat, skip, short, lex, cor, rank, ocr, sug, gt)
+	if err != nil {
+		return fmt.Errorf("parseDTD: cannot parse %q: %v", dtd, err)
+	}
+	return nil
 }
 
 func chk(err error) {
