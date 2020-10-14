@@ -31,12 +31,12 @@ func init() {
 		"set input file extensions")
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
 	CMD.Flags().BoolVarP(&flags.normalize, "normalize", "n", false, "normalize tokens")
-	CMD.Flags().BoolVarP(&flags.normalize, "file", "f", false, "print file path of tokens")
+	CMD.Flags().BoolVarP(&flags.file, "file", "f", false, "print file path of tokens")
 }
 
 func run(_ *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
-	if flag.normalize {
+	if flags.normalize {
 		_ = apoco.Pipe(ctx, g,
 			tokenize(flags.mets, flags.ifgs, flags.extensions, args), apoco.Normalize, cat(flags.file))
 	} else {
