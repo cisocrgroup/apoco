@@ -107,7 +107,7 @@ func (s cset) add(str string) {
 	for _, r := range str {
 		// Combine combining characters with their
 		// predecessors.
-		if unicode.In(r, unicode.Mc) {
+		if unicode.In(r, unicode.M) {
 			b.WriteRune(r)
 			continue
 		}
