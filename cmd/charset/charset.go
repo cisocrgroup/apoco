@@ -51,7 +51,7 @@ func run(_ *cobra.Command, args []string) {
 	_ = apoco.Pipe(ctx, g,
 		tokenize(flags.mets, flags.ifgs, flags.extensions, args),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
-		apoco.Normalize,
+		// apoco.Normalize,
 		apoco.ConnectLM(c, apoco.FreqList{}),
 		apoco.ConnectCandidates,
 		charset(gt, ocr, cor),
