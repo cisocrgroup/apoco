@@ -83,24 +83,52 @@ func checkAgent(mets *xmlquery.Node, pstep, processor, version string) bool {
 }
 
 // FindFlocats returns the Flocat nodes for the given file group.
-func FindFlocats(doc *xmlquery.Node, fg string) []*xmlquery.Node {
+func FindFlocats(mets *xmlquery.Node, fg string) []*xmlquery.Node {
 	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='fileSec']"+
 		"/*[local-name()='fileGrp'][@USE=%q]/*[local-name()='file']"+
 		"/*[local-name()='FLocat']", fg)
-	return xmlquery.Find(doc, expr)
+	return xmlquery.Find(mets, expr)
 }
 
 // FlocatGetPath returns the path of the flocat's link relative to the
 // given mets file's base directory.
-func FlocatGetPath(flocat *xmlquery.Node, metsPath string) string {
-	link, _ := node.LookupAttr(flocat, xml.Name{Space: "xlink", Local: "href"})
-	return filepath.Join(filepath.Dir(metsPath), link)
+func FlocatGetPath(n *xmlquery.Node, path string) string {
+	link, _ := node.LookupAttr(n, xml.Name{Space: "xlink", Local: "href"})
+	return filepath.Join(filepath.Dir(path), link)
 }
 
 // FindFptr returns the Fptr node for the given (unique) id.
-func FindFptr(doc *xmlquery.Node, id string) *xmlquery.Node {
+func FindFptr(mets *xmlquery.Node, id string) *xmlquery.Node {
 	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='structMap']"+
 		"/*[local-name()='div']/*[local-name()='div']"+
 		"/*[local-name()='fptr'][@FILEID=%q]", id)
-	return xmlquery.FindOne(doc, expr)
+	return xmlquery.FindOne(mets, expr)
+}
+
+// FilePathsForFileGrp returns the list of file paths for the given
+// file group.  The returned file paths are updated to be relative to
+// the mets's file base directory if they are not absolute.
+func FilePathsForFileGrp(mets *xmlquery.Node, path, fg string) ([]string, error) {
+	base := filepath.Dir(path)
+	nodes := findFileGrpFLocatFromRoot(mets, fg)
+	ret := make([]string, len(nodes))
+	for i, n := range nodes {
+		link, ok := node.LookupAttr(n, xml.Name{Space: "xlink", Local: "href"})
+		if !ok {
+			return nil, fmt.Errorf("filePathsForFileGrp %s: missing href attribute", mets)
+		}
+		if filepath.IsAbs(link) {
+			ret[i] = link
+		} else {
+			ret[i] = filepath.Join(base, link)
+		}
+	}
+	return ret, nil
+}
+
+func findFileGrpFLocatFromRoot(doc *xmlquery.Node, fg string) []*xmlquery.Node {
+	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='fileSec']"+
+		"/*[local-name()='fileGrp'][@USE=%q]/*[local-name()='file']"+
+		"/*[local-name()='FLocat']", fg)
+	return xmlquery.Find(doc, expr)
 }

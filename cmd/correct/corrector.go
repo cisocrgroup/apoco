@@ -26,8 +26,11 @@ type corrector struct {
 }
 
 func (cor *corrector) correct() error {
+	if err := cor.readMETS(); err != nil {
+		return fmt.Errorf("correct: %v", err)
+	}
 	for _, ifg := range cor.ifgs {
-		files, err := pagexml.FilePathsForFileGrp(cor.mets, ifg)
+		files, err := mets.FilePathsForFileGrp(cor.doc, cor.mets, ifg)
 		if err != nil {
 			return fmt.Errorf("correct: %v", err)
 		}
@@ -36,14 +39,11 @@ func (cor *corrector) correct() error {
 				return fmt.Errorf("correct: %v", err)
 			}
 		}
-		if err := mets.AddAgent(cor.doc, "recognition/post-correction", "apoco correct", internal.Version); err != nil {
-			return fmt.Errorf("correct: %v", err)
-		}
-		xmlData := cor.doc.OutputXML(false)
-		xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
-		if err := ioutil.WriteFile(cor.mets, []byte(xmlData), 0666); err != nil {
-			return fmt.Errorf("correct: %v", err)
-		}
+	}
+	xmlData := cor.doc.OutputXML(false)
+	xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
+	if err := ioutil.WriteFile(cor.mets, []byte(xmlData), 0666); err != nil {
+		return fmt.Errorf("correct: %v", err)
 	}
 	return nil
 }
@@ -163,11 +163,6 @@ func (cor *corrector) makeUnicode(unicodes []*xmlquery.Node) *xmlquery.Node {
 }
 
 func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
-	if cor.doc == nil || cor.fileGrp == nil {
-		if err := cor.readMETS(); err != nil {
-			return err
-		}
-	}
 	ofile := cor.addFileToFileGrp(file, ifg)
 	dir := filepath.Join(filepath.Dir(cor.mets), cor.ofg)
 	ofile = filepath.Join(dir, ofile)
@@ -176,6 +171,9 @@ func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
 	xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
 	return ioutil.WriteFile(ofile, []byte(xmlData), 0666)
 }
+
+const pstep = "recognition/post-correction"
+const agent = "apoco correct"
 
 func (cor *corrector) readMETS() error {
 	is, err := os.Open(cor.mets)
@@ -186,6 +184,10 @@ func (cor *corrector) readMETS() error {
 	doc, err := xmlquery.Parse(is)
 	if err != nil {
 		return fmt.Errorf("readMETS %s: %v", cor.mets, err)
+	}
+	// Update agent in mets header file.
+	if err := mets.AddAgent(doc, pstep, agent, internal.Version); err != nil {
+		return fmt.Errorf("readMETS: %v", err)
 	}
 	// Check if the given file group already exists and overwrite it.
 	existing := xmlquery.FindOne(doc, fmt.Sprintf("//*[local-name()='fileGrp'][@USE=%q]", cor.ofg))
@@ -203,6 +205,7 @@ func (cor *corrector) readMETS() error {
 		return fmt.Errorf("readMETS %s: missing file grp", cor.mets)
 	}
 	cor.doc = doc
+	log.Printf("doc = %v", cor.doc)
 	cor.fileGrp = &xmlquery.Node{
 		Data:         "fileGrp",
 		Prefix:       fileGrps[0].Prefix,
