@@ -172,8 +172,7 @@ func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
 	return ioutil.WriteFile(ofile, []byte(xmlData), 0666)
 }
 
-const pstep = "recognition/post-correction"
-const agent = "apoco correct"
+const agent = "apoco correct " + internal.Version
 
 func (cor *corrector) readMETS() error {
 	is, err := os.Open(cor.mets)
@@ -186,7 +185,7 @@ func (cor *corrector) readMETS() error {
 		return fmt.Errorf("readMETS %s: %v", cor.mets, err)
 	}
 	// Update agent in mets header file.
-	if err := mets.AddAgent(doc, pstep, agent, internal.Version); err != nil {
+	if err := mets.AddAgent(doc, internal.PStep, agent); err != nil {
 		return fmt.Errorf("readMETS: %v", err)
 	}
 	// Check if the given file group already exists and overwrite it.

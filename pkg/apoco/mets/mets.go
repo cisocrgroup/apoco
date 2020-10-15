@@ -11,9 +11,9 @@ import (
 )
 
 // AddAgent adds an agent to the metsHdr of the mets tree.
-func AddAgent(mets *xmlquery.Node, pstep, processor, version string) error {
+func AddAgent(mets *xmlquery.Node, pstep, agent string) error {
 	// Check if the according agent is already registered.
-	if checkAgent(mets, pstep, processor, version) {
+	if checkAgent(mets, pstep, agent) {
 		return nil
 	}
 	// Get metsHdr node or create it if it does not exist, yet.
@@ -26,25 +26,25 @@ func AddAgent(mets *xmlquery.Node, pstep, processor, version string) error {
 		}
 	}
 	// Create the new agent node.
-	agent := &xmlquery.Node{
+	agentnode := &xmlquery.Node{
 		Type:         xmlquery.ElementNode,
 		Data:         "agent",
 		Prefix:       hdr.Prefix,
 		NamespaceURI: hdr.NamespaceURI,
 	}
-	node.SetAttr(agent, xml.Attr{Name: xml.Name{Local: "TYPE"}, Value: "OTHER"})
-	node.SetAttr(agent, xml.Attr{Name: xml.Name{Local: "OTHERTYPE"}, Value: "SOFTWARE"})
-	node.SetAttr(agent, xml.Attr{Name: xml.Name{Local: "ROLE"}, Value: "OTHER"})
-	node.SetAttr(agent, xml.Attr{Name: xml.Name{Local: "OTHERROLE"}, Value: pstep})
+	node.SetAttr(agentnode, xml.Attr{Name: xml.Name{Local: "TYPE"}, Value: "OTHER"})
+	node.SetAttr(agentnode, xml.Attr{Name: xml.Name{Local: "OTHERTYPE"}, Value: "SOFTWARE"})
+	node.SetAttr(agentnode, xml.Attr{Name: xml.Name{Local: "ROLE"}, Value: "OTHER"})
+	node.SetAttr(agentnode, xml.Attr{Name: xml.Name{Local: "OTHERROLE"}, Value: pstep})
 	name := &xmlquery.Node{
 		Type:         xmlquery.ElementNode,
 		Data:         "name",
 		Prefix:       hdr.Prefix,
 		NamespaceURI: hdr.NamespaceURI,
 	}
-	node.AppendChild(name, &xmlquery.Node{Type: xmlquery.TextNode, Data: processor + " " + version})
-	node.AppendChild(agent, name)
-	node.AppendChild(hdr, agent)
+	node.AppendChild(name, &xmlquery.Node{Type: xmlquery.TextNode, Data: agent})
+	node.AppendChild(agentnode, name)
+	node.AppendChild(hdr, agentnode)
 	return nil
 }
 
@@ -67,14 +67,13 @@ func addHdr(mets *xmlquery.Node) (*xmlquery.Node, error) {
 	return hdr, nil
 }
 
-func checkAgent(mets *xmlquery.Node, pstep, processor, version string) bool {
+func checkAgent(mets *xmlquery.Node, pstep, agent string) bool {
 	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='metsHdr']"+
 		"/*[local-name()='agent'][@OTHERROLE=%q]", pstep)
-	search := fmt.Sprintf("%s %s", processor, version)
 	agents := xmlquery.Find(mets, expr)
-	for _, agent := range agents {
-		for c := agent.FirstChild; c != nil; c = c.NextSibling {
-			if node.Data(node.FirstChild(c)) == search {
+	for _, agentnode := range agents {
+		for c := agentnode.FirstChild; c != nil; c = c.NextSibling {
+			if node.Data(node.FirstChild(c)) == agent {
 				return true
 			}
 		}
