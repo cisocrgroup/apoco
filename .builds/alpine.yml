@@ -1,13 +1,13 @@
 ---
 image: alpine/edge
 pacakge:
- - go
+  - go
 sources:
- - https://git.sr.ht/~flobar/apoco
+  - https://git.sr.ht/~flobar/apoco
 tasks:
- - vet: >
-   cd apoco
-   go vet ./...
- - test: >
-   cd apoco
-   go test -cover ./...
+  - vet: >
+      cd apoco
+      go vet ./...
+  - test: >
+      cd apoco
+      go test -cover ./...
