@@ -5,9 +5,9 @@ pacakge:
 sources:
   - https://git.sr.ht/~flobar/apoco
 tasks:
-  - vet: >
+  - vet: |
       cd apoco
       go vet ./...
-  - test: >
+  - test: |
       cd apoco
       go test -cover ./...
