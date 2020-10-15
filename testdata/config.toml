@@ -3,7 +3,7 @@
 ##############################
 
 # Path to the model.
-model = "model.gz"
+model = "model.bin"
 
 # Number of parallel OCRs.
 nocr = 2
