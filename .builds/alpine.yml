@@ -1,6 +1,6 @@
 ---
 image: alpine/edge
-pacakge:
+packages:
   - go
 sources:
   - https://git.sr.ht/~flobar/apoco
