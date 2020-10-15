@@ -44,6 +44,39 @@ func EachToken(ctx context.Context, in <-chan Token, f func(Token) error) error 
 	}
 }
 
+// EachTokenGroup iterates over the tokens grouping them together
+// based on their groups.  The given callback function is called for
+// each group of tokens.
+func EachTokenGroup(ctx context.Context, in <-chan Token, f func(string, ...Token) error) error {
+	var group string
+	var tokens []Token
+	err := EachToken(ctx, in, func(t Token) error {
+		if group == "" {
+			group = t.Group
+		}
+		if group != t.Group {
+			if err := f(group, tokens...); err != nil {
+				return fmt.Errorf("eachTokenGroup: %v", err)
+			}
+			tokens = tokens[0:0] // Clear token array.
+			group = t.Group
+			return nil
+		}
+		tokens = append(tokens, t)
+		return nil
+	})
+	// Handle last group of tokens.
+	if len(tokens) != 0 {
+		if err := f(group, tokens...); err != nil {
+			return fmt.Errorf("eachTokenGroup: %v", err)
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("eachTokenGroup: %v", err)
+	}
+	return nil
+}
+
 // ReadToken reads one token from the given channel.
 func ReadToken(ctx context.Context, in <-chan Token) (Token, bool, error) {
 	select {
@@ -225,30 +258,20 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 		out := make(chan Token)
 		g.Go(func() error {
 			defer close(out)
-			var fg string
-			loader := lmLoader{config: c, lm: &LanguageModel{ngrams: ngrams}}
-			err := EachToken(ctx, in, func(t Token) error {
-				if fg == "" {
-					fg = t.Group
+			err := EachTokenGroup(ctx, in, func(group string, tokens ...Token) error {
+				loader := lmLoader{
+					config: c,
+					lm:     &LanguageModel{ngrams: ngrams},
+					tokens: tokens,
 				}
-				if fg != t.Group { // new file group
-					if err := loader.loadAndSend(ctx, out); err != nil {
-						return fmt.Errorf("connectLM: %v", err)
-					}
-					loader.tokens = loader.tokens[0:0]
-					fg = t.Group
-				}
-				loader.tokens = append(loader.tokens, t)
-				loader.lm = &LanguageModel{ngrams: ngrams}
-				return nil
-			})
-			if err != nil {
-				return fmt.Errorf("connectLM: %v", err)
-			}
-			if len(loader.tokens) > 0 {
 				if err := loader.loadAndSend(ctx, out); err != nil {
 					return fmt.Errorf("connectLM: %v", err)
 				}
+				return nil
+
+			})
+			if err != nil {
+				return fmt.Errorf("connectLM: %v", err)
 			}
 			return nil
 		})
