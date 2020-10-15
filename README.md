@@ -13,3 +13,7 @@ OCR-ed documents.
 
 ## Installation
 `go get git.sr.ht/~flobar/apoco`
+
+## License
+Apoco is licensed under the MIT License. See [LICENSE](LICENSE)
+for the full license text.
