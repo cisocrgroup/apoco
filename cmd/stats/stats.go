@@ -385,19 +385,19 @@ func printErrors(skipped, short, lex, cor bool, rank int, ocr, sug, gt string) {
 		fmt.Printf(pre+dtdFormat+"\n", skipped, short, lex, cor, rank, ocr, sug, gt)
 	}
 	if !skipped && rank > 1 {
-		write("bad rank:                ")
+		write("bad_rank ")
 	}
 	if !skipped && rank == 0 {
-		write("missing correction:      ")
+		write("missing_correction ")
 	}
 	if !skipped && cor && gt == ocr && sug != gt {
-		write("infelicitous correction: ")
+		write("disimprovement ")
 	}
 	if !skipped && !cor && ocr != gt && sug == gt {
-		write("missed opportunity:      ")
+		write("missed_opportunity ")
 	}
 	if !skipped && cor && gt != ocr && sug == gt {
-		write("successful correction:   ")
+		write("successful_correction ")
 	}
 }
 
