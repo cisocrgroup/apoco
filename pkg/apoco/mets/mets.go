@@ -114,7 +114,7 @@ func FilePathsForFileGrp(mets *xmlquery.Node, path, fg string) ([]string, error)
 	for i, n := range nodes {
 		link, ok := node.LookupAttr(n, xml.Name{Space: "xlink", Local: "href"})
 		if !ok {
-			return nil, fmt.Errorf("filePathsForFileGrp %s: missing href attribute", mets)
+			return nil, fmt.Errorf("filePathsForFileGrp %s: missing href attribute", path)
 		}
 		if filepath.IsAbs(link) {
 			ret[i] = link
