@@ -222,12 +222,14 @@ func NodeForToken(doc *xmlquery.Node, t apoco.Token) (*xmlquery.Node, error) {
 // a previous metadata node exists, it is deleted.
 func SetMetadata(doc *xmlquery.Node, creator string, created, lastChange time.Time) {
 	metadata := xmlquery.FindOne(doc, "/*[local-name()='PcGts']/*[local-name()='Metadata']")
+	var pcgts *xmlquery.Node
 	if metadata == nil {
-		return
-	}
-	pcgts := xmlquery.FindOne(doc, "/*[local-name()='PcGts']")
-	if pcgts == nil {
-		return
+		pcgts = xmlquery.FindOne(doc, "/*[local-name()='PcGts']")
+		if pcgts == nil {
+			return
+		}
+	} else {
+		pcgts = metadata.Parent
 	}
 	newMetadata := &xmlquery.Node{
 		Type:         xmlquery.ElementNode,
