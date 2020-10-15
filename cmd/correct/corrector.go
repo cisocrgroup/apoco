@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -163,6 +164,7 @@ func (cor *corrector) makeUnicode(unicodes []*xmlquery.Node) *xmlquery.Node {
 }
 
 func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
+	pagexml.SetMetadata(doc, agent, time.Now(), time.Now())
 	ofile := cor.addFileToFileGrp(file, ifg)
 	dir := filepath.Join(filepath.Dir(cor.mets), cor.ofg)
 	ofile = filepath.Join(dir, ofile)

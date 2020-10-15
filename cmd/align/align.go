@@ -89,6 +89,8 @@ func getPaths(doc *xmlquery.Node, mpath string, ifgs []string) ([][]file, error)
 	return ret, nil
 }
 
+const agent = "apoco align " + internal.Version
+
 func alignFiles(mpath, ofg string, ifgs []string) error {
 	mdoc, fg, err := readMETS(mpath, ofg)
 	if err != nil {
@@ -108,7 +110,7 @@ func alignFiles(mpath, ofg string, ifgs []string) error {
 			return err
 		}
 	}
-	if err := mets.AddAgent(mdoc, "recognition/post-correction", "apoco align", internal.Version); err != nil {
+	if err := mets.AddAgent(mdoc, internal.PStep, agent); err != nil {
 		return err
 	}
 	return ioutil.WriteFile(mpath, []byte(mdoc.OutputXML(false)), 0666)

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
@@ -215,6 +216,57 @@ func FindUnicodesInRegionSorted(region *xmlquery.Node) []*xmlquery.Node {
 // NodeForToken is just a tmp testing function.
 func NodeForToken(doc *xmlquery.Node, t apoco.Token) (*xmlquery.Node, error) {
 	return findWordFromRoot(doc, t.ID)
+}
+
+// SetMetadata creates a new metadata node with the given content.  If
+// a previous metadata node exists, it is deleted.
+func SetMetadata(doc *xmlquery.Node, creator string, created, lastChange time.Time) {
+	metadata := xmlquery.FindOne(doc, "/*[local-name()='PcGts']/*[local-name()='Metadata']")
+	if metadata == nil {
+		return
+	}
+	pcgts := xmlquery.FindOne(doc, "/*[local-name()='PcGts']")
+	if pcgts == nil {
+		return
+	}
+	newMetadata := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "Metadata",
+		Prefix:       metadata.Prefix,
+		NamespaceURI: metadata.NamespaceURI,
+	}
+	newCreator := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "Creator",
+		Prefix:       metadata.Prefix,
+		NamespaceURI: metadata.NamespaceURI,
+	}
+	node.AppendChild(newCreator, &xmlquery.Node{Type: xmlquery.TextNode, Data: creator})
+	newCreated := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "Created",
+		Prefix:       metadata.Prefix,
+		NamespaceURI: metadata.NamespaceURI,
+	}
+	node.AppendChild(newCreated, &xmlquery.Node{
+		Type: xmlquery.TextNode,
+		Data: created.String(),
+	})
+	newLastChange := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "LastChange",
+		Prefix:       metadata.Prefix,
+		NamespaceURI: metadata.NamespaceURI,
+	}
+	node.AppendChild(newLastChange, &xmlquery.Node{
+		Type: xmlquery.TextNode,
+		Data: lastChange.String(),
+	})
+	node.AppendChild(newMetadata, newCreator)
+	node.AppendChild(newMetadata, newCreated)
+	node.AppendChild(newMetadata, newLastChange)
+	node.Delete(metadata)
+	node.PrependChild(pcgts, newMetadata)
 }
 
 func findWordFromRoot(doc *xmlquery.Node, id string) (*xmlquery.Node, error) {
