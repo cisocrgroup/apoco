@@ -27,3 +27,17 @@ func TestDistance(t *testing.T) {
 		})
 	}
 }
+
+func benchmarkDistance(s1, s2 string, b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Distance(s1, s2) //"first long string", "second longer string")
+	}
+}
+
+func BenchmarkDistance1(b *testing.B) {
+	benchmarkDistance("short", "longer", b)
+}
+
+func BenchmarkDistance2(b *testing.B) {
+	benchmarkDistance("first long string", "second long string", b)
+}

@@ -1,7 +1,5 @@
 package lev
 
-import "strings"
-
 // Distance calculates the levenshtein distance between s1 and s2.
 // Reference: [Levenshtein
 // Distance](http://en.wikipedia.org/wiki/Levenshtein_distance).
@@ -12,28 +10,26 @@ func Distance(s1, s2 string) int {
 	if s1 == s2 {
 		return 0
 	}
-	s1Array := strings.Split(s1, "")
-	s2Array := strings.Split(s2, "")
-	lenS1Array := len(s1Array)
-	lenS2Array := len(s2Array)
-	if lenS1Array == 0 {
-		return lenS2Array
+	r1 := []rune(s1)
+	r2 := []rune(s2)
+	if len(r1) == 0 {
+		return len(r2)
 	}
-	if lenS2Array == 0 {
-		return lenS1Array
+	if len(r2) == 0 {
+		return len(r1)
 	}
-	m := make([][]int, lenS1Array+1)
+	m := make([][]int, len(r1)+1)
 	for i := range m {
-		m[i] = make([]int, lenS2Array+1)
+		m[i] = make([]int, len(r2)+1)
 	}
-	for i := 0; i < lenS1Array+1; i++ {
-		for j := 0; j < lenS2Array+1; j++ {
+	for i := 0; i < len(r1)+1; i++ {
+		for j := 0; j < len(r2)+1; j++ {
 			if i == 0 {
 				m[i][j] = j
 			} else if j == 0 {
 				m[i][j] = i
 			} else {
-				if s1Array[i-1] == s2Array[j-1] {
+				if r1[i-1] == r2[j-1] {
 					m[i][j] = m[i-1][j-1]
 				} else {
 					m[i][j] = min(m[i-1][j]+1, m[i][j-1]+1, m[i-1][j-1]+1)
@@ -41,13 +37,12 @@ func Distance(s1, s2 string) int {
 			}
 		}
 	}
-	return m[lenS1Array][lenS2Array]
+	return m[len(r1)][len(r2)]
 }
 
-func min(is ...int) int {
-	var min int
-	for i, v := range is {
-		if i == 0 || v < min {
+func min(min int, is ...int) int {
+	for _, v := range is {
+		if v < min {
 			min = v
 		}
 	}
