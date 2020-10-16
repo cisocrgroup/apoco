@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"github.com/antchfx/xmlquery"
 	"golang.org/x/sync/errgroup"
@@ -24,15 +25,19 @@ const MIMEType = "application/vnd.prima.page+xml"
 // sentry between the token of different file groups.  The returned
 // function ignores the input stream it just writes tokens to the
 // output stream.
-func Tokenize(mets string, fgs ...string) apoco.StreamFunc {
+func Tokenize(metsName string, fgs ...string) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
 		out := make(chan apoco.Token)
 		g.Go(func() error {
 			defer close(out)
+			m, err := mets.Open(metsName)
+			if err != nil {
+				return fmt.Errorf("tokenize: %v", err)
+			}
 			for _, fg := range fgs {
-				files, err := FilePathsForFileGrp(mets, fg)
+				files, err := m.FilePathsForFileGrp(fg)
 				if err != nil {
-					return fmt.Errorf("tokenize %s: %v", mets, err)
+					return fmt.Errorf("tokenize: %v", err)
 				}
 				for _, file := range files {
 					if err := tokenizePageXML(ctx, filepath.Dir(file), file, out); err != nil {
@@ -87,36 +92,6 @@ func gatherFilesInDir(dir, ext string) ([]string, error) {
 		return nil
 	})
 	return files, err
-}
-
-// FilePathsForFileGrp returns the list of file paths for the given
-// file group.  The returned file paths are updated to be relative to
-// the mets's file base directory.
-func FilePathsForFileGrp(mets, fg string) ([]string, error) {
-	is, err := os.Open(mets)
-	if err != nil {
-		return nil, fmt.Errorf("filePathsForFileGrp %s: cannot open: %v", mets, err)
-	}
-	defer is.Close()
-	doc, err := xmlquery.Parse(is)
-	if err != nil {
-		return nil, fmt.Errorf("filePathsForFileGrp %s: cannot parse: %v", mets, err)
-	}
-	nodes, err := findFileGrpFLocatFromRoot(doc, fg)
-	if err != nil {
-		return nil, fmt.Errorf("filePathsForFileGrp %s: cannot find file group %s: %v",
-			mets, fg, err)
-	}
-	base := filepath.Dir(mets)
-	ret := make([]string, len(nodes))
-	for i, n := range nodes {
-		link, ok := node.LookupAttr(n, xml.Name{Space: "xlink", Local: "href"})
-		if !ok {
-			return nil, fmt.Errorf("filePathsForFileGrp %s: missing href attribute", mets)
-		}
-		ret[i] = filepath.Join(base, link)
-	}
-	return ret, nil
 }
 
 func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.Token) error {
@@ -211,11 +186,6 @@ func FindUnicodesInRegionSorted(region *xmlquery.Node) []*xmlquery.Node {
 		return ii < ij
 	})
 	return nodes
-}
-
-// NodeForToken is just a tmp testing function.
-func NodeForToken(doc *xmlquery.Node, t apoco.Token) (*xmlquery.Node, error) {
-	return findWordFromRoot(doc, t.ID)
 }
 
 // SetMetadata creates a new metadata node with the given content.  If

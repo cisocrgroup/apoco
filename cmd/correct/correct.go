@@ -82,11 +82,10 @@ func run(_ *cobra.Command, args []string) {
 	}
 	cor := corrector{
 		info: infoMap,
-		mets: flags.mets,
 		ifgs: append(args, flags.ifgs...),
 		ofg:  flags.ofg,
 	}
-	chk(cor.correct())
+	chk(cor.correct(flags.mets))
 }
 
 func correct(m infoMap) apoco.StreamFunc {

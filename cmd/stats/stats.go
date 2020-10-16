@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"github.com/antchfx/xmlquery"
@@ -74,17 +75,19 @@ func handleSimple() {
 }
 
 func handleIFGs(ifgs []string) {
+	m, err := mets.Open(flags.mets)
+	chk(err)
 	for _, ifg := range ifgs {
 		var s stats
-		chk(eachWord(flags.mets, ifg, s.stat))
+		chk(eachWord(m, ifg, s.stat))
 		if !flags.info {
 			s.write(ifg)
 		}
 	}
 }
 
-func eachWord(mets, inputFileGrp string, f func(string) error) error {
-	files, err := pagexml.FilePathsForFileGrp(mets, inputFileGrp)
+func eachWord(m mets.METS, inputFileGrp string, f func(string) error) error {
+	files, err := m.FilePathsForFileGrp(inputFileGrp)
 	if err != nil {
 		return fmt.Errorf("eachWord: %v", err)
 	}

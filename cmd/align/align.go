@@ -47,16 +47,16 @@ type file struct {
 	path, id string
 }
 
-func getPaths(doc *xmlquery.Node, mpath string, ifgs []string) ([][]file, error) {
+func getPaths(m mets.METS, ifgs []string) ([][]file, error) {
 	// Append sorted list of files in the filegroups.
 	var tmp [][]file
 	for _, ifg := range ifgs {
-		flocats := mets.FindFlocats(doc, ifg)
+		flocats := m.FindFlocats(ifg)
 		files := make([]file, len(flocats))
 		for i := range flocats {
 			id, _ := node.LookupAttr(flocats[i].Parent, xml.Name{Local: "ID"})
 			files[i] = file{
-				path: mets.FlocatGetPath(flocats[i], mpath),
+				path: m.FlocatGetPath(flocats[i]),
 				id:   id,
 			}
 		}
@@ -92,11 +92,11 @@ func getPaths(doc *xmlquery.Node, mpath string, ifgs []string) ([][]file, error)
 const agent = "apoco align " + internal.Version
 
 func alignFiles(mpath, ofg string, ifgs []string) error {
-	mdoc, fg, err := readMETS(mpath, ofg)
+	m, fg, err := readMETS(mpath, ofg)
 	if err != nil {
 		return err
 	}
-	files, err := getPaths(mdoc, mpath, ifgs)
+	files, err := getPaths(m, ifgs)
 	if err != nil {
 		return err
 	}
@@ -105,15 +105,15 @@ func alignFiles(mpath, ofg string, ifgs []string) error {
 		if err != nil {
 			return err
 		}
-		opath := addFileToMETS(mdoc, fg, ofg, files[i][0])
+		opath := addFileToMETS(m, fg, ofg, files[i][0])
 		if err := writeToWS(doc, mpath, ofg, opath); err != nil {
 			return err
 		}
 	}
-	if err := mets.AddAgent(mdoc, internal.PStep, agent); err != nil {
+	if err := m.AddAgent(internal.PStep, agent); err != nil {
 		return err
 	}
-	return ioutil.WriteFile(mpath, []byte(mdoc.OutputXML(false)), 0666)
+	return m.Write()
 }
 
 func alignFile(files []file) (*xmlquery.Node, error) {
@@ -397,28 +397,23 @@ func (r *region) appendTextEquiv(text string, others ...region) {
 	node.AppendChild(r.unicodes[0].Parent.Parent, te)
 }
 
-func readMETS(mets, ofg string) (*xmlquery.Node, *xmlquery.Node, error) {
-	is, err := os.Open(mets)
+func readMETS(name, ofg string) (mets.METS, *xmlquery.Node, error) {
+	m, err := mets.Open(name)
 	if err != nil {
-		return nil, nil, err
-	}
-	defer is.Close()
-	doc, err := xmlquery.Parse(is)
-	if err != nil {
-		return nil, nil, err
+		return mets.METS{}, nil, err
 	}
 	// Check if the given file group already exists and overwrite it.
-	existing := xmlquery.FindOne(doc, fmt.Sprintf("//*[local-name()='fileGrp'][@USE=%q]", ofg))
+	existing := xmlquery.FindOne(m.Root, fmt.Sprintf("//*[local-name()='fileGrp'][@USE=%q]", ofg))
 	if existing != nil {
 		// Delete all children.
 		existing.FirstChild = nil
 		existing.LastChild = nil
-		return doc, existing, nil
+		return m, existing, nil
 	}
 	// Add a new filegroup entry.
-	fileGrps := xmlquery.Find(doc, "//*[local-name()='fileGrp']")
+	fileGrps := xmlquery.Find(m.Root, "//*[local-name()='fileGrp']")
 	if len(fileGrps) == 0 {
-		return nil, nil, fmt.Errorf("missing file grp in %s", mets)
+		return mets.METS{}, nil, fmt.Errorf("missing file grp in %s", m.Name)
 	}
 	fileGrp := &xmlquery.Node{
 		Data:         "fileGrp",
@@ -430,10 +425,10 @@ func readMETS(mets, ofg string) (*xmlquery.Node, *xmlquery.Node, error) {
 		Value: ofg,
 	})
 	node.PrependSibling(fileGrps[0], fileGrp)
-	return doc, fileGrp, nil
+	return m, fileGrp, nil
 }
 
-func addFileToMETS(doc, fg *xmlquery.Node, ofg string, f file) string {
+func addFileToMETS(m mets.METS, fg *xmlquery.Node, ofg string, f file) string {
 	newID := internal.IDFromFilePath(f.path, ofg)
 	filePath := newID + ".xml"
 	// Build parent file node
@@ -473,19 +468,19 @@ func addFileToMETS(doc, fg *xmlquery.Node, ofg string, f file) string {
 	// Add nodes to the tree.
 	node.AppendChild(fnode, flocat)
 	node.AppendChild(fg, fnode)
-	addFileToStructMap(doc, f.id, newID)
+	addFileToStructMap(m, f.id, newID)
 	return filePath
 }
 
-func addFileToStructMap(doc *xmlquery.Node, id, newID string) {
+func addFileToStructMap(m mets.METS, id, newID string) {
 	// Check if the according fptr already exists and skip
 	// inserting a fptr already exists.
-	fptr := mets.FindFptr(doc, newID)
+	fptr := m.FindFptr(newID)
 	if fptr != nil {
 		return
 	}
 	// Find fptr for the aligned id and append the new id.
-	fptr = mets.FindFptr(doc, id)
+	fptr = m.FindFptr(id)
 	if fptr == nil {
 		log.Printf("[warning] cannot find fptr for %s", id)
 		return

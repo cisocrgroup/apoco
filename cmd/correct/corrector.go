@@ -20,18 +20,19 @@ import (
 )
 
 type corrector struct {
-	info         infoMap
-	mets, ofg    string
-	ifgs         []string
-	doc, fileGrp *xmlquery.Node
+	info    infoMap
+	ofg     string
+	ifgs    []string
+	fileGrp *xmlquery.Node
+	mets    mets.METS
 }
 
-func (cor *corrector) correct() error {
-	if err := cor.readMETS(); err != nil {
+func (cor *corrector) correct(metsName string) error {
+	if err := cor.readMETS(metsName); err != nil {
 		return fmt.Errorf("correct: %v", err)
 	}
 	for _, ifg := range cor.ifgs {
-		files, err := mets.FilePathsForFileGrp(cor.doc, cor.mets, ifg)
+		files, err := cor.mets.FilePathsForFileGrp(ifg)
 		if err != nil {
 			return fmt.Errorf("correct: %v", err)
 		}
@@ -41,9 +42,7 @@ func (cor *corrector) correct() error {
 			}
 		}
 	}
-	xmlData := cor.doc.OutputXML(false)
-	xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
-	if err := ioutil.WriteFile(cor.mets, []byte(xmlData), 0666); err != nil {
+	if err := cor.mets.Write(); err != nil {
 		return fmt.Errorf("correct: %v", err)
 	}
 	return nil
@@ -166,7 +165,7 @@ func (cor *corrector) makeUnicode(unicodes []*xmlquery.Node) *xmlquery.Node {
 func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
 	pagexml.SetMetadata(doc, agent, time.Now(), time.Now())
 	ofile := cor.addFileToFileGrp(file, ifg)
-	dir := filepath.Join(filepath.Dir(cor.mets), cor.ofg)
+	dir := filepath.Join(filepath.Dir(cor.mets.Name), cor.ofg)
 	ofile = filepath.Join(dir, ofile)
 	_ = os.MkdirAll(dir, 0777)
 	xmlData := doc.OutputXML(false)
@@ -176,37 +175,30 @@ func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
 
 const agent = "apoco correct " + internal.Version
 
-func (cor *corrector) readMETS() error {
-	is, err := os.Open(cor.mets)
+func (cor *corrector) readMETS(name string) error {
+	m, err := mets.Open(name)
 	if err != nil {
-		return fmt.Errorf("readMETS %s: %v", cor.mets, err)
+		return fmt.Errorf("readMETS %s: %v", name, err)
 	}
-	defer is.Close()
-	doc, err := xmlquery.Parse(is)
-	if err != nil {
-		return fmt.Errorf("readMETS %s: %v", cor.mets, err)
-	}
+	cor.mets = m
 	// Update agent in mets header file.
-	if err := mets.AddAgent(doc, internal.PStep, agent); err != nil {
+	if err := cor.mets.AddAgent(internal.PStep, agent); err != nil {
 		return fmt.Errorf("readMETS: %v", err)
 	}
 	// Check if the given file group already exists and overwrite it.
-	existing := xmlquery.FindOne(doc, fmt.Sprintf("//*[local-name()='fileGrp'][@USE=%q]", cor.ofg))
+	existing := xmlquery.FindOne(cor.mets.Root, fmt.Sprintf("//*[local-name()='fileGrp'][@USE=%q]", cor.ofg))
 	if existing != nil {
 		// Delete all children.
 		existing.FirstChild = nil
 		existing.LastChild = nil
-		cor.doc = doc
 		cor.fileGrp = existing
 		return nil
 	}
 	// Add a new filegroup entry.
-	fileGrps := xmlquery.Find(doc, "//*[local-name()='fileGrp']")
+	fileGrps := xmlquery.Find(cor.mets.Root, "//*[local-name()='fileGrp']")
 	if len(fileGrps) == 0 {
-		return fmt.Errorf("readMETS %s: missing file grp", cor.mets)
+		return fmt.Errorf("readMETS %s: missing file grp", cor.mets.Name)
 	}
-	cor.doc = doc
-	log.Printf("doc = %v", cor.doc)
 	cor.fileGrp = &xmlquery.Node{
 		Data:         "fileGrp",
 		Prefix:       fileGrps[0].Prefix,
@@ -273,21 +265,21 @@ func (cor *corrector) addFileToFileGrp(file, ifg string) string {
 //         <mets:fptr FILEID="OCR-D-IMG_0001"/>
 func (cor *corrector) addFileToStructMap(path, newID, ifg string) {
 	// Check if the according new id already exists.
-	fptr := mets.FindFptr(cor.doc, newID)
+	fptr := cor.mets.FindFptr(newID)
 	if fptr != nil {
 		return
 	}
 	// Search for the flocat with the according file path and use
 	// its id.
-	flocats := mets.FindFlocats(cor.doc, ifg)
+	flocats := cor.mets.FindFlocats(ifg)
 	var oldID string
 	for _, flocat := range flocats {
-		if filepath.Base(path) == filepath.Base(mets.FlocatGetPath(flocat, cor.mets)) {
+		if filepath.Base(path) == filepath.Base(cor.mets.FlocatGetPath(flocat)) {
 			oldID, _ = node.LookupAttr(flocat.Parent, xml.Name{Local: "ID"})
 			break
 		}
 	}
-	fptr = mets.FindFptr(cor.doc, oldID)
+	fptr = cor.mets.FindFptr(oldID)
 	if fptr == nil {
 		log.Printf("[warning] cannot find fptr for %s", oldID)
 		return
