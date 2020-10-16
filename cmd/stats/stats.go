@@ -387,6 +387,9 @@ func printErrors(skipped, short, lex, cor bool, rank int, ocr, sug, gt string) {
 	write := func(pre string) {
 		fmt.Printf(pre+dtdFormat+"\n", skipped, short, lex, cor, rank, ocr, sug, gt)
 	}
+	if !skipped && rank == 0 {
+		write("missing_correction ")
+	}
 	if !skipped && rank > 1 {
 		write("bad_rank ")
 	}
