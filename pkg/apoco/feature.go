@@ -68,17 +68,14 @@ func NewFeatureSet(names ...string) (FeatureSet, error) {
 // second return parameter for the configuration) is omitted and not
 // appended to the resulting feature vector.
 func (fs FeatureSet) Calculate(xs []float64, t Token, n int) []float64 {
-	// ret := make([]float64, 0, n*len(fs))
 	for _, f := range fs {
 		for i := 0; i < n; i++ {
 			if val, ok := f(t, i, n); ok {
 				xs = append(xs, val)
-				// ret = append(ret, val)
 			}
 		}
 	}
 	return xs
-	// return ret
 }
 
 // OCRTokenLen returns the length of the OCR token.  It operates on
