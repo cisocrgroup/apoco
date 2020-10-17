@@ -57,6 +57,12 @@ func (lr *LR) sigmoid(x *mat.VecDense) *mat.VecDense {
 	return x
 }
 
+// Weights returns the weights of the logic regression model.
+func (lr *LR) Weights() []float64 {
+	return lr.weights.RawVector().Data
+
+}
+
 // PredictProb calculates the probablility predictions for the given values.
 func (lr *LR) PredictProb(x *mat.Dense) *mat.VecDense {
 	var tmp mat.VecDense
@@ -100,7 +106,7 @@ func (lr *LR) MarshalJSON() ([]byte, error) {
 	data := lrdata{
 		LearningRate: lr.LearningRate,
 		Ntrain:       lr.Ntrain,
-		Weights:      lr.weights.RawVector().Data,
+		Weights:      lr.Weights(),
 	}
 	return json.Marshal(data)
 }
@@ -110,7 +116,7 @@ func (lr *LR) GobEncode() ([]byte, error) {
 	data := lrdata{
 		LearningRate: lr.LearningRate,
 		Ntrain:       lr.Ntrain,
-		Weights:      lr.weights.RawVector().Data,
+		Weights:      lr.Weights(),
 	}
 	var buf bytes.Buffer
 	err := gob.NewEncoder(&buf).Encode(data)
