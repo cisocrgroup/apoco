@@ -1,6 +1,8 @@
 package ml
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -103,10 +105,37 @@ func (lr *LR) MarshalJSON() ([]byte, error) {
 	return json.Marshal(data)
 }
 
+// GobEncode implements the GobEncoder interface.
+func (lr *LR) GobEncode() ([]byte, error) {
+	data := lrdata{
+		LearningRate: lr.LearningRate,
+		Ntrain:       lr.Ntrain,
+		Weights:      lr.weights.RawVector().Data,
+	}
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(data)
+	return buf.Bytes(), err
+}
+
 // UnmarshalJSON implements the json.Unmarshal interface.
 func (lr *LR) UnmarshalJSON(data []byte) error {
 	var tmp lrdata
 	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	*lr = LR{
+		Ntrain:       tmp.Ntrain,
+		LearningRate: tmp.LearningRate,
+		weights:      mat.NewVecDense(len(tmp.Weights), tmp.Weights),
+	}
+	return nil
+}
+
+// GobDecode implements the GobDecoder interface.
+func (lr *LR) GobDecode(data []byte) error {
+	var tmp lrdata
+	r := bytes.NewReader(data)
+	if err := gob.NewDecoder(r).Decode(&tmp); err != nil {
 		return err
 	}
 	*lr = LR{
@@ -162,6 +191,7 @@ func meanNormalization(xs *mat.Dense) error {
 	return nil
 }
 
+// TODO: Remove this
 func zScoreNormalization(xs *mat.Dense) error {
 	r, c := xs.Dims()
 	tmp := make([]float64, r)
