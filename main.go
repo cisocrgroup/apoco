@@ -2,13 +2,11 @@ package main
 
 import (
 	"git.sr.ht/~flobar/apoco/cmd/align"
-	"git.sr.ht/~flobar/apoco/cmd/cat"
 	"git.sr.ht/~flobar/apoco/cmd/charset"
 	"git.sr.ht/~flobar/apoco/cmd/correct"
 	"git.sr.ht/~flobar/apoco/cmd/eval"
-	"git.sr.ht/~flobar/apoco/cmd/printmodel"
+	printcmd "git.sr.ht/~flobar/apoco/cmd/print"
 	"git.sr.ht/~flobar/apoco/cmd/protocol"
-	"git.sr.ht/~flobar/apoco/cmd/stats"
 	"git.sr.ht/~flobar/apoco/cmd/train"
 	"git.sr.ht/~flobar/apoco/cmd/version"
 	"github.com/spf13/cobra"
@@ -22,13 +20,11 @@ var root = &cobra.Command{
 func init() {
 	root.AddCommand(
 		align.CMD,
-		cat.CMD,
 		charset.CMD,
 		correct.CMD,
 		eval.CMD,
-		printmodel.CMD,
+		printcmd.CMD,
 		protocol.CMD,
-		stats.CMD,
 		train.CMD,
 		version.CMD,
 	)

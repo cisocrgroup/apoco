@@ -1,22 +1,21 @@
-package printmodel
+package print
 
 import (
 	"fmt"
-	"log"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 )
 
-// CMD runs the apoco printmodel command.
-var CMD = &cobra.Command{
-	Use:   "printmodel [MODEL...]",
-	Short: "Print information about a model",
-	Run:   run,
+// modelCMD runs the apoco print model command.
+var modelCMD = &cobra.Command{
+	Use:   "model [MODEL...]",
+	Short: "Print information about models",
+	Run:   runModel,
 }
 
-func run(_ *cobra.Command, args []string) {
+func runModel(_ *cobra.Command, args []string) {
 	for _, name := range args {
 		model, err := apoco.ReadModel(name, "")
 		chk(err)
@@ -29,10 +28,6 @@ func run(_ *cobra.Command, args []string) {
 func printmodel(name, typ string, ds map[int]apoco.ModelData) {
 	for nocr, data := range ds {
 		ws := data.Model.Weights()
-		// _, err := fmt.Printf("%s(%d) = %v\n", typ, nocr, data.Features)
-		// chk(err)
-		// _, err = fmt.Printf("%s(%d) = %v\n", typ, nocr, ws)
-		// chk(err)
 		fs, err := apoco.NewFeatureSet(data.Features...)
 		chk(err)
 		for f := range fs {
@@ -64,11 +59,5 @@ func mktok(typ string, nocr int) apoco.Token {
 			Tokens:  make([]string, nocr),
 			Payload: new(gofiler.Candidate),
 		}
-	}
-}
-
-func chk(err error) {
-	if err != nil {
-		log.Fatalf("error: %v", err)
 	}
 }

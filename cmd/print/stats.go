@@ -1,11 +1,10 @@
-package stats
+package print
 
 import (
 	"bufio"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -16,36 +15,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var flags = struct {
-	ifgs       []string
-	mets       string
-	limit      int
-	info, json bool
-	skipShort  bool
+var statsFlags = struct {
+	ifgs      []string
+	mets      string
+	limit     int
+	info      bool
+	skipShort bool
 }{}
 
 // CMD runs the apoco stats command.
-var CMD = &cobra.Command{
+var statsCMD = &cobra.Command{
 	Use:   "stats [DIRS...]",
 	Short: "Extract correction stats",
-	Run:   run,
+	Run:   runStats,
 }
 
 func init() {
-	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
-	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
-	CMD.Flags().IntVarP(&flags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
-	CMD.Flags().BoolVarP(&flags.skipShort, "skip-short", "s", false,
+	statsCMD.Flags().StringVarP(&statsFlags.mets, "mets", "m", "mets.xml", "set path to the mets file")
+	statsCMD.Flags().StringSliceVarP(&statsFlags.ifgs, "input-file-grp", "I", nil, "set input file groups")
+	statsCMD.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
+	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "skip-short", "s", false,
 		"exclude short tokens (len<3) from the evaluation")
-	CMD.Flags().BoolVarP(&flags.info, "info", "i", false, "print out correction information")
-	CMD.Flags().BoolVarP(&flags.json, "json", "j", false, "output as json")
+	statsCMD.Flags().BoolVarP(&statsFlags.info, "info", "i", false, "print out correction information")
 }
 
-func run(_ *cobra.Command, args []string) {
-	if len(flags.ifgs) == 0 {
+func runStats(_ *cobra.Command, args []string) {
+	if len(statsFlags.ifgs) == 0 {
 		handleSimple()
 	} else {
-		handleIFGs(flags.ifgs)
+		handleIFGs(statsFlags.ifgs)
 	}
 }
 
@@ -60,7 +58,7 @@ func handleSimple() {
 			if _, err := fmt.Sscanf(dtd, "#filename=%s", &tmp); err != nil {
 				continue
 			}
-			if filename != "" && !flags.info {
+			if filename != "" && !statsFlags.info {
 				s.write(filename)
 			}
 			filename = tmp
@@ -69,18 +67,18 @@ func handleSimple() {
 		}
 		chk(s.stat(dtd))
 	}
-	if !flags.info {
+	if !statsFlags.info {
 		s.write(filename)
 	}
 }
 
 func handleIFGs(ifgs []string) {
-	m, err := mets.Open(flags.mets)
+	m, err := mets.Open(statsFlags.mets)
 	chk(err)
 	for _, ifg := range ifgs {
 		var s stats
 		chk(eachWord(m, ifg, s.stat))
-		if !flags.info {
+		if !statsFlags.info {
 			s.write(ifg)
 		}
 	}
@@ -158,13 +156,13 @@ func (s *stats) stat(dtd string) error {
 	if err := parseDTD(dtd, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
 		return fmt.Errorf("stat: %v", err)
 	}
-	if flags.info {
+	if statsFlags.info {
 		printErrors(skipped, short, lex, cor, rank, ocr, sug, gt)
 		return nil
 	}
 	// Exclude short tokens from the complete evaluation if
-	// the flags.skipShort option is set.
-	if flags.skipShort && skipped && short {
+	// the statsFlags.skipShort option is set.
+	if statsFlags.skipShort && skipped && short {
 		return nil
 	}
 	// Update counts.
@@ -216,10 +214,10 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && cor && gt == ocr && sug != gt {
 		s.Disimprovement++
-		if 0 < flags.limit {
+		if 0 < statsFlags.limit {
 			if rank == 0 {
 				s.DisimprovementMC++
-			} else if flags.limit < rank {
+			} else if statsFlags.limit < rank {
 				s.DisimprovementBL++
 			} else {
 				s.DisimprovementBR++
@@ -240,10 +238,10 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && cor && gt != ocr && sug != gt {
 		s.DoNotCare++
-		if 0 < flags.limit {
+		if 0 < statsFlags.limit {
 			if rank == 0 {
 				s.DoNotCareMC++
-			} else if flags.limit < rank {
+			} else if statsFlags.limit < rank {
 				s.DoNotCareBL++
 			} else {
 				s.DoNotCareBR++
@@ -267,10 +265,10 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && !cor && ocr == gt && sug != gt {
 		s.DodgedBullets++
-		if 0 < flags.limit {
+		if 0 < statsFlags.limit {
 			if rank == 0 {
 				s.DodgedBulletsMC++
-			} else if flags.limit < rank {
+			} else if statsFlags.limit < rank {
 				s.DodgedBulletsBL++
 			} else {
 				s.DodgedBulletsBR++
@@ -291,10 +289,10 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && !cor && ocr != gt && sug != gt {
 		s.SkippedDoNotCare++
-		if 0 < flags.limit {
+		if 0 < statsFlags.limit {
 			if rank == 0 {
 				s.SkippedDoNotCareMC++
-			} else if flags.limit < rank {
+			} else if statsFlags.limit < rank {
 				s.SkippedDoNotCareBL++
 			} else {
 				s.SkippedDoNotCareBR++
@@ -413,10 +411,4 @@ func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *
 		return fmt.Errorf("parseDTD: cannot parse %q: %v", dtd, err)
 	}
 	return nil
-}
-
-func chk(err error) {
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
 }
