@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
@@ -50,10 +51,10 @@ func cat(file bool) apoco.StreamFunc {
 		g.Go(func() error {
 			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
 				if file {
-					_, err := fmt.Printf("%s@%s\n", t.File, t)
+					_, err := fmt.Printf("%s@%s\n", t.File, token2string(t))
 					return err
 				} else {
-					_, err := fmt.Printf("%s\n", t)
+					_, err := fmt.Printf("%s\n", token2string(t))
 					return err
 				}
 			})
@@ -71,6 +72,15 @@ func tokenize(mets string, ifgs, exts, args []string) apoco.StreamFunc {
 	}
 	e := snippets.Extensions(exts)
 	return e.Tokenize(args...)
+}
+
+func token2string(t apoco.Token) string {
+	ret := make([]string, len(t.Tokens)+1)
+	ret[0] = t.ID
+	for i, tok := range t.Tokens {
+		ret[i+1] = strings.ReplaceAll(tok, " ", "_")
+	}
+	return strings.Join(ret, " ")
 }
 
 func chk(err error) {
