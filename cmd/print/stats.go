@@ -217,21 +217,13 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && cor && gt == ocr && sug != gt {
 		s.Disimprovement++
-		if 0 < statsFlags.limit {
-			if rank == 0 {
-				s.DisimprovementMC++
-			} else if statsFlags.limit < rank {
-				s.DisimprovementBL++
-			} else {
-				s.DisimprovementBR++
-			}
-		} else {
-			if rank == 0 {
-				s.DisimprovementMC++
-			} else if 1 < rank {
-				s.DisimprovementBR++
-			}
-		}
+		updateSubErrors(
+			statsFlags.limit,
+			rank,
+			&s.DisimprovementMC,
+			&s.DisimprovementBR,
+			&s.DisimprovementBL,
+		)
 	}
 	if !skipped && cor && gt != ocr {
 		s.OCRIncorrect++
@@ -241,21 +233,13 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && cor && gt != ocr && sug != gt {
 		s.DoNotCare++
-		if 0 < statsFlags.limit {
-			if rank == 0 {
-				s.DoNotCareMC++
-			} else if statsFlags.limit < rank {
-				s.DoNotCareBL++
-			} else {
-				s.DoNotCareBR++
-			}
-		} else {
-			if rank == 0 {
-				s.DoNotCareMC++
-			} else if 1 < rank {
-				s.DoNotCareBR++
-			}
-		}
+		updateSubErrors(
+			statsFlags.limit,
+			rank,
+			&s.DoNotCareMC,
+			&s.DoNotCareBR,
+			&s.DoNotCareBL,
+		)
 	}
 	if !skipped && !cor {
 		s.NotReplaced++
@@ -268,21 +252,13 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && !cor && ocr == gt && sug != gt {
 		s.DodgedBullets++
-		if 0 < statsFlags.limit {
-			if rank == 0 {
-				s.DodgedBulletsMC++
-			} else if statsFlags.limit < rank {
-				s.DodgedBulletsBL++
-			} else {
-				s.DodgedBulletsBR++
-			}
-		} else {
-			if rank == 0 {
-				s.DodgedBulletsMC++
-			} else if 1 < rank {
-				s.DodgedBulletsBR++
-			}
-		}
+		updateSubErrors(
+			statsFlags.limit,
+			rank,
+			&s.DodgedBulletsMC,
+			&s.DodgedBulletsBR,
+			&s.DodgedBulletsBL,
+		)
 	}
 	if !skipped && !cor && ocr != gt {
 		s.OCRIncorrectNR++
@@ -292,21 +268,13 @@ func (s *stats) stat(dtd string) error {
 	}
 	if !skipped && !cor && ocr != gt && sug != gt {
 		s.SkippedDoNotCare++
-		if 0 < statsFlags.limit {
-			if rank == 0 {
-				s.SkippedDoNotCareMC++
-			} else if statsFlags.limit < rank {
-				s.SkippedDoNotCareBL++
-			} else {
-				s.SkippedDoNotCareBR++
-			}
-		} else {
-			if rank == 0 {
-				s.SkippedDoNotCareMC++
-			} else if 1 < rank {
-				s.SkippedDoNotCareBR++
-			}
-		}
+		updateSubErrors(
+			statsFlags.limit,
+			rank,
+			&s.SkippedDoNotCareMC,
+			&s.SkippedDoNotCareBR,
+			&s.SkippedDoNotCareBL,
+		)
 	}
 	if ocr != gt {
 		s.TotalErrBefore++
@@ -380,6 +348,24 @@ func (s *stats) write(name string) {
 	fmt.Printf("            ├─ bad rank           = %d\n", s.SkippedDoNotCareBR)
 	fmt.Printf("            ├─ bad limit          = %d\n", s.SkippedDoNotCareBL)
 	fmt.Printf("            └─ missing correction = %d\n", s.SkippedDoNotCareMC)
+}
+
+func updateSubErrors(limit, rank int, mc, br, bl *int) {
+	if limit > 0 {
+		if rank == 0 {
+			*mc++
+		} else if statsFlags.limit < rank {
+			*bl++
+		} else {
+			*br++
+		}
+	} else {
+		if rank == 0 {
+			*mc++
+		} else if 1 < rank {
+			*br++
+		}
+	}
 }
 
 func checkSanity(skipped, short, lex, cor bool) error {
