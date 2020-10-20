@@ -3,6 +3,7 @@ package eval
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
@@ -68,14 +69,7 @@ func dmEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 				// mocr := tokens[i].Tokens[0]
 				s.add(y.AtVec(i), p.AtVec(i))
 			}
-			fmt.Printf("dm,tp,%d,%d\n", c.Nocr, s.tp)
-			fmt.Printf("dm,fp,%d,%d\n", c.Nocr, s.fp)
-			fmt.Printf("dm,tn,%d,%d\n", c.Nocr, s.tn)
-			fmt.Printf("dm,fn,%d,%d\n", c.Nocr, s.fn)
-			fmt.Printf("dm,pr,%d,%f\n", c.Nocr, s.precision())
-			fmt.Printf("dm,re,%d,%f\n", c.Nocr, s.recall())
-			fmt.Printf("dm,f1,%d,%f\n", c.Nocr, s.f1())
-			return nil
+			return s.print(os.Stdout, "dm", c.Nocr)
 		})
 		return nil
 	}

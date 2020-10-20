@@ -1,6 +1,8 @@
 package eval
 
 import (
+	"fmt"
+	"io"
 	"log"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -77,6 +79,31 @@ func (s *stats) precision() float64 {
 
 func (s *stats) f1() float64 {
 	return 2 * s.precision() * s.recall() / (s.precision() + s.recall())
+}
+
+func (s *stats) print(out io.Writer, typ string, nocr int) error {
+	f := formater{out: out}
+	f.printf("%s/%d tp %d\n", typ, nocr, s.tp)
+	f.printf("%s/%d fp %d\n", typ, nocr, s.fp)
+	f.printf("%s/%d tn %d\n", typ, nocr, s.tn)
+	f.printf("%s/%d fn %d\n", typ, nocr, s.fn)
+	f.printf("%s/%d pr %f\n", typ, nocr, s.precision())
+	f.printf("%s/%d re %f\n", typ, nocr, s.recall())
+	f.printf("%s/%d f1 %f\n", typ, nocr, s.f1())
+	return f.err
+}
+
+type formater struct {
+	out io.Writer
+	err error
+}
+
+func (f *formater) printf(format string, args ...interface{}) {
+	if f.err != nil {
+		return
+	}
+	_, err := fmt.Fprintf(f.out, format, args...)
+	f.err = err
 }
 
 func chk(err error) {

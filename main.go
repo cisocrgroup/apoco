@@ -5,7 +5,7 @@ import (
 	"git.sr.ht/~flobar/apoco/cmd/charset"
 	"git.sr.ht/~flobar/apoco/cmd/correct"
 	"git.sr.ht/~flobar/apoco/cmd/eval"
-	printcmd "git.sr.ht/~flobar/apoco/cmd/print"
+	"git.sr.ht/~flobar/apoco/cmd/print"
 	"git.sr.ht/~flobar/apoco/cmd/protocol"
 	"git.sr.ht/~flobar/apoco/cmd/train"
 	"git.sr.ht/~flobar/apoco/cmd/version"
@@ -23,7 +23,7 @@ func init() {
 		charset.CMD,
 		correct.CMD,
 		eval.CMD,
-		printcmd.CMD,
+		print.CMD,
 		protocol.CMD,
 		train.CMD,
 		version.CMD,

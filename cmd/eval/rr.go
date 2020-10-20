@@ -3,6 +3,7 @@ package eval
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
@@ -62,14 +63,7 @@ func rrEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 			for i := 0; i < n; i++ {
 				s.add(y.AtVec(i), p.AtVec(i))
 			}
-			fmt.Printf("rr,tp,%d,%d\n", c.Nocr, s.tp)
-			fmt.Printf("rr,fp,%d,%d\n", c.Nocr, s.fp)
-			fmt.Printf("rr,tn,%d,%d\n", c.Nocr, s.tn)
-			fmt.Printf("rr,fn,%d,%d\n", c.Nocr, s.fn)
-			fmt.Printf("rr,pr,%d,%f\n", c.Nocr, s.precision())
-			fmt.Printf("rr,re,%d,%f\n", c.Nocr, s.recall())
-			fmt.Printf("rr,f1,%d,%f\n", c.Nocr, s.f1())
-			return nil
+			return s.print(os.Stdout, "rr", c.Nocr)
 		})
 		return nil
 	}
