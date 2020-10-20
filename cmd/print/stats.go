@@ -156,6 +156,9 @@ func (s *stats) stat(dtd string) error {
 	if err := parseDTD(dtd, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
 		return fmt.Errorf("stat: %v", err)
 	}
+	if err := checkSanity(skipped, short, lex, cor); err != nil {
+		return err
+	}
 	if statsFlags.info {
 		printErrors(skipped, short, lex, cor, rank, ocr, sug, gt)
 		return nil
@@ -377,6 +380,19 @@ func (s *stats) write(name string) {
 	fmt.Printf("            ├─ bad rank           = %d\n", s.SkippedDoNotCareBR)
 	fmt.Printf("            ├─ bad limit          = %d\n", s.SkippedDoNotCareBL)
 	fmt.Printf("            └─ missing correction = %d\n", s.SkippedDoNotCareMC)
+}
+
+func checkSanity(skipped, short, lex, cor bool) error {
+	if !skipped && short {
+		return fmt.Errorf("invalid stat: not skipped but short")
+	}
+	if !skipped && lex {
+		return fmt.Errorf("invalid stat: not skipped but lexical")
+	}
+	if skipped && cor {
+		return fmt.Errorf("invalid stat: skipped and corrected")
+	}
+	return nil
 }
 
 const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
