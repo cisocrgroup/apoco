@@ -29,3 +29,31 @@ func TestTokenize(t *testing.T) {
 		t.Fatalf("got error: %v", err)
 	}
 }
+
+// voll. Diſe wurtzel reiniget die mů
+func TestCalamari(t *testing.T) {
+	ext := Extensions{".json"}
+	var g errgroup.Group
+	tok := ext.Tokenize("testdata/dir")
+	want := []string{"voll.", "Diſe", "wurtzel", "reiniget", "die", "mů"}
+	var i int
+
+	for token := range tok(context.Background(), &g, nil) {
+		if len(token.Tokens) != 1 {
+			t.Fatalf("bad token: %s", token)
+		}
+		if token.Group != "dir" {
+			t.Fatalf("bad group: %s", token.Group)
+		}
+		if token.File != "testdata/dir/a/00010.json" {
+			t.Fatalf("bad file: %s", token.File)
+		}
+		if got := token.Tokens[0]; got != want[i] {
+			t.Fatalf("expected %q; got %q", want[i], got)
+		}
+		i++
+	}
+	if err := g.Wait(); err != nil {
+		t.Fatalf("got error: %v", err)
+	}
+}

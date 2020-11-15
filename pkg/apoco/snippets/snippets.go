@@ -3,6 +3,7 @@ package snippets
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -137,9 +138,12 @@ func readFile(path string) (apoco.Chars, error) {
 	}
 	defer is.Close()
 	var line apoco.Chars
-	if strings.HasSuffix(path, ".txt") {
+	switch filepath.Ext(path) {
+	case ".txt":
 		line, err = readTXT(is)
-	} else {
+	case ".json":
+		line, err = readJSON(is)
+	default:
 		line, err = readTSV(is)
 	}
 	if err != nil {
@@ -196,6 +200,31 @@ func appendChar(chars apoco.Chars, c apoco.Char) apoco.Chars {
 	return append(chars, c)
 }
 
+func readJSON(in io.Reader) (apoco.Chars, error) {
+	var data calamariPredictions
+	if err := json.NewDecoder(in).Decode(&data); err != nil {
+		return nil, fmt.Errorf("cannot read json: %v", err)
+	}
+	var ret apoco.Chars
+	for _, p := range data.Predictions {
+		if p.ID != "voted" {
+			continue
+		}
+		for _, pos := range p.Positions {
+			if len(pos.Chars) == 0 {
+				continue
+			}
+			for _, r := range pos.Chars[0].Char {
+				ret = append(ret, apoco.Char{
+					Char: r,
+					Conf: pos.Chars[0].Prob,
+				})
+			}
+		}
+	}
+	return ret, nil
+}
+
 func trim(chars apoco.Chars) apoco.Chars {
 	var i, j int
 	for i = 0; i < len(chars); i++ {
@@ -217,4 +246,22 @@ func runes(chars apoco.Chars) []rune {
 		runes[i] = chars[i].Char
 	}
 	return runes
+}
+
+type calamariChar struct {
+	Char string  `json:"char"`
+	Prob float64 `json:"probability"`
+}
+
+type calamariPositions struct {
+	Chars []calamariChar `json:"chars"`
+}
+
+type calamariPrediction struct {
+	ID        string              `json:"id"`
+	Positions []calamariPositions `json:"positions"`
+}
+
+type calamariPredictions struct {
+	Predictions []calamariPrediction `json:"predictions"`
 }
