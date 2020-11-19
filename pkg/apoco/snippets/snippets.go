@@ -22,10 +22,12 @@ import (
 type Extensions []string
 
 // Tokenize tokenizes tokens from line snippets TSV files (identyfied
-// by the given file extensions) and alignes them accordingly.  If a
-// extension ends with `.txt`, one line is read from the text file (no
-// confidences).  Otherwise the file is read as a TSV file expecting
-// on char and its confidence on each line.
+// by the given file extensions) and alignes them accordingly.
+//
+// If a extension ends with `.txt`, one line is read from the text
+// file (no confidences); if the file ends with `.json`, calamari's
+// extended data format is assumed. Otherwise the file is read as a
+// TSV file expecting on char and its confidence on each line.
 func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
 		out := make(chan apoco.Token)

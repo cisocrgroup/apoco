@@ -37,7 +37,6 @@ func TestCalamari(t *testing.T) {
 	tok := ext.Tokenize("testdata/dir")
 	want := []string{"voll.", "Diſe", "wurtzel", "reiniget", "die", "mů"}
 	var i int
-
 	for token := range tok(context.Background(), &g, nil) {
 		if len(token.Tokens) != 1 {
 			t.Fatalf("bad token: %s", token)
