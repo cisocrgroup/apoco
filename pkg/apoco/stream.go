@@ -33,13 +33,13 @@ func EachToken(ctx context.Context, in <-chan Token, f func(Token) error) error 
 	for {
 		token, ok, err := ReadToken(ctx, in)
 		if err != nil {
-			return fmt.Errorf("eachToken: %v", err)
+			return err
 		}
 		if !ok {
 			return nil
 		}
 		if err := f(token); err != nil {
-			return fmt.Errorf("eachToken: %v", err)
+			return err
 		}
 	}
 }
