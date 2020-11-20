@@ -12,8 +12,10 @@ import (
 func TestTokenize(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
 	var g errgroup.Group
-	tok := ext.Tokenize("testdata/dir")
-	for token := range tok(context.Background(), &g, nil) {
+	n, want := 0, 16
+	for token := range ext.Tokenize("testdata/dir")(context.Background(), &g, nil) {
+		n++
+		// for token := range tok(context.Background(), &g, nil) {
 		if len(token.Tokens) != 3 {
 			t.Fatalf("bad token: %s", token)
 		}
@@ -25,6 +27,9 @@ func TestTokenize(t *testing.T) {
 			t.Fatalf("bad file: %s", token.File)
 		}
 	}
+	if n != want {
+		t.Fatalf("invalid number of tokens: expected %d; got %d", want, n)
+	}
 	if err := g.Wait(); err != nil {
 		t.Fatalf("got error: %v", err)
 	}
@@ -34,10 +39,9 @@ func TestTokenize(t *testing.T) {
 func TestCalamari(t *testing.T) {
 	ext := Extensions{".json"}
 	var g errgroup.Group
-	tok := ext.Tokenize("testdata/dir")
 	want := []string{"voll.", "Diſe", "wurtzel", "reiniget", "die", "mů"}
 	var i int
-	for token := range tok(context.Background(), &g, nil) {
+	for token := range ext.Tokenize("testdata/dir")(context.Background(), &g, nil) {
 		if len(token.Tokens) != 1 {
 			t.Fatalf("bad token: %s", token)
 		}
@@ -51,6 +55,9 @@ func TestCalamari(t *testing.T) {
 			t.Fatalf("expected %q; got %q", want[i], got)
 		}
 		i++
+	}
+	if i != len(want) {
+		t.Fatalf("invalid number of tokens: expected %d; got %d", len(want), i)
 	}
 	if err := g.Wait(); err != nil {
 		t.Fatalf("got error: %v", err)

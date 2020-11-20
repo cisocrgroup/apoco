@@ -83,6 +83,15 @@ func (chars Chars) String() string {
 	return strings.Join(strs, ",")
 }
 
+// Confs returns the confidences as array.
+func (chars Chars) Confs() []float64 {
+	confs := make([]float64, len(chars))
+	for i := range chars {
+		confs[i] = chars[i].Conf
+	}
+	return confs
+}
+
 // Char represents an OCR char with its confidence.
 type Char struct {
 	Conf float64 // confidence of the rune

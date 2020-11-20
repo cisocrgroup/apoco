@@ -21,22 +21,32 @@ import (
 // list of file extensions.
 type Extensions []string
 
-// Tokenize tokenizes tokens from line snippets TSV files (identyfied
-// by the given file extensions) and alignes them accordingly.
+// Tokenize tokenizes tokens from line snippets (identyfied by the
+// given file extensions) and alignes them accordingly.  It is a
+// shorthand for piping ReadLines into TokenizeLines.
+func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
+	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
+		out := e.ReadLines(dirs...)(ctx, g, in)
+		return e.TokenizeLines()(ctx, g, out)
+	}
+}
+
+// ReadLines returns a stream function that reads snippet files
+// (identyfied by the given file extensions) and returns a stream of
+// line tokens.
 //
 // If a extension ends with `.txt`, one line is read from the text
 // file (no confidences); if the file ends with `.json`, calamari's
 // extended data format is assumed. Otherwise the file is read as a
-// TSV file expecting on char and its confidence on each line.
-func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
+// TSV file expecting one char and its confidence on each line.
+func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
 		out := make(chan apoco.Token)
 		g.Go(func() error {
 			defer close(out)
-			// Iterate over the directories and read the tokens from each dir.
 			for _, dir := range dirs {
-				if err := e.sendTokensFromDir(ctx, out, dir); err != nil {
-					return fmt.Errorf("tokenize: %v", err)
+				if err := e.readLinesFromDir(ctx, out, dir); err != nil {
+					return fmt.Errorf("read lines %s: %v", dir, err)
 				}
 			}
 			return nil
@@ -45,24 +55,21 @@ func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
 	}
 }
 
-func (e Extensions) sendTokensFromDir(ctx context.Context, out chan<- apoco.Token, bdir string) error {
-	if len(e) == 0 {
-		return fmt.Errorf("readTokensFromDir %s: empty file extensions", bdir)
-	}
+func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.Token, base string) error {
 	// Use a dir path stack to iterate over all dirs in the tree.
-	dirs := []string{bdir}
+	dirs := []string{base}
 	for len(dirs) != 0 {
 		dir := dirs[len(dirs)-1]
 		dirs = dirs[0 : len(dirs)-1]
 		// Read all file info entries from the dir.
 		is, err := os.Open(dir)
 		if err != nil {
-			return fmt.Errorf("readTokensFromDir %s: %v", bdir, err)
+			return fmt.Errorf("read lines from dir %s: %v", dir, err)
 		}
 		fis, err := is.Readdir(-1)
 		is.Close() // Unconditionally close the dir.
 		if err != nil {
-			return fmt.Errorf("readTokensFromDir %s: %v", bdir, err)
+			return fmt.Errorf("read lines from dir %s: %v", dir, err)
 		}
 		// Either append new dirs to the stack or handle files with
 		// the master file extension at index 0. Skip all other files.
@@ -75,51 +82,83 @@ func (e Extensions) sendTokensFromDir(ctx context.Context, out chan<- apoco.Toke
 				continue
 			}
 			file := filepath.Join(dir, fi.Name())
-			if err := e.sendTokensFromSnippets(ctx, out, bdir, file); err != nil {
-				return fmt.Errorf("readTokensFromDir %s: %v", bdir, err)
+			if err := e.readLinesFromSnippets(ctx, out, base, file); err != nil {
+				return fmt.Errorf("read lines from dir %s: %v", dir, err)
 			}
 		}
 	}
 	return nil
 }
 
-func (e Extensions) sendTokensFromSnippets(ctx context.Context, out chan<- apoco.Token, bdir, file string) error {
+func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.Token, base, file string) error {
 	var lines []apoco.Chars
 	pairs, err := readFile(file)
 	if err != nil {
-		return fmt.Errorf("sendTokensFromSnippets: %v", err)
+		return fmt.Errorf("read lines from snippets %s: %v", file, err)
 	}
 	lines = append(lines, pairs)
 	for i := 1; i < len(e); i++ {
 		path := file[0:len(file)-len(e[0])] + e[i]
 		pairs, err := readFile(path)
 		if err != nil {
-			return fmt.Errorf("sendTokensFromSnippets %s: %v", file, err)
+			return fmt.Errorf("read lines from snippets %s: %v", file, err)
 		}
 		lines = append(lines, pairs)
 	}
-	if err := sendTokens(ctx, out, bdir, file, lines); err != nil {
-		return fmt.Errorf("sendTokensFromSnippets: %v", err)
+	err = apoco.SendTokens(ctx, out, apoco.Token{
+		Payload: lines,
+		Chars:   lines[0],
+		Confs:   lines[0].Confs(),
+		Group:   filepath.Base(base),
+		File:    file,
+		ID:      file,
+		Tokens: func() []string {
+			ret := make([]string, len(lines))
+			for i := range lines {
+				ret[i] = lines[i].String()
+			}
+			return ret
+		}(),
+	})
+	if err != nil {
+		return fmt.Errorf("read lines from snippets %s: %v", file, err)
 	}
 	return nil
 }
 
-func sendTokens(ctx context.Context, out chan<- apoco.Token, bdir, file string, lines []apoco.Chars) error {
+// TokenizeLines returns a stream function that tokenizes and aligns
+// line tokens.
+func (e Extensions) TokenizeLines() apoco.StreamFunc {
+	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
+		out := make(chan apoco.Token)
+		g.Go(func() error {
+			defer close(out)
+			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+				return tokenizeLines(ctx, out, t)
+			})
+		})
+		return out
+	}
+}
+
+func tokenizeLines(ctx context.Context, out chan<- apoco.Token, line apoco.Token) error {
+	lines := line.Payload.([]apoco.Chars)
 	alignments := alignLines(lines...)
 	for i := range alignments {
 		t := apoco.Token{
-			File:  file,
-			Group: filepath.Base(bdir),
+			File:  line.File,
+			Group: line.Group,
 			ID:    strconv.Itoa(i + 1),
 		}
 		for j, p := range alignments[i] {
 			if j == 0 {
 				t.Chars = lines[j][p.B:p.E]
+				t.Confs = lines[j][p.B:p.E].Confs()
 			}
-			t.Tokens = append(t.Tokens, string(p.Slice())) //lines[j][p.b:p.e])))
+			t.Tokens = append(t.Tokens, string(p.Slice()))
 		}
 		if err := apoco.SendTokens(ctx, out, t); err != nil {
-			return fmt.Errorf("sendTokens: %v", err)
+			return fmt.Errorf("tokenize lines: %v", err)
 		}
 	}
 	return nil
