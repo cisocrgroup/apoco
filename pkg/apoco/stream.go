@@ -15,14 +15,24 @@ import (
 )
 
 // StreamFunc is a type def for stream funcs.
-type StreamFunc func(context.Context, *errgroup.Group, <-chan Token) <-chan Token
+type StreamFunc func(context.Context, *errgroup.Group, <-chan Token) (<-chan Token, error)
 
-// Pipe pipes multiple stream funcs together.  The first function in the list (the reader)
-// is called with a nil channel
-func Pipe(ctx context.Context, g *errgroup.Group, r StreamFunc, ps ...StreamFunc) <-chan Token {
+// Pipe pipes multiple stream funcs together, making shure to run all
+// of them in paralell.  The first function in the list (the reader)
+// is called with a nil channel.  It is required for the last stream
+// function to always return a nil channel; otherwise this function
+// panics.
+//
+// TODO: Pipe should not return a channel.
+// TODO: Pipe should explicitly use g.Go(func(){...}) so that the stream
+//       functions don't need to use g.Go themselves.
+func Pipe(ctx context.Context, g *errgroup.Group, r StreamFunc, ps ...StreamFunc) {
 	out := r(ctx, g, nil)
 	for _, p := range ps {
 		out = p(ctx, g, out)
+	}
+	if (out) != nil {
+		panic("pipe: last function did not return a nil channel")
 	}
 	return out
 }
