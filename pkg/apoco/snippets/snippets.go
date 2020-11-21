@@ -106,24 +106,25 @@ func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.
 		lines = append(lines, pairs)
 	}
 	err = apoco.SendTokens(ctx, out, apoco.Token{
-		Payload: lines,
-		Chars:   lines[0],
-		Confs:   lines[0].Confs(),
-		Group:   filepath.Base(base),
-		File:    file,
-		ID:      file,
-		Tokens: func() []string {
-			ret := make([]string, len(lines))
-			for i := range lines {
-				ret[i] = lines[i].String()
-			}
-			return ret
-		}(),
+		Chars:  lines[0],
+		Confs:  lines[0].Confs(),
+		Group:  filepath.Base(base),
+		File:   file,
+		ID:     filepath.Base(file),
+		Tokens: makeTokensFromPairs(lines),
 	})
 	if err != nil {
 		return fmt.Errorf("read lines from snippets %s: %v", file, err)
 	}
 	return nil
+}
+
+func makeTokensFromPairs(lines []apoco.Chars) []string {
+	ret := make([]string, len(lines))
+	for i := range lines {
+		ret[i] = lines[i].String()
+	}
+	return ret
 }
 
 // TokenizeLines returns a stream function that tokenizes and aligns
@@ -142,18 +143,17 @@ func (e Extensions) TokenizeLines() apoco.StreamFunc {
 }
 
 func tokenizeLines(ctx context.Context, out chan<- apoco.Token, line apoco.Token) error {
-	lines := line.Payload.([]apoco.Chars)
-	alignments := alignLines(lines...)
+	alignments := alignLines(line.Tokens...)
 	for i := range alignments {
 		t := apoco.Token{
 			File:  line.File,
 			Group: line.Group,
-			ID:    strconv.Itoa(i + 1),
+			ID:    line.ID + ":" + strconv.Itoa(i+1),
 		}
 		for j, p := range alignments[i] {
 			if j == 0 {
-				t.Chars = lines[j][p.B:p.E]
-				t.Confs = lines[j][p.B:p.E].Confs()
+				t.Chars = line.Chars[p.B:p.E]
+				t.Confs = line.Chars[p.B:p.E].Confs()
 			}
 			t.Tokens = append(t.Tokens, string(p.Slice()))
 		}
@@ -164,10 +164,10 @@ func tokenizeLines(ctx context.Context, out chan<- apoco.Token, line apoco.Token
 	return nil
 }
 
-func alignLines(lines ...apoco.Chars) [][]align.Pos {
-	var rs [][]rune
-	for _, line := range lines {
-		rs = append(rs, runes(line))
+func alignLines(lines ...string) [][]align.Pos {
+	rs := make([][]rune, len(lines))
+	for i := range lines {
+		rs[i] = []rune(lines[i])
 	}
 	return align.Do(rs[0], rs[1:]...)
 }
