@@ -1,6 +1,7 @@
 package train
 
 import (
+	"context"
 	"log"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -42,12 +43,14 @@ func init() {
 	CMD.AddCommand(rrCMD, dmCMD)
 }
 
-func tokenize(exts, dirs []string) apoco.StreamFunc {
+func pipe(ctx context.Context, exts, dirs []string, fns ...apoco.StreamFunc) error {
 	if len(exts) == 1 && exts[0] == ".xml" {
-		return pagexml.TokenizeDirs(exts[0], dirs...)
+		fns = append([]apoco.StreamFunc{pagexml.TokenizeDirs(exts[0], dirs...)}, fns...)
+	} else {
+		e := snippets.Extensions(exts)
+		fns = append([]apoco.StreamFunc{e.ReadLines(dirs...), e.TokenizeLines}, fns...)
 	}
-	e := snippets.Extensions(exts)
-	return e.Tokenize(dirs...)
+	return apoco.Pipe(ctx, fns...)
 }
 
 func chk(err error) {
