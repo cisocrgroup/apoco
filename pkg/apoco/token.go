@@ -78,8 +78,8 @@ type Chars []Char
 // String converts a char array to a string.
 func (chars Chars) String() string {
 	var sb strings.Builder
-	for _, r := range chars {
-		sb.WriteRune(r)
+	for i := range chars {
+		sb.WriteRune(chars[i].Char)
 	}
 	return sb.String()
 }
