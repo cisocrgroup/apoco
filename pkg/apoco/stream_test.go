@@ -92,3 +92,47 @@ func TestNormalize(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterBad(t *testing.T) {
+	for _, tc := range []struct {
+		test []Token
+		want string
+	}{
+		{mktoks("a|b", "a|b|c"), "a|b|c"},
+		{mktoks("a|b|c", "a|b", "a|b|c"), "a|b|c a|b|c"},
+	} {
+		t.Run(fmttoks(tc.test...), func(t *testing.T) {
+			var got []Token
+			err := Pipe(context.Background(),
+				sendtoks(tc.test...), FilterBad(3), readtoks(&got))
+			if err != nil {
+				t.Fatalf("got error: %v", err)
+			}
+			if got := fmttoks(got...); got != tc.want {
+				t.Fatalf("expected %s; got %s", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestFilterShort(t *testing.T) {
+	for _, tc := range []struct {
+		test []Token
+		want string
+	}{
+		{mktoks("aaa|bbb", "aaaa|b|c"), "aaaa|b|c"},
+		{mktoks("aaaa|b|c", "aa|bb", "aaaa|b|c"), "aaaa|b|c aaaa|b|c"},
+	} {
+		t.Run(fmttoks(tc.test...), func(t *testing.T) {
+			var got []Token
+			err := Pipe(context.Background(),
+				sendtoks(tc.test...), FilterShort(4), readtoks(&got))
+			if err != nil {
+				t.Fatalf("got error: %v", err)
+			}
+			if got := fmttoks(got...); got != tc.want {
+				t.Fatalf("expected %s; got %s", tc.want, got)
+			}
+		})
+	}
+}
