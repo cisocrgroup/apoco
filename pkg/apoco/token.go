@@ -75,12 +75,13 @@ func (t *Token) HasTrait(i int, trait TraitType) bool {
 // Chars represents the master OCR chars with the respective confidences.
 type Chars []Char
 
+// String converts a char array to a string.
 func (chars Chars) String() string {
-	strs := make([]string, len(chars))
-	for i := range chars {
-		strs[i] = chars[i].String()
+	var sb strings.Builder
+	for _, r := range chars {
+		sb.WriteRune(r)
 	}
-	return strings.Join(strs, ",")
+	return sb.String()
 }
 
 // Confs returns the confidences as array.
