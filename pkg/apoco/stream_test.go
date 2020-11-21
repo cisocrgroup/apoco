@@ -8,13 +8,13 @@ import (
 	"testing"
 )
 
-func sendtoks(ts ...Token) StreamFuncX {
+func sendtoks(ts ...Token) StreamFunc {
 	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
 		return SendTokens(ctx, out, ts...)
 	}
 }
 
-func readtoks(ts *[]Token) StreamFuncX {
+func readtoks(ts *[]Token) StreamFunc {
 	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
 		return EachToken(ctx, in, func(t Token) error {
 			*ts = append(*ts, t)
@@ -23,7 +23,7 @@ func readtoks(ts *[]Token) StreamFuncX {
 	}
 }
 
-func counttoks(cnt *int) StreamFuncX {
+func counttoks(cnt *int) StreamFunc {
 	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
 		return EachToken(ctx, in, func(_ Token) error {
 			*cnt++
