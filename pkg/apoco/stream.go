@@ -64,6 +64,15 @@ func Pipe(ctx context.Context, fns ...StreamFunc) error {
 	return g.Wait()
 }
 
+// Iterate calls the given callback function for each token.  Iterate
+// must be the last stream function of the pipe, since it offers no
+// way to write any tokens to an output channel within the pipe.
+func Iterate(fn func(Token) error) StreamFunc {
+	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+		return EachToken(ctx, in, fn)
+	}
+}
+
 // EachToken iterates over the tokens in the input channel and calls
 // the callback function for each token.
 func EachToken(ctx context.Context, in <-chan Token, f func(Token) error) error {
