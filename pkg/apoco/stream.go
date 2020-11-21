@@ -15,28 +15,51 @@ import (
 )
 
 // StreamFunc is a type def for stream funcs.
-type StreamFunc func(context.Context, *errgroup.Group, <-chan Token) (<-chan Token, error)
-
-// type StreamFunc func(context.Context, chan<- Token, <-chan Token) error
+type StreamFuncX func(context.Context, <-chan Token, chan<- Token) error
+type StreamFunc func(context.Context, *errgroup.Group, <-chan Token) <-chan Token
 
 // Pipe pipes multiple stream funcs together, making shure to run all
-// of them in paralell.  The first function in the list (the reader)
-// is called with a nil channel.  It is required for the last stream
-// function to always return a nil channel; otherwise this function
-// panics.
+// of them concurently.  The first function in the list (the reader)
+// is called with a nil input channel.  The last function is always
+// called with a nil output channel.  To clarify: the first function
+// must never read from its input channel and the last function must
+// never write to its output channel.
+//
+// StreamFunctions should transform the input tokens to output
+// tokens. They must never close any channels.  They should use the
+// SendTokens and EachToken utility functions to ensure proper context
+// cancelation.
 //
 // TODO: Pipe should not return a channel.
 // TODO: Pipe should explicitly use g.Go(func(){...}) so that the stream
 //       functions don't need to use g.Go themselves.
-func Pipe(ctx context.Context, g *errgroup.Group, r StreamFunc, ps ...StreamFunc) {
-	out := r(ctx, g, nil)
-	for _, p := range ps {
-		out = p(ctx, g, out)
+func Pipe(ctx context.Context, fns ...StreamFuncX) error {
+	if len(fns) == 0 {
+		return nil
 	}
-	if (out) != nil {
-		panic("pipe: last function did not return a nil channel")
+	g, gctx := errgroup.WithContext(ctx)
+	var in chan Token
+	for i, fn := range fns {
+		// The last function gets a nil write channel
+		var out chan Token
+		if i < len(fns)-1 {
+			out = make(chan Token)
+		}
+		// Wrap into a function to avoid problems with
+		// closures and go routines.
+		func(fn StreamFuncX, in <-chan Token, out chan<- Token) {
+			g.Go(func() error {
+				defer func() {
+					if out != nil {
+						close(out)
+					}
+				}()
+				return fn(gctx, in, out)
+			})
+		}(fn, in, out)
+		in = out
 	}
-	return out
+	return g.Wait()
 }
 
 // EachToken iterates over the tokens in the input channel and calls
@@ -117,27 +140,27 @@ func SendTokens(ctx context.Context, out chan<- Token, tokens ...Token) error {
 // Normalize trims all leading and subsequent punctionation from the
 // tokens, converts them to lowercase and replaces any whitespace
 // (in the case of merges due to alignment) with a '_'.
-func Normalize(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-	out := make(chan Token)
-	g.Go(func() error {
-		defer close(out)
-		return EachToken(ctx, in, func(t Token) error {
-			for i := range t.Tokens {
-				if i == 0 { // handle master OCR in a special way
-					t.Chars = normalizeChars(t.Chars)
-				}
-				t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
-					return unicode.IsPunct(r) || unicode.IsSpace(r)
-				})
-				t.Tokens[i] = strings.ReplaceAll(strings.ToLower(t.Tokens[i]), " ", "_")
+func Normalize(ctx context.Context, in <-chan Token, out chan<- Token) error {
+	err := EachToken(ctx, in, func(t Token) error {
+		for i := range t.Tokens {
+			if i == 0 { // handle master OCR in a special way
+				t.Chars = normalizeChars(t.Chars)
 			}
-			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("normalize: %v", err)
-			}
-			return nil
-		})
+			t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
+				return unicode.IsPunct(r) || unicode.IsSpace(r)
+			})
+			t.Tokens[i] = strings.ReplaceAll(
+				strings.ToLower(t.Tokens[i]), " ", "_")
+		}
+		if err := SendTokens(ctx, out, t); err != nil {
+			return fmt.Errorf("normalize: send tokens: %v", err)
+		}
+		return nil
 	})
-	return out
+	if err != nil {
+		return fmt.Errorf("normalize: each token: %v", err)
+	}
+	return nil
 }
 
 func charsToString(chars Chars) string {
