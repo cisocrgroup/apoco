@@ -92,7 +92,7 @@ func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.Token
 
 func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.Token, base, file string) error {
 	var lines []apoco.Chars
-	pairs, err := readFile(file)
+	pairs, err := readSnippetFile(file)
 	if err != nil {
 		return fmt.Errorf("read lines from snippets %s: %v", file, err)
 	}
@@ -172,7 +172,7 @@ func alignLines(lines ...apoco.Chars) [][]align.Pos {
 	return align.Do(rs[0], rs[1:]...)
 }
 
-func readFile(path string) (apoco.Chars, error) {
+func readSnippetFile(path string) (apoco.Chars, error) {
 	is, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("readFile %s: %v", path, err)

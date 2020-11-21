@@ -17,6 +17,8 @@ import (
 // StreamFunc is a type def for stream funcs.
 type StreamFunc func(context.Context, *errgroup.Group, <-chan Token) (<-chan Token, error)
 
+// type StreamFunc func(context.Context, chan<- Token, <-chan Token) error
+
 // Pipe pipes multiple stream funcs together, making shure to run all
 // of them in paralell.  The first function in the list (the reader)
 // is called with a nil channel.  It is required for the last stream
@@ -114,7 +116,7 @@ func SendTokens(ctx context.Context, out chan<- Token, tokens ...Token) error {
 
 // Normalize trims all leading and subsequent punctionation from the
 // tokens, converts them to lowercase and replaces any whitespace
-// (in the case of merges due to the alignment) with a '_'.
+// (in the case of merges due to alignment) with a '_'.
 func Normalize(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
 	out := make(chan Token)
 	g.Go(func() error {
