@@ -20,6 +20,13 @@ import (
 // list of file extensions.
 type Extensions []string
 
+// Tokenize is a helper function that combines ReadLines and
+// TokenizeLines into one function.  It is the same as calling
+// `apoco.Pipe(ReadLines, TokenizeLines,...)`.
+func (e Extensions) Tokenize(ctx context.Context, dirs ...string) apoco.StreamFunc {
+	return apoco.Combine(ctx, e.ReadLines(dirs...), e.TokenizeLines)
+}
+
 // ReadLines returns a stream function that reads snippet files
 // (identyfied by the given file extensions) and returns a stream of
 // line tokens.

@@ -64,6 +64,33 @@ func Pipe(ctx context.Context, fns ...StreamFunc) error {
 	return g.Wait()
 }
 
+// Combine lets you combine stream functions.  All functions are run
+// concurently in their own error group.
+func Combine(ctx context.Context, fns ...StreamFunc) StreamFunc {
+	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+		if len(fns) == 0 {
+			return nil
+		}
+		g, gctx := errgroup.WithContext(ctx)
+		run := func(fn StreamFunc, in <-chan Token, out chan<- Token) {
+			g.Go(func() error {
+				defer close(out)
+				return fn(gctx, in, out)
+			})
+		}
+		n := len(fns) // len(fns) != 0
+		for _, fn := range fns[:n-1] {
+			xout := make(chan Token)
+			run(fn, in, xout)
+			in = xout
+		}
+		// We do not need to close the last out channel, since
+		// this will be closed by the pipe function.
+		g.Go(func() error { return fns[n-1](gctx, in, out) })
+		return g.Wait()
+	}
+}
+
 // Iterate calls the given callback function for each token.  Iterate
 // must be the last stream function of the pipe, since it offers no
 // way to write any tokens to an output channel within the pipe.

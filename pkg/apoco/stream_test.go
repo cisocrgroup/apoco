@@ -136,3 +136,29 @@ func TestFilterShort(t *testing.T) {
 		})
 	}
 }
+
+func TestCombine(t *testing.T) {
+	for _, tc := range []struct {
+		test []Token
+		want string
+	}{
+		{mktoks("A|B|C", "D|E", "F|G|H"), "a|b|c f|g|h"},
+		//{mktoks("aaaa|b|c", "aa|bb", "aaaa|b|c"), "aaaa|b|c aaaa|b|c"},
+	} {
+		t.Run(fmttoks(tc.test...), func(t *testing.T) {
+			var got []Token
+			ctx := context.Background()
+			err := Pipe(
+				ctx,
+				sendtoks(tc.test...),
+				Combine(ctx, FilterBad(3), Normalize),
+				readtoks(&got))
+			if err != nil {
+				t.Fatalf("got error: %v", err)
+			}
+			if got := fmttoks(got...); got != tc.want {
+				t.Fatalf("expected %s; got %s", tc.want, got)
+			}
+		})
+	}
+}
