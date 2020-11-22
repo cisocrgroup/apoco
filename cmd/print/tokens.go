@@ -9,7 +9,6 @@ import (
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
 var tokensFlags = struct {
@@ -35,7 +34,6 @@ func init() {
 }
 
 func runTokens(_ *cobra.Command, args []string) {
-	g, ctx := errgroup.WithContext(context.Background())
 	var stream []apoco.StreamFunc
 	if tokensFlags.normalize {
 		stream = append(stream, apoco.Normalize)
@@ -45,24 +43,21 @@ func runTokens(_ *cobra.Command, args []string) {
 	} else {
 		stream = append(stream, cat(tokensFlags.file))
 	}
-	_ = apoco.Pipe(ctx, g, tokenize(tokensFlags.mets,
-		tokensFlags.ifgs, tokensFlags.extensions, args), stream...)
-	chk(g.Wait())
+	chk(pipe(context.Background(),
+		tokensFlags.mets, tokensFlags.ifgs,
+		tokensFlags.extensions, args, stream...))
 }
 
 func cat(file bool) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		g.Go(func() error {
-			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				if file {
-					_, err := fmt.Printf("%s@%s\n", t.File, token2string(t))
-					return err
-				}
-				_, err := fmt.Printf("%s\n", token2string(t))
+	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
+		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+			if file {
+				_, err := fmt.Printf("%s@%s\n", t.File, token2string(t))
 				return err
-			})
+			}
+			_, err := fmt.Printf("%s\n", token2string(t))
+			return err
 		})
-		return nil
 	}
 }
 
@@ -76,18 +71,15 @@ func token2string(t apoco.Token) string {
 }
 
 func pjson() apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
+	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
 		var tokens []apoco.Token
-		g.Go(func() error {
-			err := apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				tokens = append(tokens, t)
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-			return json.NewEncoder(os.Stdout).Encode(tokens)
+		err := apoco.EachToken(ctx, in, func(t apoco.Token) error {
+			tokens = append(tokens, t)
+			return nil
 		})
-		return nil
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(tokens)
 	}
 }

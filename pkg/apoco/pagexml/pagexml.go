@@ -14,7 +14,6 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"github.com/antchfx/xmlquery"
-	"golang.org/x/sync/errgroup"
 )
 
 // MIMEType defines the mime type for page xml documents.
@@ -26,28 +25,24 @@ const MIMEType = "application/vnd.prima.page+xml"
 // function ignores the input stream it just writes tokens to the
 // output stream.
 func Tokenize(metsName string, fgs ...string) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
-		g.Go(func() error {
-			defer close(out)
-			m, err := mets.Open(metsName)
+	return func(ctx context.Context, _ <-chan apoco.Token, out chan<- apoco.Token) error {
+		m, err := mets.Open(metsName)
+		if err != nil {
+			return fmt.Errorf("tokenize: %v", err)
+		}
+		for _, fg := range fgs {
+			files, err := m.FilePathsForFileGrp(fg)
 			if err != nil {
 				return fmt.Errorf("tokenize: %v", err)
 			}
-			for _, fg := range fgs {
-				files, err := m.FilePathsForFileGrp(fg)
+			for _, file := range files {
+				err := tokenizePageXML(ctx, filepath.Dir(file), file, out)
 				if err != nil {
-					return fmt.Errorf("tokenize: %v", err)
-				}
-				for _, file := range files {
-					if err := tokenizePageXML(ctx, filepath.Dir(file), file, out); err != nil {
-						return err
-					}
+					return err
 				}
 			}
-			return nil
-		})
-		return out
+		}
+		return nil
 	}
 }
 
@@ -56,24 +51,19 @@ func Tokenize(metsName string, fgs ...string) apoco.StreamFunc {
 // function ignores the input stream.  It only writes tokens to the
 // output stream.
 func TokenizeDirs(ext string, dirs ...string) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
-		g.Go(func() error {
-			defer close(out)
-			for _, dir := range dirs {
-				files, err := gatherFilesInDir(dir, ext)
-				if err != nil {
-					return fmt.Errorf("tokenize dir %s: %v", dir, err)
-				}
-				for _, file := range files {
-					if err := tokenizePageXML(ctx, dir, file, out); err != nil {
-						return err
-					}
+	return func(ctx context.Context, _ <-chan apoco.Token, out chan<- apoco.Token) error {
+		for _, dir := range dirs {
+			files, err := gatherFilesInDir(dir, ext)
+			if err != nil {
+				return fmt.Errorf("tokenize dir %s: %v", dir, err)
+			}
+			for _, file := range files {
+				if err := tokenizePageXML(ctx, dir, file, out); err != nil {
+					return err
 				}
 			}
-			return nil
-		})
-		return out
+		}
+		return nil
 	}
 }
 

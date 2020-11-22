@@ -14,22 +14,11 @@ import (
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/align"
-	"golang.org/x/sync/errgroup"
 )
 
 // Extensions is used to tokenize snippets in directories using the
 // list of file extensions.
 type Extensions []string
-
-// Tokenize tokenizes tokens from line snippets (identyfied by the
-// given file extensions) and alignes them accordingly.  It is a
-// shorthand for piping ReadLines into TokenizeLines.
-func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		out := e.ReadLines(dirs...)(ctx, g, in)
-		return e.TokenizeLines()(ctx, g, out)
-	}
-}
 
 // ReadLines returns a stream function that reads snippet files
 // (identyfied by the given file extensions) and returns a stream of
@@ -40,18 +29,13 @@ func (e Extensions) Tokenize(dirs ...string) apoco.StreamFunc {
 // extended data format is assumed. Otherwise the file is read as a
 // TSV file expecting one char and its confidence on each line.
 func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, _ <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
-		g.Go(func() error {
-			defer close(out)
-			for _, dir := range dirs {
-				if err := e.readLinesFromDir(ctx, out, dir); err != nil {
-					return fmt.Errorf("read lines %s: %v", dir, err)
-				}
+	return func(ctx context.Context, _ <-chan apoco.Token, out chan<- apoco.Token) error {
+		for _, dir := range dirs {
+			if err := e.readLinesFromDir(ctx, out, dir); err != nil {
+				return fmt.Errorf("read lines %s: %v", dir, err)
 			}
-			return nil
-		})
-		return out
+		}
+		return nil
 	}
 }
 
@@ -92,14 +76,14 @@ func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.Token
 
 func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.Token, base, file string) error {
 	var lines []apoco.Chars
-	pairs, err := readFile(file)
+	pairs, err := readSnippetFile(file)
 	if err != nil {
 		return fmt.Errorf("read lines from snippets %s: %v", file, err)
 	}
 	lines = append(lines, pairs)
 	for i := 1; i < len(e); i++ {
 		path := file[0:len(file)-len(e[0])] + e[i]
-		pairs, err := readFile(path)
+		pairs, err := readSnippetFile(path)
 		if err != nil {
 			return fmt.Errorf("read lines from snippets %s: %v", file, err)
 		}
@@ -127,19 +111,12 @@ func makeTokensFromPairs(lines []apoco.Chars) []string {
 	return ret
 }
 
-// TokenizeLines returns a stream function that tokenizes and aligns
-// line tokens.
-func (e Extensions) TokenizeLines() apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
-		g.Go(func() error {
-			defer close(out)
-			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				return tokenizeLines(ctx, out, t)
-			})
-		})
-		return out
-	}
+// TokenizeLines is a stream function that tokenizes and aligns line
+// tokens.
+func (e Extensions) TokenizeLines(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
+	return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+		return tokenizeLines(ctx, out, t)
+	})
 }
 
 func tokenizeLines(ctx context.Context, out chan<- apoco.Token, line apoco.Token) error {
@@ -172,7 +149,7 @@ func alignLines(lines ...string) [][]align.Pos {
 	return align.Do(rs[0], rs[1:]...)
 }
 
-func readFile(path string) (apoco.Chars, error) {
+func readSnippetFile(path string) (apoco.Chars, error) {
 	is, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("readFile %s: %v", path, err)

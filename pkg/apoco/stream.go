@@ -14,17 +14,63 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// StreamFunc is a type def for stream funcs.
-type StreamFunc func(context.Context, *errgroup.Group, <-chan Token) <-chan Token
+// StreamFunc is a type def for stream functions.  A stream function
+// is used to transform tokens from the input channel to the output
+// channel.  They should be used with the Pipe function to chain
+// multiple functions together.
+type StreamFunc func(context.Context, <-chan Token, chan<- Token) error
 
-// Pipe pipes multiple stream funcs together.  The first function in the list (the reader)
-// is called with a nil channel
-func Pipe(ctx context.Context, g *errgroup.Group, r StreamFunc, ps ...StreamFunc) <-chan Token {
-	out := r(ctx, g, nil)
-	for _, p := range ps {
-		out = p(ctx, g, out)
+// Pipe pipes multiple stream funcs together, making shure to run all
+// of them concurently.  The first function in the list (the reader)
+// is called with a nil input channel.  The last function is always
+// called with a nil output channel.  To clarify: the first function
+// must never read from its input channel and the last function must
+// never write to its output channel.
+//
+// StreamFunctions should transform the input tokens to output
+// tokens. They must never close any channels.  They should use the
+// SendTokens, ReadToken and EachToken utility functions to ensure
+// proper handling of context cancelation.
+//
+// TODO: Pipe should not return a channel.
+// TODO: Pipe should explicitly use g.Go(func(){...}) so that the stream
+//       functions don't need to use g.Go themselves.
+func Pipe(ctx context.Context, fns ...StreamFunc) error {
+	if len(fns) == 0 {
+		return nil
 	}
-	return out
+	g, gctx := errgroup.WithContext(ctx)
+	var in chan Token
+	for i, fn := range fns {
+		// The last function gets a nil write channel
+		var out chan Token
+		if i < len(fns)-1 {
+			out = make(chan Token)
+		}
+		// Wrap into a function to avoid problems with
+		// closures and go routines.
+		func(fn StreamFunc, in <-chan Token, out chan<- Token) {
+			g.Go(func() error {
+				defer func() {
+					if out != nil {
+						close(out)
+					}
+				}()
+				return fn(gctx, in, out)
+			})
+		}(fn, in, out)
+		in = out
+	}
+	return g.Wait()
+}
+
+// Iterate calls the given callback function for each token.  Iterate
+// must be the last stream function of the pipe, since it offers no
+// way to write any tokens to an output channel within the pipe.
+func Iterate(fn func(Token) error) StreamFunc {
+	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+		return EachToken(ctx, in, fn)
+	}
 }
 
 // EachToken iterates over the tokens in the input channel and calls
@@ -77,7 +123,8 @@ func EachTokenGroup(ctx context.Context, in <-chan Token, f func(string, ...Toke
 	return nil
 }
 
-// ReadToken reads one token from the given channel.
+// ReadToken reads one token from the given channel.  This function
+// should alsways be used to read single tokens from input channels.
 func ReadToken(ctx context.Context, in <-chan Token) (Token, bool, error) {
 	select {
 	case token, ok := <-in:
@@ -90,7 +137,9 @@ func ReadToken(ctx context.Context, in <-chan Token) (Token, bool, error) {
 	}
 }
 
-// SendTokens writes tokens into the given output channel.
+// SendTokens writes tokens into the given output channel.  This
+// function should always be used to write tokens into output
+// channels.
 func SendTokens(ctx context.Context, out chan<- Token, tokens ...Token) error {
 	for _, t := range tokens {
 		select {
@@ -104,28 +153,28 @@ func SendTokens(ctx context.Context, out chan<- Token, tokens ...Token) error {
 
 // Normalize trims all leading and subsequent punctionation from the
 // tokens, converts them to lowercase and replaces any whitespace
-// (in the case of merges due to the alignment) with a '_'.
-func Normalize(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-	out := make(chan Token)
-	g.Go(func() error {
-		defer close(out)
-		return EachToken(ctx, in, func(t Token) error {
-			for i := range t.Tokens {
-				if i == 0 { // handle master OCR in a special way
-					t.Chars = normalizeChars(t.Chars)
-				}
-				t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
-					return unicode.IsPunct(r) || unicode.IsSpace(r)
-				})
-				t.Tokens[i] = strings.ReplaceAll(strings.ToLower(t.Tokens[i]), " ", "_")
+// (in the case of merges due to alignment) with a '_'.
+func Normalize(ctx context.Context, in <-chan Token, out chan<- Token) error {
+	err := EachToken(ctx, in, func(t Token) error {
+		for i := range t.Tokens {
+			if i == 0 { // handle master OCR in a special way
+				t.Chars = normalizeChars(t.Chars)
 			}
-			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("normalize: %v", err)
-			}
-			return nil
-		})
+			t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
+				return unicode.IsPunct(r) || unicode.IsSpace(r)
+			})
+			t.Tokens[i] = strings.ReplaceAll(
+				strings.ToLower(t.Tokens[i]), " ", "_")
+		}
+		if err := SendTokens(ctx, out, t); err != nil {
+			return fmt.Errorf("normalize: send tokens: %v", err)
+		}
+		return nil
 	})
-	return out
+	if err != nil {
+		return fmt.Errorf("normalize: each token: %v", err)
+	}
+	return nil
 }
 
 func charsToString(chars Chars) string {
@@ -151,131 +200,110 @@ func normalizeChars(chars Chars) Chars {
 	return chars[i:j]
 }
 
-// FilterBad filters tokens with not enough ocr and/or gt tokens.
+// FilterBad returns a astream function that filters tokens with not
+// enough ocr and/or gt tokens.
 func FilterBad(min int) StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-		out := make(chan Token)
-		g.Go(func() error {
-			defer close(out)
-			err := EachToken(ctx, in, func(t Token) error {
-				if len(t.Tokens) < min {
-					return nil
-				}
-				if err := SendTokens(ctx, out, t); err != nil {
-					return fmt.Errorf("filterBad: %v", err)
-				}
-				return nil
-			})
-			if err != nil {
-				return fmt.Errorf("filterBad: %v", err)
-			}
-			return nil
-		})
-		return out
-
-	}
-}
-
-// FilterShort filters short master OCR tokens from the input stream.
-// Short tokens are tokens, with less than 4 unicode characters.
-func FilterShort(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-	out := make(chan Token)
-	g.Go(func() error {
-		defer close(out)
+	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
 		err := EachToken(ctx, in, func(t Token) error {
-			if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
+			if len(t.Tokens) < min {
 				return nil
 			}
 			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("filterShort: %v", err)
+				return fmt.Errorf("filter bad: send tokens: %v", err)
 			}
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("filterShort: %v", err)
+			return fmt.Errorf("filter bad: each token: %v", err)
 		}
 		return nil
-	})
-	return out
+	}
+}
+
+// FilterShort returns a stream function that filters short master OCR
+// tokens from the input stream.  Short tokens are tokens, with less
+// than min unicode characters.
+func FilterShort(min int) StreamFunc {
+	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+		err := EachToken(ctx, in, func(t Token) error {
+			if utf8.RuneCountInString(t.Tokens[0]) < min {
+				return nil
+			}
+			if err := SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("filter short: send tokens: %v", err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("filter short: each token: %v", err)
+		}
+		return nil
+	}
 }
 
 // FilterLexiconEntries filters all tokens that are lexicon entries
 // from the stream.
-func FilterLexiconEntries(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-	out := make(chan Token)
-	g.Go(func() error {
-		defer close(out)
-		err := EachToken(ctx, in, func(t Token) error {
-			if t.IsLexiconEntry() {
-				return nil
-			}
-			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("filterLexiconEntry: %v", err)
-			}
+func FilterLexiconEntries(ctx context.Context, in <-chan Token, out chan<- Token) error {
+	err := EachToken(ctx, in, func(t Token) error {
+		if t.IsLexiconEntry() {
 			return nil
-		})
-		if err != nil {
+		}
+		if err := SendTokens(ctx, out, t); err != nil {
 			return fmt.Errorf("filterLexiconEntry: %v", err)
 		}
 		return nil
 	})
-	return out
+	if err != nil {
+		return fmt.Errorf("filterLexiconEntry: %v", err)
+	}
+	return nil
 }
 
 // ConnectCandidates connects tokens with their respective candidates
 // to the stream.  Tokens with no candidates or tokens with only a
 // modern interpretation are filtered from the stream.
-func ConnectCandidates(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-	out := make(chan Token)
-	g.Go(func() error {
-		defer close(out)
-		err := EachToken(ctx, in, func(t Token) error {
-			interp, ok := t.LM.Profile[t.Tokens[0]]
-			if !ok { // no suggestions (too short or unknown)
-				return nil
-			}
-			for i := range interp.Candidates {
-				t.Payload = &interp.Candidates[i]
-				if err := SendTokens(ctx, out, t); err != nil {
-					return fmt.Errorf("add candidate: %v", err)
-				}
-			}
+func ConnectCandidates(ctx context.Context, in <-chan Token, out chan<- Token) error {
+	err := EachToken(ctx, in, func(t Token) error {
+		interp, ok := t.LM.Profile[t.Tokens[0]]
+		if !ok { // no suggestions (too short or unknown)
 			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("add candidate: %v", err)
+		}
+		for i := range interp.Candidates {
+			t.Payload = &interp.Candidates[i]
+			if err := SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("add candidate: %v", err)
+			}
 		}
 		return nil
 	})
-	return out
+	if err != nil {
+		return fmt.Errorf("add candidate: %v", err)
+	}
+	return nil
 }
 
 // ConnectLM loads the language model for the tokens and adds them to
 // each token.  Based on the file group of the tokens different
 // language models are loaded.
 func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-		out := make(chan Token)
-		g.Go(func() error {
-			defer close(out)
-			err := EachTokenGroup(ctx, in, func(group string, tokens ...Token) error {
-				loader := lmLoader{
-					config: c,
-					lm:     &LanguageModel{ngrams: ngrams},
-					tokens: tokens,
-				}
-				if err := loader.loadAndSend(ctx, out); err != nil {
-					return fmt.Errorf("connectLM: %v", err)
-				}
-				return nil
-
-			})
-			if err != nil {
+	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+		defer close(out)
+		err := EachTokenGroup(ctx, in, func(group string, tokens ...Token) error {
+			loader := lmLoader{
+				config: c,
+				lm:     &LanguageModel{ngrams: ngrams},
+				tokens: tokens,
+			}
+			if err := loader.loadAndSend(ctx, out); err != nil {
 				return fmt.Errorf("connectLM: %v", err)
 			}
 			return nil
+
 		})
-		return out
+		if err != nil {
+			return fmt.Errorf("connectLM: %v", err)
+		}
+		return nil
 	}
 }
 
@@ -317,39 +345,34 @@ func (l lmLoader) load(ctx context.Context) error {
 // ConnectRankings connects the tokens of the input stream with their
 // respective rankings.
 func ConnectRankings(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-		out := make(chan Token)
-		g.Go(func() error {
-			defer close(out)
-			var lfid, ltid string // last file id and last token id
-			var tokens []Token
-			err := EachToken(ctx, in, func(t Token) error {
-				if t.File != lfid || t.ID != ltid {
-					if len(tokens) > 0 {
-						tmp := connectRankings(lr, fs, n, tokens)
-						if err := SendTokens(ctx, out, tmp); err != nil {
-							return err
-						}
-						tokens = tokens[0:0]
+	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+		var lfid, ltid string // last file id and last token id
+		var tokens []Token
+		err := EachToken(ctx, in, func(t Token) error {
+			if t.File != lfid || t.ID != ltid {
+				if len(tokens) > 0 {
+					tmp := connectRankings(lr, fs, n, tokens)
+					if err := SendTokens(ctx, out, tmp); err != nil {
+						return err
 					}
-					lfid = t.File
-					ltid = t.ID
+					tokens = tokens[0:0]
 				}
-				tokens = append(tokens, t)
-				return nil
-			})
-			if err != nil {
-				return err
+				lfid = t.File
+				ltid = t.ID
 			}
-			if len(tokens) > 0 {
-				t := connectRankings(lr, fs, n, tokens)
-				if err := SendTokens(ctx, out, t); err != nil {
-					return err
-				}
-			}
+			tokens = append(tokens, t)
 			return nil
 		})
-		return out
+		if err != nil {
+			return err
+		}
+		if len(tokens) > 0 {
+			t := connectRankings(lr, fs, n, tokens)
+			if err := SendTokens(ctx, out, t); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 }
 
@@ -379,35 +402,30 @@ func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []Token) Token {
 // ConnectCorrections connects the tokens with the decider's correction
 // decisions.
 func ConnectCorrections(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan Token) <-chan Token {
-		out := make(chan Token)
-		g.Go(func() error {
-			defer close(out)
-			blen := 1024
-			buf := make([]Token, 0, blen)
-			err := EachToken(ctx, in, func(t Token) error {
-				if len(buf) >= blen {
-					connectCorrections(lr, fs, n, buf)
-					if err := SendTokens(ctx, out, buf...); err != nil {
-						return fmt.Errorf("connectCorrections: %v", err)
-					}
-					buf = buf[0:0]
-				}
-				buf = append(buf, t)
-				return nil
-			})
-			if err != nil {
-				return fmt.Errorf("connectCorrections: %v", err)
-			}
-			if len(buf) > 0 {
+	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+		blen := 1024
+		buf := make([]Token, 0, blen)
+		err := EachToken(ctx, in, func(t Token) error {
+			if len(buf) >= blen {
 				connectCorrections(lr, fs, n, buf)
 				if err := SendTokens(ctx, out, buf...); err != nil {
 					return fmt.Errorf("connectCorrections: %v", err)
 				}
+				buf = buf[0:0]
 			}
+			buf = append(buf, t)
 			return nil
 		})
-		return out
+		if err != nil {
+			return fmt.Errorf("connectCorrections: %v", err)
+		}
+		if len(buf) > 0 {
+			connectCorrections(lr, fs, n, buf)
+			if err := SendTokens(ctx, out, buf...); err != nil {
+				return fmt.Errorf("connectCorrections: %v", err)
+			}
+		}
+		return nil
 	}
 }
 

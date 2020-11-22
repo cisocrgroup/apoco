@@ -10,7 +10,6 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
 var flags = struct {
@@ -55,9 +54,11 @@ func run(_ *cobra.Command, args []string) {
 	dmlr, dmfs, err := m.Get("dm", c.Nocr)
 	chk(err)
 	infoMap := make(infoMap)
-	g, ctx := errgroup.WithContext(context.Background())
-	_ = apoco.Pipe(ctx, g,
-		tokenize(flags.mets, flags.ifgs, flags.extensions, args),
+	chk(pipe(context.Background(),
+		flags.mets,
+		flags.ifgs,
+		flags.extensions,
+		args,
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
 		register(infoMap),
@@ -69,8 +70,7 @@ func run(_ *cobra.Command, args []string) {
 		analyzeRankings(infoMap),
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
 		correct(infoMap),
-	)
-	chk(g.Wait())
+	))
 	log.Printf("correcting %d pages (%d tokens)", len(infoMap), infoMap.numberOfTokens())
 	if len(flags.ifgs) == 0 {
 		for _, ids := range infoMap {
@@ -89,114 +89,92 @@ func run(_ *cobra.Command, args []string) {
 }
 
 func correct(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		g.Go(func() error {
-			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				info := m.get(t)
-				info.skipped = false
-				info.cor = t.Payload.(apoco.Correction).Conf > 0.5
-				info.conf = t.Payload.(apoco.Correction).Conf
-				info.sug = t.Payload.(apoco.Correction).Candidate.Suggestion
-				return nil
-			})
+	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
+		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+			info := m.get(t)
+			info.skipped = false
+			info.cor = t.Payload.(apoco.Correction).Conf > 0.5
+			info.conf = t.Payload.(apoco.Correction).Conf
+			info.sug = t.Payload.(apoco.Correction).Candidate.Suggestion
+			return nil
 		})
-		return nil
 	}
 }
 
 func register(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
-		g.Go(func() error {
-			defer close(out)
-			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				// Each token is skipped as default.
-				// If a token is not skipped, skipped
-				// must be explicitly set to false.
-				m.get(t).skipped = true
-				if err := apoco.SendTokens(ctx, out, t); err != nil {
-					return fmt.Errorf("register: %v", err)
-				}
-				return nil
-			})
+	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
+		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+			// Each token is skipped as default.
+			// If a token is not skipped, skipped
+			// must be explicitly set to false.
+			m.get(t).skipped = true
+			if err := apoco.SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("register: %v", err)
+			}
+			return nil
 		})
-		return out
 	}
 }
 
 func filterLex(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
-		g.Go(func() error {
-			defer close(out)
-			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				if t.IsLexiconEntry() {
-					m.get(t).lex = true
-					return nil
-				}
-				if err := apoco.SendTokens(ctx, out, t); err != nil {
-					return fmt.Errorf("filterLex: %v", err)
-				}
+	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
+		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+			if t.IsLexiconEntry() {
+				m.get(t).lex = true
 				return nil
-			})
+			}
+			if err := apoco.SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("filterLex: %v", err)
+			}
+			return nil
 		})
-		return out
 	}
 }
 
 func filterShort(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
-		g.Go(func() error {
-			defer close(out)
-			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
-					m.get(t).short = true
-					return nil
-				}
-				if err := apoco.SendTokens(ctx, out, t); err != nil {
-					return fmt.Errorf("filterShort: %v", err)
-				}
+	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
+		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+			if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
+				m.get(t).short = true
 				return nil
-			})
+			}
+			if err := apoco.SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("filterShort: %v", err)
+			}
+			return nil
 		})
-		return out
 	}
 }
 
 func analyzeRankings(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		out := make(chan apoco.Token)
-		g.Go(func() error {
-			defer close(out)
-			return apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				var rank int
-				for i, r := range t.Payload.([]apoco.Ranking) {
-					if r.Candidate.Suggestion == t.Tokens[len(t.Tokens)-1] {
-						rank = i + 1
-						break
-					}
+	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
+		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+			var rank int
+			for i, r := range t.Payload.([]apoco.Ranking) {
+				if r.Candidate.Suggestion == t.Tokens[len(t.Tokens)-1] {
+					rank = i + 1
+					break
 				}
-				m.get(t).rank = rank
-				if err := apoco.SendTokens(ctx, out, t); err != nil {
-					return fmt.Errorf("analyzeRankings: %v", err)
-				}
-				return nil
-			})
+			}
+			m.get(t).rank = rank
+			if err := apoco.SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("analyzeRankings: %v", err)
+			}
+			return nil
 		})
-		return out
 	}
 }
 
-func tokenize(mets string, ifgs, exts, args []string) apoco.StreamFunc {
+func pipe(ctx context.Context, mets string, ifgs, exts, dirs []string, fns ...apoco.StreamFunc) error {
 	if len(ifgs) != 0 {
-		return pagexml.Tokenize(mets, ifgs...)
+		fns = append([]apoco.StreamFunc{pagexml.Tokenize(mets, ifgs...)}, fns...)
+	} else if len(exts) == 1 && exts[0] == ".xml" {
+		fns = append([]apoco.StreamFunc{pagexml.TokenizeDirs(exts[0], dirs...)}, fns...)
+	} else {
+		e := snippets.Extensions(exts)
+		fns = append([]apoco.StreamFunc{e.ReadLines(dirs...), e.TokenizeLines}, fns...)
 	}
-	if len(exts) == 1 && exts[0] == ".xml" {
-		return pagexml.TokenizeDirs(exts[0], args...)
-	}
-	e := snippets.Extensions(exts)
-	return e.Tokenize(args...)
+	return apoco.Pipe(ctx, fns...)
 }
 
 func chk(err error) {

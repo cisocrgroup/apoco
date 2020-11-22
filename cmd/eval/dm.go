@@ -8,7 +8,6 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -27,51 +26,45 @@ func dmRun(_ *cobra.Command, args []string) {
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)
 	chk(err)
-	g, ctx := errgroup.WithContext(context.Background())
-	_ = apoco.Pipe(ctx, g,
-		tokenize(flags.extensions, args),
+	chk(pipe(context.Background(), flags.extensions, args,
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize,
-		apoco.FilterShort,
+		apoco.FilterShort(4),
 		apoco.ConnectLM(c, m.Ngrams),
 		apoco.FilterLexiconEntries,
 		apoco.ConnectCandidates,
 		apoco.ConnectRankings(lr, fs, c.Nocr),
-		dmEval(c, m))
-	chk(g.Wait())
+		dmEval(c, m)))
 }
 
 func dmEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
-	return func(ctx context.Context, g *errgroup.Group, in <-chan apoco.Token) <-chan apoco.Token {
-		g.Go(func() error {
-			lr, fs, err := m.Get("dm", c.Nocr)
-			if err != nil {
-				return fmt.Errorf("evaldm: %v", err)
-			}
-			var xs, ys []float64
-			var tokens []apoco.Token
-			err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
-				xs = fs.Calculate(xs, t, c.Nocr)
-				ys = append(ys, dmGT(t))
-				tokens = append(tokens, t)
-				return nil
-			})
-			if err != nil {
-				return fmt.Errorf("evaldm: %v", err)
-			}
-			n := len(ys)
-			x := mat.NewDense(n, len(xs)/n, xs)
-			y := mat.NewVecDense(n, ys)
-			p := lr.Predict(x, 0.5)
-			var s stats
-			for i := 0; i < n; i++ {
-				// cor := tokens[i].Payload.([]apoco.Ranking)[0].Candidate.Suggestion
-				// mocr := tokens[i].Tokens[0]
-				s.add(y.AtVec(i), p.AtVec(i))
-			}
-			return s.print(os.Stdout, "dm", c.Nocr)
+	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
+		lr, fs, err := m.Get("dm", c.Nocr)
+		if err != nil {
+			return fmt.Errorf("evaldm: %v", err)
+		}
+		var xs, ys []float64
+		var tokens []apoco.Token
+		err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
+			xs = fs.Calculate(xs, t, c.Nocr)
+			ys = append(ys, dmGT(t))
+			tokens = append(tokens, t)
+			return nil
 		})
-		return nil
+		if err != nil {
+			return fmt.Errorf("evaldm: %v", err)
+		}
+		n := len(ys)
+		x := mat.NewDense(n, len(xs)/n, xs)
+		y := mat.NewVecDense(n, ys)
+		p := lr.Predict(x, 0.5)
+		var s stats
+		for i := 0; i < n; i++ {
+			// cor := tokens[i].Payload.([]apoco.Ranking)[0].Candidate.Suggestion
+			// mocr := tokens[i].Tokens[0]
+			s.add(y.AtVec(i), p.AtVec(i))
+		}
+		return s.print(os.Stdout, "dm", c.Nocr)
 	}
 }
 
