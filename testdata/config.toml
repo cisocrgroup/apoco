@@ -3,7 +3,7 @@
 ##############################
 
 # Path to the model.
-model = "model.bin"
+model = "testdata/model.bin"
 
 # Number of parallel OCRs.
 nocr = 2
