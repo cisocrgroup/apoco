@@ -71,7 +71,6 @@ func dmTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		}
 		return nil
 	}
-	return nil
 }
 
 func loadDMModel(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
