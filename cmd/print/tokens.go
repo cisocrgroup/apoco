@@ -19,7 +19,7 @@ var tokensFlags = struct {
 
 // CMD defines the apoco cat command.
 var tokensCMD = &cobra.Command{
-	Use:   "cat [DIRS...]",
+	Use:   "tokens [DIRS...]",
 	Short: "Output tokens to stdout",
 	Run:   runTokens,
 }
