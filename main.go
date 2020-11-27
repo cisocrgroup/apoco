@@ -6,7 +6,6 @@ import (
 	"git.sr.ht/~flobar/apoco/cmd/correct"
 	"git.sr.ht/~flobar/apoco/cmd/eval"
 	"git.sr.ht/~flobar/apoco/cmd/print"
-	"git.sr.ht/~flobar/apoco/cmd/protocol"
 	"git.sr.ht/~flobar/apoco/cmd/train"
 	"git.sr.ht/~flobar/apoco/cmd/version"
 	"github.com/spf13/cobra"
@@ -24,7 +23,6 @@ func init() {
 		correct.CMD,
 		eval.CMD,
 		print.CMD,
-		protocol.CMD,
 		train.CMD,
 		version.CMD,
 	)

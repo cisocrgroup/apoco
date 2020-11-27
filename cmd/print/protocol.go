@@ -1,9 +1,8 @@
-package protocol
+package print
 
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"unicode/utf8"
@@ -11,16 +10,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CMD defines the apoco catprot command.
-var CMD = &cobra.Command{
+var protocolCMD = &cobra.Command{
 	Use:   "protocol [INPUT...]",
 	Short: "Output stats from a-i-pocoto protocol files",
-	Run:   run,
+	Run:   runProtocol,
 }
 
-func run(_ *cobra.Command, args []string) {
+func runProtocol(_ *cobra.Command, args []string) {
 	for _, arg := range args {
-		cat(arg)
+		catp(arg)
 	}
 }
 
@@ -84,7 +82,7 @@ func (c *correction) rank(gt string) int {
 	return 0
 }
 
-func cat(name string) {
+func catp(name string) {
 	_, err := fmt.Printf("#filename=%s\n", name)
 	chk(err)
 	is, err := os.Open(name)
@@ -116,10 +114,4 @@ func e(str string) string {
 		return "ε"
 	}
 	return strings.ToLower(strings.Replace(str, " ", "_", -1))
-}
-
-func chk(err error) {
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
 }
