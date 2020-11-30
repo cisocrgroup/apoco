@@ -17,5 +17,6 @@ var CMD = &cobra.Command{
 }
 
 func run(_ *cobra.Command, args []string) {
-	fmt.Printf("%s version: %s [%s/%s]\n", os.Args[0], internal.Version, runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("%s version: %s [%s/%s]\n",
+		os.Args[0], internal.Version, runtime.GOOS, runtime.GOARCH)
 }
