@@ -36,13 +36,13 @@ func rrRun(_ *cobra.Command, args []string) {
 }
 
 func rrEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := m.Get("rr", c.Nocr)
 		if err != nil {
 			return fmt.Errorf("rreval: %v", err)
 		}
 		var xs, ys []float64
-		err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
+		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			xs = fs.Calculate(xs, t, c.Nocr)
 			ys = append(ys, rrGT(t))
 			return nil
@@ -62,7 +62,7 @@ func rrEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 	}
 }
 
-func rrGT(t apoco.Token) float64 {
+func rrGT(t apoco.T) float64 {
 	candidate := t.Payload.(*gofiler.Candidate)
 	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
 }

@@ -99,17 +99,17 @@ func jsonmodels(name, typ string, ds map[int]apoco.ModelData) []modelst {
 	return models
 }
 
-func mktok(typ string, nocr int) apoco.Token {
+func mktok(typ string, nocr int) apoco.T {
 	switch typ {
 	case "dm":
-		return apoco.Token{
+		return apoco.T{
 			Tokens: make([]string, nocr),
 			Payload: []apoco.Ranking{
 				apoco.Ranking{Candidate: new(gofiler.Candidate)},
 			},
 		}
 	default:
-		return apoco.Token{
+		return apoco.T{
 			Tokens:  make([]string, nocr),
 			Payload: new(gofiler.Candidate),
 		}

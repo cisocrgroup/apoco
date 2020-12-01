@@ -36,7 +36,7 @@ func (e Extensions) Tokenize(ctx context.Context, dirs ...string) apoco.StreamFu
 // extended data format is assumed. Otherwise the file is read as a
 // TSV file expecting one char and its confidence on each line.
 func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
-	return func(ctx context.Context, _ <-chan apoco.Token, out chan<- apoco.Token) error {
+	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
 		for _, dir := range dirs {
 			if err := e.readLinesFromDir(ctx, out, dir); err != nil {
 				return fmt.Errorf("read lines %s: %v", dir, err)
@@ -46,7 +46,7 @@ func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 	}
 }
 
-func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.Token, base string) error {
+func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.T, base string) error {
 	// Use a dir path stack to iterate over all dirs in the tree.
 	dirs := []string{base}
 	for len(dirs) != 0 {
@@ -81,7 +81,7 @@ func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.Token
 	return nil
 }
 
-func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.Token, base, file string) error {
+func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.T, base, file string) error {
 	var lines []apoco.Chars
 	pairs, err := readSnippetFile(file)
 	if err != nil {
@@ -96,7 +96,7 @@ func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.
 		}
 		lines = append(lines, pairs)
 	}
-	err = apoco.SendTokens(ctx, out, apoco.Token{
+	err = apoco.SendTokens(ctx, out, apoco.T{
 		Chars:  lines[0],
 		Confs:  lines[0].Confs(),
 		Group:  filepath.Base(base),
@@ -120,16 +120,16 @@ func makeTokensFromPairs(lines []apoco.Chars) []string {
 
 // TokenizeLines is a stream function that tokenizes and aligns line
 // tokens.
-func (e Extensions) TokenizeLines(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
-	return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+func (e Extensions) TokenizeLines(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
+	return apoco.EachToken(ctx, in, func(t apoco.T) error {
 		return tokenizeLines(ctx, out, t)
 	})
 }
 
-func tokenizeLines(ctx context.Context, out chan<- apoco.Token, line apoco.Token) error {
+func tokenizeLines(ctx context.Context, out chan<- apoco.T, line apoco.T) error {
 	alignments := alignLines(line.Tokens...)
 	for i := range alignments {
-		t := apoco.Token{
+		t := apoco.T{
 			File:  line.File,
 			Group: line.Group,
 			ID:    line.ID + ":" + strconv.Itoa(i+1),

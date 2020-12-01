@@ -18,7 +18,7 @@ import (
 // is used to transform tokens from the input channel to the output
 // channel.  They should be used with the Pipe function to chain
 // multiple functions together.
-type StreamFunc func(context.Context, <-chan Token, chan<- Token) error
+type StreamFunc func(context.Context, <-chan T, chan<- T) error
 
 // Pipe pipes multiple stream funcs together, making shure to run all
 // of them concurently.  The first function in the list (the reader)
@@ -40,16 +40,16 @@ func Pipe(ctx context.Context, fns ...StreamFunc) error {
 		return nil
 	}
 	g, gctx := errgroup.WithContext(ctx)
-	var in chan Token
+	var in chan T
 	for i, fn := range fns {
 		// The last function gets a nil write channel
-		var out chan Token
+		var out chan T
 		if i < len(fns)-1 {
-			out = make(chan Token)
+			out = make(chan T)
 		}
 		// Wrap into a function to avoid problems with
 		// closures and go routines.
-		func(fn StreamFunc, in <-chan Token, out chan<- Token) {
+		func(fn StreamFunc, in <-chan T, out chan<- T) {
 			g.Go(func() error {
 				defer func() {
 					if out != nil {
@@ -67,12 +67,12 @@ func Pipe(ctx context.Context, fns ...StreamFunc) error {
 // Combine lets you combine stream functions.  All functions are run
 // concurently in their own error group.
 func Combine(ctx context.Context, fns ...StreamFunc) StreamFunc {
-	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		if len(fns) == 0 {
 			return nil
 		}
 		g, gctx := errgroup.WithContext(ctx)
-		run := func(fn StreamFunc, in <-chan Token, out chan<- Token) {
+		run := func(fn StreamFunc, in <-chan T, out chan<- T) {
 			g.Go(func() error {
 				defer close(out)
 				return fn(gctx, in, out)
@@ -80,7 +80,7 @@ func Combine(ctx context.Context, fns ...StreamFunc) StreamFunc {
 		}
 		n := len(fns) // len(fns) != 0
 		for _, fn := range fns[:n-1] {
-			xout := make(chan Token)
+			xout := make(chan T)
 			run(fn, in, xout)
 			in = xout
 		}
@@ -94,15 +94,15 @@ func Combine(ctx context.Context, fns ...StreamFunc) StreamFunc {
 // Iterate calls the given callback function for each token.  Iterate
 // must be the last stream function of the pipe, since it offers no
 // way to write any tokens to an output channel within the pipe.
-func Iterate(fn func(Token) error) StreamFunc {
-	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+func Iterate(fn func(T) error) StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		return EachToken(ctx, in, fn)
 	}
 }
 
 // EachToken iterates over the tokens in the input channel and calls
 // the callback function for each token.
-func EachToken(ctx context.Context, in <-chan Token, f func(Token) error) error {
+func EachToken(ctx context.Context, in <-chan T, f func(T) error) error {
 	for {
 		token, ok, err := ReadToken(ctx, in)
 		if err != nil {
@@ -120,10 +120,10 @@ func EachToken(ctx context.Context, in <-chan Token, f func(Token) error) error 
 // EachTokenGroup iterates over the tokens grouping them together
 // based on their groups.  The given callback function is called for
 // each group of tokens.
-func EachTokenGroup(ctx context.Context, in <-chan Token, f func(string, ...Token) error) error {
+func EachTokenGroup(ctx context.Context, in <-chan T, f func(string, ...T) error) error {
 	var group string
-	var tokens []Token
-	err := EachToken(ctx, in, func(t Token) error {
+	var tokens []T
+	err := EachToken(ctx, in, func(t T) error {
 		if group == "" {
 			group = t.Group
 		}
@@ -152,7 +152,7 @@ func EachTokenGroup(ctx context.Context, in <-chan Token, f func(string, ...Toke
 
 // ReadToken reads one token from the given channel.  This function
 // should alsways be used to read single tokens from input channels.
-func ReadToken(ctx context.Context, in <-chan Token) (Token, bool, error) {
+func ReadToken(ctx context.Context, in <-chan T) (T, bool, error) {
 	select {
 	case token, ok := <-in:
 		if !ok {
@@ -160,14 +160,14 @@ func ReadToken(ctx context.Context, in <-chan Token) (Token, bool, error) {
 		}
 		return token, true, nil
 	case <-ctx.Done():
-		return Token{}, false, fmt.Errorf("readToken: %v", ctx.Err())
+		return T{}, false, fmt.Errorf("readToken: %v", ctx.Err())
 	}
 }
 
 // SendTokens writes tokens into the given output channel.  This
 // function should always be used to write tokens into output
 // channels.
-func SendTokens(ctx context.Context, out chan<- Token, tokens ...Token) error {
+func SendTokens(ctx context.Context, out chan<- T, tokens ...T) error {
 	for _, t := range tokens {
 		select {
 		case out <- t:
@@ -181,8 +181,8 @@ func SendTokens(ctx context.Context, out chan<- Token, tokens ...Token) error {
 // Normalize trims all leading and subsequent punctionation from the
 // tokens, converts them to lowercase and replaces any whitespace
 // (in the case of merges due to alignment) with a '_'.
-func Normalize(ctx context.Context, in <-chan Token, out chan<- Token) error {
-	err := EachToken(ctx, in, func(t Token) error {
+func Normalize(ctx context.Context, in <-chan T, out chan<- T) error {
+	err := EachToken(ctx, in, func(t T) error {
 		for i := range t.Tokens {
 			if i == 0 { // handle master OCR in a special way
 				t.Chars = normalizeChars(t.Chars)
@@ -230,8 +230,8 @@ func normalizeChars(chars Chars) Chars {
 // FilterBad returns a astream function that filters tokens with not
 // enough ocr and/or gt tokens.
 func FilterBad(min int) StreamFunc {
-	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
-		err := EachToken(ctx, in, func(t Token) error {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachToken(ctx, in, func(t T) error {
 			if len(t.Tokens) < min {
 				return nil
 			}
@@ -251,8 +251,8 @@ func FilterBad(min int) StreamFunc {
 // tokens from the input stream.  Short tokens are tokens, with less
 // than min unicode characters.
 func FilterShort(min int) StreamFunc {
-	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
-		err := EachToken(ctx, in, func(t Token) error {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachToken(ctx, in, func(t T) error {
 			if utf8.RuneCountInString(t.Tokens[0]) < min {
 				return nil
 			}
@@ -270,8 +270,8 @@ func FilterShort(min int) StreamFunc {
 
 // FilterLexiconEntries filters all tokens that are lexicon entries
 // from the stream.
-func FilterLexiconEntries(ctx context.Context, in <-chan Token, out chan<- Token) error {
-	err := EachToken(ctx, in, func(t Token) error {
+func FilterLexiconEntries(ctx context.Context, in <-chan T, out chan<- T) error {
+	err := EachToken(ctx, in, func(t T) error {
 		if t.IsLexiconEntry() {
 			return nil
 		}
@@ -289,8 +289,8 @@ func FilterLexiconEntries(ctx context.Context, in <-chan Token, out chan<- Token
 // ConnectCandidates connects tokens with their respective candidates
 // to the stream.  Tokens with no candidates or tokens with only a
 // modern interpretation are filtered from the stream.
-func ConnectCandidates(ctx context.Context, in <-chan Token, out chan<- Token) error {
-	err := EachToken(ctx, in, func(t Token) error {
+func ConnectCandidates(ctx context.Context, in <-chan T, out chan<- T) error {
+	err := EachToken(ctx, in, func(t T) error {
 		interp, ok := t.LM.Profile[t.Tokens[0]]
 		if !ok { // no suggestions (too short or unknown)
 			return nil
@@ -313,9 +313,9 @@ func ConnectCandidates(ctx context.Context, in <-chan Token, out chan<- Token) e
 // each token.  Based on the file group of the tokens different
 // language models are loaded.
 func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
-	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		defer close(out)
-		err := EachTokenGroup(ctx, in, func(group string, tokens ...Token) error {
+		err := EachTokenGroup(ctx, in, func(group string, tokens ...T) error {
 			loader := lmLoader{
 				config: c,
 				lm:     &LanguageModel{ngrams: ngrams},
@@ -336,11 +336,11 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 
 type lmLoader struct {
 	lm     *LanguageModel
-	tokens []Token
+	tokens []T
 	config *Config
 }
 
-func (l lmLoader) loadAndSend(ctx context.Context, out chan<- Token) error {
+func (l lmLoader) loadAndSend(ctx context.Context, out chan<- T) error {
 	if err := l.load(ctx); err != nil {
 		return fmt.Errorf("loadAndSend: %v", err)
 	}
@@ -372,10 +372,10 @@ func (l lmLoader) load(ctx context.Context) error {
 // ConnectRankings connects the tokens of the input stream with their
 // respective rankings.
 func ConnectRankings(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
-	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		var lfid, ltid string // last file id and last token id
-		var tokens []Token
-		err := EachToken(ctx, in, func(t Token) error {
+		var tokens []T
+		err := EachToken(ctx, in, func(t T) error {
 			if t.File != lfid || t.ID != ltid {
 				if len(tokens) > 0 {
 					tmp := connectRankings(lr, fs, n, tokens)
@@ -403,7 +403,7 @@ func ConnectRankings(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
 	}
 }
 
-func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []Token) Token {
+func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []T) T {
 	var xs []float64
 	// calculate feature values
 	for _, token := range tokens {
@@ -429,10 +429,10 @@ func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []Token) Token {
 // ConnectCorrections connects the tokens with the decider's correction
 // decisions.
 func ConnectCorrections(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
-	return func(ctx context.Context, in <-chan Token, out chan<- Token) error {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		blen := 1024
-		buf := make([]Token, 0, blen)
-		err := EachToken(ctx, in, func(t Token) error {
+		buf := make([]T, 0, blen)
+		err := EachToken(ctx, in, func(t T) error {
 			if len(buf) >= blen {
 				connectCorrections(lr, fs, n, buf)
 				if err := SendTokens(ctx, out, buf...); err != nil {
@@ -456,7 +456,7 @@ func ConnectCorrections(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
 	}
 }
 
-func connectCorrections(lr *ml.LR, fs FeatureSet, nocr int, tokens []Token) {
+func connectCorrections(lr *ml.LR, fs FeatureSet, nocr int, tokens []T) {
 	xs := make([]float64, 0, len(tokens)*len(fs))
 	for _, t := range tokens {
 		xs = fs.Calculate(xs, t, nocr)

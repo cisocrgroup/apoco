@@ -8,8 +8,8 @@ import (
 	"github.com/finkf/gofiler"
 )
 
-// Token represent aligned OCR-tokens.
-type Token struct {
+// T represents aligned OCR-tokens.
+type T struct {
 	LM      *LanguageModel // language model for this token
 	Payload interface{}    // token payload; *gofiler.Candidate, []Ranking or Correction
 	File    string         // the file of the token
@@ -24,7 +24,7 @@ type Token struct {
 
 // IsLexiconEntry returns true if this token is a normal lexicon entry
 // for its connected language model.
-func (t Token) IsLexiconEntry() bool {
+func (t T) IsLexiconEntry() bool {
 	if t.LM == nil {
 		return false
 	}
@@ -37,7 +37,7 @@ func (t Token) IsLexiconEntry() bool {
 		len(interp.Candidates[0].HistPatterns) == 0
 }
 
-func (t Token) String() string {
+func (t T) String() string {
 	return fmt.Sprintf("%s", strings.Join(t.Tokens, "|"))
 }
 
@@ -56,7 +56,7 @@ const (
 )
 
 // SetTrait sets a trait.
-func (t *Token) SetTrait(i int, trait TraitType) {
+func (t *T) SetTrait(i int, trait TraitType) {
 	if trait < LowerCase {
 		t.traits |= trait
 		return
@@ -65,7 +65,7 @@ func (t *Token) SetTrait(i int, trait TraitType) {
 }
 
 // HasTrait returns true if the token has the given trait.
-func (t *Token) HasTrait(i int, trait TraitType) bool {
+func (t *T) HasTrait(i int, trait TraitType) bool {
 	if trait < LowerCase {
 		return (t.traits & trait) > 0
 	}

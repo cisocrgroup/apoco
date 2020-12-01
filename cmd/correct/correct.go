@@ -89,8 +89,8 @@ func run(_ *cobra.Command, args []string) {
 }
 
 func correct(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
-		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
+		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			info := m.get(t)
 			info.skipped = false
 			info.cor = t.Payload.(apoco.Correction).Conf > 0.5
@@ -102,8 +102,8 @@ func correct(m infoMap) apoco.StreamFunc {
 }
 
 func register(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
-		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
+		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			// Each token is skipped as default.
 			// If a token is not skipped, skipped
 			// must be explicitly set to false.
@@ -117,8 +117,8 @@ func register(m infoMap) apoco.StreamFunc {
 }
 
 func filterLex(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
-		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
+		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if t.IsLexiconEntry() {
 				m.get(t).lex = true
 				return nil
@@ -132,8 +132,8 @@ func filterLex(m infoMap) apoco.StreamFunc {
 }
 
 func filterShort(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
-		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
+		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
 				m.get(t).short = true
 				return nil
@@ -147,8 +147,8 @@ func filterShort(m infoMap) apoco.StreamFunc {
 }
 
 func analyzeRankings(m infoMap) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
-		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
+		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			var rank int
 			for i, r := range t.Payload.([]apoco.Ranking) {
 				if r.Candidate.Suggestion == t.Tokens[len(t.Tokens)-1] {

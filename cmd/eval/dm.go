@@ -38,14 +38,14 @@ func dmRun(_ *cobra.Command, args []string) {
 }
 
 func dmEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := m.Get("dm", c.Nocr)
 		if err != nil {
 			return fmt.Errorf("evaldm: %v", err)
 		}
 		var xs, ys []float64
-		var tokens []apoco.Token
-		err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
+		var tokens []apoco.T
+		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			xs = fs.Calculate(xs, t, c.Nocr)
 			ys = append(ys, dmGT(t))
 			tokens = append(tokens, t)
@@ -68,7 +68,7 @@ func dmEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
 	}
 }
 
-func dmGT(t apoco.Token) float64 {
+func dmGT(t apoco.T) float64 {
 	candidate := t.Payload.([]apoco.Ranking)[0].Candidate
 	gt := t.Tokens[len(t.Tokens)-1]
 	// return ml.Bool(candidate.Suggestion == gt && t.Tokens[0] != gt)

@@ -49,8 +49,8 @@ func runTokens(_ *cobra.Command, args []string) {
 }
 
 func cat(file bool) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
-		return apoco.EachToken(ctx, in, func(t apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
+		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if file {
 				_, err := fmt.Printf("%s@%s\n", t.File, token2string(t))
 				return err
@@ -61,7 +61,7 @@ func cat(file bool) apoco.StreamFunc {
 	}
 }
 
-func token2string(t apoco.Token) string {
+func token2string(t apoco.T) string {
 	ret := make([]string, len(t.Tokens)+1)
 	ret[0] = t.ID
 	for i, tok := range t.Tokens {
@@ -71,9 +71,9 @@ func token2string(t apoco.Token) string {
 }
 
 func pjson() apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
-		var tokens []apoco.Token
-		err := apoco.EachToken(ctx, in, func(t apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
+		var tokens []apoco.T
+		err := apoco.EachToken(ctx, in, func(t apoco.T) error {
 			tokens = append(tokens, t)
 			return nil
 		})

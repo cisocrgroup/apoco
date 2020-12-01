@@ -142,7 +142,7 @@ func (lm *LanguageModel) LoadGzippedNGram(path string) error {
 	return nil
 }
 
-func (lm *LanguageModel) calculateLexicality(tokens ...Token) {
+func (lm *LanguageModel) calculateLexicality(tokens ...T) {
 	var total, lexical int
 	for _, token := range tokens {
 		total++
@@ -158,7 +158,7 @@ func (lm *LanguageModel) calculateLexicality(tokens ...Token) {
 }
 
 // LoadProfile loads the profile for the master OCR tokens.
-func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, cache bool, tokens ...Token) error {
+func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, cache bool, tokens ...T) error {
 	if len(tokens) == 0 {
 		return nil
 	}

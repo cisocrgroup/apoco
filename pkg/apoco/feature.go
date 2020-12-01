@@ -42,7 +42,7 @@ var register = map[string]FeatureFunc{
 // OCR-index i and the total number of parallel OCRs n).  The function
 // then should return the feature value for the given token and wether
 // this feature applies for the given configuration (i and n).
-type FeatureFunc func(t Token, i, n int) (float64, bool)
+type FeatureFunc func(t T, i, n int) (float64, bool)
 
 // FeatureSet is just a list of feature funcs.
 type FeatureSet []FeatureFunc
@@ -67,7 +67,7 @@ func NewFeatureSet(names ...string) (FeatureSet, error) {
 // does not apply to the given configuration (and returns false as it
 // second return parameter for the configuration) is omitted and not
 // appended to the resulting feature vector.
-func (fs FeatureSet) Calculate(xs []float64, t Token, n int) []float64 {
+func (fs FeatureSet) Calculate(xs []float64, t T, n int) []float64 {
 	for _, f := range fs {
 		for i := 0; i < n; i++ {
 			if val, ok := f(t, i, n); ok {
@@ -80,19 +80,19 @@ func (fs FeatureSet) Calculate(xs []float64, t Token, n int) []float64 {
 
 // OCRTokenLen returns the length of the OCR token.  It operates on
 // any configuration.
-func OCRTokenLen(t Token, i, n int) (float64, bool) {
+func OCRTokenLen(t T, i, n int) (float64, bool) {
 	return float64(len(t.Tokens[0])), true
 }
 
 // OCRTokenConf return the OCR-confidence for the the given
 // configuration.
-func OCRTokenConf(t Token, i, n int) (float64, bool) {
+func OCRTokenConf(t T, i, n int) (float64, bool) {
 	return t.Confs[i], true
 }
 
 // AgreeingOCRs returns the number of OCRs that aggree with the master
 // OCR token.
-func AgreeingOCRs(t Token, i, n int) (float64, bool) {
+func AgreeingOCRs(t T, i, n int) (float64, bool) {
 	if i != 0 || n == 1 {
 		return 0, false
 	}
@@ -107,18 +107,18 @@ func AgreeingOCRs(t Token, i, n int) (float64, bool) {
 
 // OCRUnigramFreq returns the relative frequency of the OCR token in
 // the unigram language model.
-func OCRUnigramFreq(t Token, i, n int) (float64, bool) {
+func OCRUnigramFreq(t T, i, n int) (float64, bool) {
 	return t.LM.Unigram(t.Tokens[i]), true
 }
 
 // OCRTrigramFreq returns the product of the OCR token's trigrams.
-func OCRTrigramFreq(t Token, i, n int) (float64, bool) {
+func OCRTrigramFreq(t T, i, n int) (float64, bool) {
 	return t.LM.Trigram(t.Tokens[i]), true
 }
 
 // OCRMaxCharConf returns the maximal character confidence of the
 // master OCR token.
-func OCRMaxCharConf(t Token, i, n int) (float64, bool) {
+func OCRMaxCharConf(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -133,7 +133,7 @@ func OCRMaxCharConf(t Token, i, n int) (float64, bool) {
 
 // OCRMinCharConf returns the minimal character confidence of the
 // master OCR token.
-func OCRMinCharConf(t Token, i, n int) (float64, bool) {
+func OCRMinCharConf(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -148,7 +148,7 @@ func OCRMinCharConf(t Token, i, n int) (float64, bool) {
 
 // OCRMaxTrigramFreq returns the maximal trigram relative frequenzy
 // confidence of the tokens.
-func OCRMaxTrigramFreq(t Token, i, n int) (float64, bool) {
+func OCRMaxTrigramFreq(t T, i, n int) (float64, bool) {
 	max := 0.0
 	t.LM.EachTrigram(t.Tokens[i], func(conf float64) {
 		if max < conf {
@@ -160,7 +160,7 @@ func OCRMaxTrigramFreq(t Token, i, n int) (float64, bool) {
 
 // OCRMinTrigramFreq returns the minimal trigram relative frequenzy
 // confidence of the tokens.
-func OCRMinTrigramFreq(t Token, i, n int) (float64, bool) {
+func OCRMinTrigramFreq(t T, i, n int) (float64, bool) {
 	min := 1.0
 	t.LM.EachTrigram(t.Tokens[i], func(conf float64) {
 		if min > conf {
@@ -172,7 +172,7 @@ func OCRMinTrigramFreq(t Token, i, n int) (float64, bool) {
 
 // CandidateProfilerWeight returns the profiler confidence value for
 // tokens candidate.
-func CandidateProfilerWeight(t Token, i, n int) (float64, bool) {
+func CandidateProfilerWeight(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -182,7 +182,7 @@ func CandidateProfilerWeight(t Token, i, n int) (float64, bool) {
 
 // CandidateUnigramFreq returns the relative frequency of the token's
 // candidate.
-func CandidateUnigramFreq(t Token, i, n int) (float64, bool) {
+func CandidateUnigramFreq(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -192,7 +192,7 @@ func CandidateUnigramFreq(t Token, i, n int) (float64, bool) {
 
 // CandidateTrigramFreq returns the product of the candidate's
 // trigrams.
-func CandidateTrigramFreq(t Token, i, n int) (float64, bool) {
+func CandidateTrigramFreq(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -202,7 +202,7 @@ func CandidateTrigramFreq(t Token, i, n int) (float64, bool) {
 
 // CandidateAgreeingOCR returns the number of OCR tokens that agree
 // with the specific profiler candidate of the token.
-func CandidateAgreeingOCR(t Token, i, n int) (float64, bool) {
+func CandidateAgreeingOCR(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -219,7 +219,7 @@ func CandidateAgreeingOCR(t Token, i, n int) (float64, bool) {
 // CandidateHistPatternConf returns the product of the confidences of
 // the primary OCR characters for the assumed historical rewrite
 // pattern of the connected candidate.
-func CandidateHistPatternConf(t Token, i, n int) (float64, bool) {
+func CandidateHistPatternConf(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -237,7 +237,7 @@ func CandidateHistPatternConf(t Token, i, n int) (float64, bool) {
 // CandidateOCRPatternConf returns the product of the confidences of
 // the primary OCR characters for the assumed OCR error pattern of the
 // connected candidate.
-func CandidateOCRPatternConf(t Token, i, n int) (float64, bool) {
+func CandidateOCRPatternConf(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -281,7 +281,7 @@ func averagePosPatternConf(chars Chars, p gofiler.Pattern) float64 {
 
 // CandidateMatchesOCR returns true if the according ocr matches the
 // connected candidate and false otherwise.
-func CandidateMatchesOCR(t Token, i, n int) (float64, bool) {
+func CandidateMatchesOCR(t T, i, n int) (float64, bool) {
 	candidate := mustGetCandidate(t)
 	return ml.Bool(candidate.Suggestion == t.Tokens[i]), true
 }
@@ -291,7 +291,7 @@ func CandidateMatchesOCR(t Token, i, n int) (float64, bool) {
 // the master OCR the according Distance from the profiler candidate
 // is used, whereas for support OCRs the levenshtein distance is
 // calculated.
-func CandidateLevenshteinDist(t Token, i, n int) (float64, bool) {
+func CandidateLevenshteinDist(t T, i, n int) (float64, bool) {
 	candidate := mustGetCandidate(t)
 	if i == 0 {
 		return float64(candidate.Distance), true
@@ -301,7 +301,7 @@ func CandidateLevenshteinDist(t Token, i, n int) (float64, bool) {
 
 // CandidateLen returns the length of the connected profiler
 // candidate.
-func CandidateLen(t Token, i, n int) (float64, bool) {
+func CandidateLen(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -312,7 +312,7 @@ func CandidateLen(t Token, i, n int) (float64, bool) {
 
 // CandidateMaxTrigramFreq returns the maximal trigram frequenzy for
 // the connected candidate.
-func CandidateMaxTrigramFreq(t Token, i, n int) (float64, bool) {
+func CandidateMaxTrigramFreq(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -328,7 +328,7 @@ func CandidateMaxTrigramFreq(t Token, i, n int) (float64, bool) {
 
 // CandidateMinTrigramFreq returns the minimal trigram frequezy for
 // the connected candidate.
-func CandidateMinTrigramFreq(t Token, i, n int) (float64, bool) {
+func CandidateMinTrigramFreq(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -342,7 +342,7 @@ func CandidateMinTrigramFreq(t Token, i, n int) (float64, bool) {
 	return min, true
 }
 
-func mustGetCandidate(t Token) *gofiler.Candidate {
+func mustGetCandidate(t T) *gofiler.Candidate {
 	switch tx := t.Payload.(type) {
 	case *gofiler.Candidate:
 		return tx
@@ -355,7 +355,7 @@ func mustGetCandidate(t Token) *gofiler.Candidate {
 
 // RankingConf returns the confidence of the best ranked correction
 // candidate for the given token.
-func RankingConf(t Token, i, n int) (float64, bool) {
+func RankingConf(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -367,7 +367,7 @@ func RankingConf(t Token, i, n int) (float64, bool) {
 // correction candidate's confidence to the next.  If only one
 // correction candidate is available, the next ranking's confidence is
 // assumed to be 0.
-func RankingConfDiffToNext(t Token, i, n int) (float64, bool) {
+func RankingConfDiffToNext(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -381,7 +381,7 @@ func RankingConfDiffToNext(t Token, i, n int) (float64, bool) {
 
 // RankingCandidateConfDiffToNext returns the top ranked candidate's
 // weight minus the the weight of the next (or 0).
-func RankingCandidateConfDiffToNext(t Token, i, n int) (float64, bool) {
+func RankingCandidateConfDiffToNext(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
@@ -396,7 +396,7 @@ func RankingCandidateConfDiffToNext(t Token, i, n int) (float64, bool) {
 // DocumentLexicality returns the (global) lexicality of the given
 // token's document.  Using this feature only makes sense if the
 // training contains at least more than one training document.
-func DocumentLexicality(t Token, i, n int) (float64, bool) {
+func DocumentLexicality(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}

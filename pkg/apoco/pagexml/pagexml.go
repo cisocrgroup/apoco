@@ -25,7 +25,7 @@ const MIMEType = "application/vnd.prima.page+xml"
 // function ignores the input stream it just writes tokens to the
 // output stream.
 func Tokenize(metsName string, fgs ...string) apoco.StreamFunc {
-	return func(ctx context.Context, _ <-chan apoco.Token, out chan<- apoco.Token) error {
+	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
 		m, err := mets.Open(metsName)
 		if err != nil {
 			return fmt.Errorf("tokenize: %v", err)
@@ -51,7 +51,7 @@ func Tokenize(metsName string, fgs ...string) apoco.StreamFunc {
 // function ignores the input stream.  It only writes tokens to the
 // output stream.
 func TokenizeDirs(ext string, dirs ...string) apoco.StreamFunc {
-	return func(ctx context.Context, _ <-chan apoco.Token, out chan<- apoco.Token) error {
+	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
 		for _, dir := range dirs {
 			files, err := gatherFilesInDir(dir, ext)
 			if err != nil {
@@ -84,7 +84,7 @@ func gatherFilesInDir(dir, ext string) ([]string, error) {
 	return files, err
 }
 
-func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.Token) error {
+func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.T) error {
 	is, err := os.Open(file)
 	if err != nil {
 		return fmt.Errorf("tokenizePageXML %s: %v", file, err)
@@ -116,19 +116,19 @@ func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.Toke
 	return nil
 }
 
-func newTokenFromNode(fg, file string, wordNode *xmlquery.Node) (apoco.Token, error) {
+func newTokenFromNode(fg, file string, wordNode *xmlquery.Node) (apoco.T, error) {
 	id, ok := node.LookupAttr(wordNode, xml.Name{Local: "id"})
 	if !ok {
-		return apoco.Token{}, fmt.Errorf("newTokenFromNode: missing id for word node")
+		return apoco.T{}, fmt.Errorf("newTokenFromNode: missing id for word node")
 	}
-	ret := apoco.Token{Group: fg, File: file, ID: id}
+	ret := apoco.T{Group: fg, File: file, ID: id}
 	lines := FindUnicodesInRegionSorted(node.Parent(wordNode))
 	words := FindUnicodesInRegionSorted(wordNode)
 	for i := 0; i < len(lines) && i < len(words); i++ {
 		if i == 0 {
 			chars, err := readCharsFromNode(node.Parent(node.Parent(words[i])))
 			if err != nil {
-				return apoco.Token{}, fmt.Errorf("newTokenFromNode: %v", err)
+				return apoco.T{}, fmt.Errorf("newTokenFromNode: %v", err)
 			}
 			ret.Chars = chars
 		}

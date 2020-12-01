@@ -42,7 +42,7 @@ func (m infoMap) numberOfTokens() int {
 	return sum
 }
 
-func (m infoMap) get(t apoco.Token) *info {
+func (m infoMap) get(t apoco.T) *info {
 	infoMapLock.Lock()
 	defer infoMapLock.Unlock()
 	if _, ok := m[t.File]; !ok {

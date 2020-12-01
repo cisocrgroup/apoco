@@ -38,13 +38,13 @@ func dmRun(_ *cobra.Command, args []string) {
 }
 
 func dmTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, _ chan<- apoco.Token) error {
+	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := loadDMModel(c, m, update)
 		if err != nil {
 			return fmt.Errorf("traindm: %v", err)
 		}
 		var xs, ys []float64
-		err = apoco.EachToken(ctx, in, func(t apoco.Token) error {
+		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if !useTokenForDMTraining(t, c.Cautious) {
 				return nil
 			}
@@ -88,7 +88,7 @@ func loadDMModel(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.Fea
 	return lr, fs, nil
 }
 
-func useTokenForDMTraining(t apoco.Token, cautious bool) bool {
+func useTokenForDMTraining(t apoco.T, cautious bool) bool {
 	if cautious {
 		return true
 	}
@@ -100,7 +100,7 @@ func useTokenForDMTraining(t apoco.Token, cautious bool) bool {
 	return true
 }
 
-func dmGT(t apoco.Token) float64 {
+func dmGT(t apoco.T) float64 {
 	candidate := t.Payload.([]apoco.Ranking)[0].Candidate
 	gt := t.Tokens[len(t.Tokens)-1]
 	return ml.Bool(candidate.Suggestion == gt)
