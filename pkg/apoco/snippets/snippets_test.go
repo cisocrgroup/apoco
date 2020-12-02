@@ -9,8 +9,8 @@ import (
 
 const testDir = "testdata/dir"
 
-func iterate(fn func(apoco.Token) error) apoco.StreamFunc {
-	return func(ctx context.Context, in <-chan apoco.Token, out chan<- apoco.Token) error {
+func iterate(fn func(apoco.T) error) apoco.StreamFunc {
+	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, fn)
 	}
 }
@@ -21,7 +21,7 @@ func TestTokenize(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
 	n, want := 0, 16
 	ctx := context.Background()
-	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(func(tok apoco.Token) error {
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(func(tok apoco.T) error {
 		n++
 		if len(tok.Tokens) != 3 {
 			t.Fatalf("bad token: %s", tok)
@@ -49,7 +49,7 @@ func TestCalamari(t *testing.T) {
 	want := []string{"voll.", "Diſe", "wurtzel", "reiniget", "die", "mů"}
 	var i int
 	ctx := context.Background()
-	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(func(tok apoco.Token) error {
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(func(tok apoco.T) error {
 		if len(tok.Tokens) != 1 {
 			t.Fatalf("bad token: %s", tok)
 		}
