@@ -91,12 +91,24 @@ func Combine(ctx context.Context, fns ...StreamFunc) StreamFunc {
 	}
 }
 
-// Iterate calls the given callback function for each token.  Iterate
-// must be the last stream function of the pipe, since it offers no
-// way to write any tokens to an output channel within the pipe.
-func Iterate(fn func(T) error) StreamFunc {
+// Tee calls all the given callback function for each token.  After
+// all functions have been called, if the output channel is not nil,
+// the token is send to the output channel.
+func Tee(fns ...func(T) error) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		return EachToken(ctx, in, fn)
+		return EachToken(ctx, in, func(t T) error {
+			for _, fn := range fns {
+				if err := fn(t); err != nil {
+					return fmt.Errorf("tee: %v", err)
+				}
+			}
+			if out != nil {
+				if err := SendTokens(ctx, out, t); err != nil {
+					return fmt.Errorf("tee: %v", err)
+				}
+			}
+			return nil
+		})
 	}
 }
 
