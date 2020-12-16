@@ -38,8 +38,8 @@ func Do(master []rune, other ...[]rune) [][]Pos {
 }
 
 func alignAt(spaces []int, str []rune) []Pos {
-	// If str is empty, each alignment is the empty string.
-	// We need to return still a slice with the right lenght.
+	// If str is empty, each alignment is the empty string.  We
+	// still need to return a slice with the right lenght.
 	if len(str) == 0 {
 		return make([]Pos, len(spaces)+1)
 	}
