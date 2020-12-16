@@ -20,10 +20,14 @@ func Do(master []rune, other ...[]rune) [][]Pos {
 	var spaces []int
 	var words [][]Pos
 	b := -1
-	for i := range master {
+	for i := 0; i < len(master); i++ {
 		if unicode.IsSpace(master[i]) {
 			spaces = append(spaces, i)
 			words = append(words, []Pos{{B: b + 1, E: i, str: master}})
+			// Skip subsequent whitespace.
+			for i+1 < len(master) && unicode.IsSpace(master[i+1]) {
+				i++
+			}
 			b = i
 		}
 	}

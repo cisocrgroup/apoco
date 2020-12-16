@@ -19,6 +19,7 @@ func Test(t *testing.T) {
 		{"abcd", "ab cd", []string{"abcd", "ab cd"}},
 		{"n uch ter in", "nuchter in",
 			[]string{"n", "nuchter", "uch", "nuchter", "ter", "nuchter", "in", "in"}},
+		{"a bc  d", "a b d", []string{"a", "a", "bc", "b", "d", "d"}},
 	} {
 		t.Run(tc.master, func(t *testing.T) {
 			pos := Do([]rune(tc.master), []rune(tc.other))
