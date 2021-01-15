@@ -42,7 +42,9 @@ func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			return fmt.Errorf("rrtrain: %v", err)
 		}
 		var xs, ys []float64
+		lms := make(lms)
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
+			lms.add(t)
 			xs = fs.Calculate(xs, t, c.Nocr)
 			ys = append(ys, rrGT(t))
 			return nil
@@ -62,6 +64,8 @@ func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		log.Printf("rrtrain: fitted %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
 			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
 		m.Put("rr", c.Nocr, lr, c.RRFeatures)
+		m.GlobalHistPatterns = lms.globalHistPatternMeans()
+		m.GlobalOCRPatterns = lms.globalOCRPatternMeans()
 		if err := m.Write(c.Model); err != nil {
 			return fmt.Errorf("rrtrain: %v", err)
 		}
@@ -87,4 +91,52 @@ func loadRRModel(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.Fea
 func rrGT(t apoco.T) float64 {
 	candidate := t.Payload.(*gofiler.Candidate)
 	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
+}
+
+type lms map[*apoco.LanguageModel]struct{}
+
+func (lms lms) add(t apoco.T) {
+	lms[t.LM] = struct{}{}
+}
+
+func (lms lms) globalHistPatternMeans() map[string]float64 {
+	xs := make([]map[string]float64, 0, len(lms))
+	for lm := range lms {
+		xs = append(xs, lm.Profile.GlobalHistPatterns())
+	}
+	return means(xs)
+}
+
+func (lms lms) globalOCRPatternMeans() map[string]float64 {
+	xs := make([]map[string]float64, 0, len(lms))
+	for lm := range lms {
+		xs = append(xs, lm.Profile.GlobalOCRPatterns())
+	}
+	return means(xs)
+}
+
+func means(xs []map[string]float64) map[string]float64 {
+	n := len(xs)
+	if n == 0 {
+		return nil
+	}
+	if n == 1 {
+		return xs[0]
+	}
+	keys := make(map[string]struct{})
+	for _, x := range xs {
+		for key := range x {
+			keys[key] = struct{}{}
+		}
+	}
+	means := make(map[string]float64)
+	for key := range keys {
+		sum := 0.0
+		for _, x := range xs {
+			val, _ := x[key]
+			sum += val
+		}
+		means[key] = sum / float64(n)
+	}
+	return means
 }

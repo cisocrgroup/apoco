@@ -12,8 +12,10 @@ import (
 
 // Model holds the different models for the different number of OCRs.
 type Model struct {
-	Models map[string]map[int]ModelData `json:"models"`
-	Ngrams FreqList                     `json:"ngrams"`
+	Models             map[string]map[int]ModelData
+	GlobalHistPatterns map[string]float64
+	GlobalOCRPatterns  map[string]float64
+	Ngrams             FreqList
 }
 
 // ModelData holds a linear regression model.
