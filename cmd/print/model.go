@@ -17,6 +17,17 @@ var modelCMD = &cobra.Command{
 	Run:   runModel,
 }
 
+var modelFlags = struct {
+	histPats, ocrPats bool
+}{}
+
+func init() {
+	modelCMD.Flags().BoolVarP(&modelFlags.histPats, "hist-pats", "p", false,
+		"output global historical pattern probabilities")
+	modelCMD.Flags().BoolVarP(&modelFlags.ocrPats, "ocr-pats", "e", false,
+		"output global ocr error pattern probabilities")
+}
+
 func runModel(_ *cobra.Command, args []string) {
 	if flags.json {
 		printjson(args)
@@ -30,6 +41,12 @@ func printmodels(args []string) {
 	for _, name := range args {
 		model, err := apoco.ReadModel(name, "")
 		chk(err)
+		if modelFlags.histPats {
+			printpats(name, "hist", model.GlobalHistPatterns)
+		}
+		if modelFlags.ocrPats {
+			printpats(name, "ocr", model.GlobalOCRPatterns)
+		}
 		for typ, data := range model.Models {
 			printmodel(name, typ, data)
 		}
@@ -47,7 +64,7 @@ func printmodel(name, typ string, ds map[int]apoco.ModelData) {
 				if !ok {
 					continue
 				}
-				_, err := fmt.Printf("%s %s/%d %s(%d) %f\n",
+				_, err := fmt.Printf("%s %s/%d %s(%d) %.13f\n",
 					name, typ, nocr, data.Features[f], i+1, ws[f+i])
 				chk(err)
 
@@ -56,28 +73,39 @@ func printmodel(name, typ string, ds map[int]apoco.ModelData) {
 	}
 }
 
+func printpats(name, typ string, pats map[string]float64) {
+	for pat, prob := range pats {
+		_, err := fmt.Printf("%s %s %s %.13f\n", name, typ, pat, prob)
+		chk(err)
+	}
+}
+
 func printjson(args []string) {
 	var models []modelst
 	for _, name := range args {
 		model, err := apoco.ReadModel(name, "")
 		chk(err)
-		for typ, data := range model.Models {
-			models = append(models, jsonmodels(name, typ, data)...)
+		st := modelst{
+			Name: name,
+			Data: make(map[string][]feature),
 		}
+		if modelFlags.histPats {
+			st.GlobalHistPatterns = model.GlobalHistPatterns
+		}
+		if modelFlags.ocrPats {
+			st.GlobalOCRPatterns = model.GlobalOCRPatterns
+		}
+		for typ, data := range model.Models {
+			st.Data[typ] = jsonfeatures(typ, data)
+		}
+		models = append(models, st)
 	}
 	chk(json.NewEncoder(os.Stdout).Encode(models))
 }
 
-func jsonmodels(name, typ string, ds map[int]apoco.ModelData) []modelst {
-	var models []modelst
+func jsonfeatures(typ string, ds map[int]apoco.ModelData) []feature {
+	var features []feature
 	for nocr, data := range ds {
-		m := modelst{
-			Name:         name,
-			Type:         typ,
-			Nocr:         nocr,
-			LearningRate: data.Model.LearningRate,
-			Ntrain:       data.Model.Ntrain,
-		}
 		ws := data.Model.Weights()
 		fs, err := apoco.NewFeatureSet(data.Features...)
 		chk(err)
@@ -87,16 +115,15 @@ func jsonmodels(name, typ string, ds map[int]apoco.ModelData) []modelst {
 				if !ok {
 					continue
 				}
-				m.Features = append(m.Features, feature{
+				features = append(features, feature{
 					Name:   data.Features[f],
 					Nocr:   i + 1,
 					Weight: ws[f+i],
 				})
 			}
 		}
-		models = append(models, m)
 	}
-	return models
+	return features
 }
 
 func mktok(typ string, nocr int) apoco.T {
@@ -117,10 +144,10 @@ func mktok(typ string, nocr int) apoco.T {
 }
 
 type modelst struct {
-	Name, Type   string
-	Features     []feature
-	LearningRate float64
-	Nocr, Ntrain int
+	Name               string
+	Data               map[string][]feature
+	GlobalHistPatterns map[string]float64 `json:",omitempty"`
+	GlobalOCRPatterns  map[string]float64 `json:",omitempty"`
 }
 
 type feature struct {
