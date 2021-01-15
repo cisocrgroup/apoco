@@ -322,7 +322,6 @@ func ConnectCandidates(ctx context.Context, in <-chan T, out chan<- T) error {
 // language models are loaded.
 func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		defer close(out)
 		err := EachTokenGroup(ctx, in, func(group string, tokens ...T) error {
 			loader := lmLoader{
 				config: c,
