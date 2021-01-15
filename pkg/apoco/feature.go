@@ -2,6 +2,7 @@ package apoco
 
 import (
 	"fmt"
+	"math"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco/lev"
@@ -25,6 +26,7 @@ var register = map[string]FeatureFunc{
 	"CandidateTrigramFreq":           CandidateTrigramFreq,
 	"CandidateAgreeingOCR":           CandidateAgreeingOCR,
 	"CandidateOCRPatternConf":        CandidateOCRPatternConf,
+	"CandidateOCRPatternConfLog":     CandidateOCRPatternConfLog,
 	"CandidateHistPatternConf":       CandidateHistPatternConf,
 	"CandidateLevenshteinDist":       CandidateLevenshteinDist,
 	"CandidateMaxTrigramFreq":        CandidateMaxTrigramFreq,
@@ -250,6 +252,24 @@ func CandidateOCRPatternConf(t T, i, n int) (float64, bool) {
 		prod *= averagePosPatternConf(t.Chars, p)
 	}
 	return prod, true
+}
+
+// CandidateOCRPatternConfLog returns the sum of the logarithm of the
+// confidences of the primary OCR characters for the assumed OCR error
+// pattern of the connected candidate.
+func CandidateOCRPatternConfLog(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	candidate := mustGetCandidate(t)
+	if len(candidate.OCRPatterns) == 0 {
+		return 0, true
+	}
+	var sum float64
+	for _, p := range candidate.OCRPatterns {
+		sum += math.Log(averagePosPatternConf(t.Chars, p))
+	}
+	return sum, true
 }
 
 func averagePosPatternConf(chars Chars, p gofiler.Pattern) float64 {
