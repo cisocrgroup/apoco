@@ -31,10 +31,6 @@ type StreamFunc func(context.Context, <-chan T, chan<- T) error
 // tokens. They must never close any channels.  They should use the
 // SendTokens, ReadToken and EachToken utility functions to ensure
 // proper handling of context cancelation.
-//
-// TODO: Pipe should not return a channel.
-// TODO: Pipe should explicitly use g.Go(func(){...}) so that the stream
-//       functions don't need to use g.Go themselves.
 func Pipe(ctx context.Context, fns ...StreamFunc) error {
 	if len(fns) == 0 {
 		return nil
