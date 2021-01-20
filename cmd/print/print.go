@@ -23,7 +23,7 @@ var flags = struct {
 func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.json, "json", "J", false, "set json output")
 	// Subcommands
-	CMD.AddCommand(statsCMD, tokensCMD, modelCMD, protocolCMD)
+	CMD.AddCommand(statsCMD, tokensCMD, modelCMD, protocolCMD, profileCMD)
 }
 
 func pipe(ctx context.Context, mets string, ifgs, exts, dirs []string, fns ...apoco.StreamFunc) error {
