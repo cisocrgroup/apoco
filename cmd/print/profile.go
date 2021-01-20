@@ -52,7 +52,7 @@ func printprofile(name string, profile gofiler.Profile) {
 	if !profileFlags.noProfile {
 		for _, i := range profile {
 			for j, c := range i.Candidates {
-				fmt.Printf("%s %s %d %s", name, i.OCR, j+1, c)
+				fmt.Printf("%s %d %s %s\n", name, j+1, i.OCR, c)
 			}
 		}
 	}
