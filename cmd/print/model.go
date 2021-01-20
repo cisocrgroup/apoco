@@ -31,33 +31,32 @@ func init() {
 }
 
 func runModel(_ *cobra.Command, args []string) {
-	if flags.json {
-		printjson(args)
-	} else {
-		printmodels(args)
-
-	}
-}
-
-func printmodels(args []string) {
 	for _, name := range args {
 		model, err := apoco.ReadModel(name, "")
 		chk(err)
-		if modelFlags.histPats {
-			printpats(name, "hist", model.GlobalHistPatterns)
-		}
-		if modelFlags.ocrPats {
-			printpats(name, "ocr", model.GlobalOCRPatterns)
-		}
-		if !modelFlags.noWeights {
-			for typ, data := range model.Models {
-				printmodel(name, typ, data)
-			}
+		if flags.json {
+			printmodeljson(name, model)
+		} else {
+			printmodel(name, model)
 		}
 	}
 }
 
-func printmodel(name, typ string, ds map[int]apoco.ModelData) {
+func printmodel(name string, model apoco.Model) {
+	if modelFlags.histPats {
+		printpats(name, "hist", model.GlobalHistPatterns)
+	}
+	if modelFlags.ocrPats {
+		printpats(name, "ocr", model.GlobalOCRPatterns)
+	}
+	if !modelFlags.noWeights {
+		for typ, data := range model.Models {
+			printmodeldata(name, typ, data)
+		}
+	}
+}
+
+func printmodeldata(name, typ string, ds map[int]apoco.ModelData) {
 	for nocr, data := range ds {
 		ws := data.Model.Weights()
 		fs, err := apoco.NewFeatureSet(data.Features...)
@@ -84,27 +83,21 @@ func printpats(name, typ string, pats map[string]float64) {
 	}
 }
 
-func printjson(args []string) {
-	var models []modelst
-	for _, name := range args {
-		model, err := apoco.ReadModel(name, "")
-		chk(err)
-		st := modelst{Name: name}
-		if modelFlags.histPats {
-			st.GlobalHistPatterns = model.GlobalHistPatterns
-		}
-		if modelFlags.ocrPats {
-			st.GlobalOCRPatterns = model.GlobalOCRPatterns
-		}
-		if !modelFlags.noWeights {
-			st.Features = make(map[string][]feature)
-			for typ, data := range model.Models {
-				st.Features[typ] = jsonfeatures(typ, data)
-			}
-		}
-		models = append(models, st)
+func printmodeljson(name string, model apoco.Model) {
+	st := modelst{Name: name}
+	if modelFlags.histPats {
+		st.GlobalHistPatterns = model.GlobalHistPatterns
 	}
-	chk(json.NewEncoder(os.Stdout).Encode(models))
+	if modelFlags.ocrPats {
+		st.GlobalOCRPatterns = model.GlobalOCRPatterns
+	}
+	if !modelFlags.noWeights {
+		st.Features = make(map[string][]feature)
+		for typ, data := range model.Models {
+			st.Features[typ] = jsonfeatures(typ, data)
+		}
+	}
+	chk(json.NewEncoder(os.Stdout).Encode(st))
 }
 
 func jsonfeatures(typ string, ds map[int]apoco.ModelData) []feature {
