@@ -18,14 +18,16 @@ var modelCMD = &cobra.Command{
 }
 
 var modelFlags = struct {
-	histPats, ocrPats bool
+	histPats, ocrPats, noWeights bool
 }{}
 
 func init() {
-	modelCMD.Flags().BoolVarP(&modelFlags.histPats, "hist-pats", "p", false,
+	modelCMD.Flags().BoolVarP(&modelFlags.histPats, "histpats", "p", false,
 		"output global historical pattern probabilities")
-	modelCMD.Flags().BoolVarP(&modelFlags.ocrPats, "ocr-pats", "e", false,
+	modelCMD.Flags().BoolVarP(&modelFlags.ocrPats, "ocrpats", "e", false,
 		"output global ocr error pattern probabilities")
+	modelCMD.Flags().BoolVarP(&modelFlags.noWeights, "noweights", "n", false,
+		"do not output feature weights")
 }
 
 func runModel(_ *cobra.Command, args []string) {
@@ -47,8 +49,10 @@ func printmodels(args []string) {
 		if modelFlags.ocrPats {
 			printpats(name, "ocr", model.GlobalOCRPatterns)
 		}
-		for typ, data := range model.Models {
-			printmodel(name, typ, data)
+		if !modelFlags.noWeights {
+			for typ, data := range model.Models {
+				printmodel(name, typ, data)
+			}
 		}
 	}
 }
@@ -85,18 +89,18 @@ func printjson(args []string) {
 	for _, name := range args {
 		model, err := apoco.ReadModel(name, "")
 		chk(err)
-		st := modelst{
-			Name: name,
-			Data: make(map[string][]feature),
-		}
+		st := modelst{Name: name}
 		if modelFlags.histPats {
 			st.GlobalHistPatterns = model.GlobalHistPatterns
 		}
 		if modelFlags.ocrPats {
 			st.GlobalOCRPatterns = model.GlobalOCRPatterns
 		}
-		for typ, data := range model.Models {
-			st.Data[typ] = jsonfeatures(typ, data)
+		if !modelFlags.noWeights {
+			st.Features = make(map[string][]feature)
+			for typ, data := range model.Models {
+				st.Features[typ] = jsonfeatures(typ, data)
+			}
 		}
 		models = append(models, st)
 	}
@@ -145,9 +149,9 @@ func mktok(typ string, nocr int) apoco.T {
 
 type modelst struct {
 	Name               string
-	Data               map[string][]feature
-	GlobalHistPatterns map[string]float64 `json:",omitempty"`
-	GlobalOCRPatterns  map[string]float64 `json:",omitempty"`
+	Features           map[string][]feature `json:",omitempty"`
+	GlobalHistPatterns map[string]float64   `json:",omitempty"`
+	GlobalOCRPatterns  map[string]float64   `json:",omitempty"`
 }
 
 type feature struct {
