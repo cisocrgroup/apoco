@@ -78,21 +78,21 @@ func (f *FreqList) loadCSV(in io.Reader) error {
 
 // LanguageModel consists of holds the language model for tokens.
 type LanguageModel struct {
-	ngrams     FreqList
-	unigrams   FreqList
+	Ngrams     FreqList
+	Unigrams   FreqList
 	Profile    gofiler.Profile
 	Lexicality float64
 }
 
 // AddUnigram adds the token to the language model's unigram map.
 func (lm *LanguageModel) AddUnigram(token string) {
-	lm.unigrams.add(token)
+	lm.Unigrams.add(token)
 }
 
 // Unigram looks up the given token in the unigram list (or 0 if the
 // unigram is not present).
 func (lm *LanguageModel) Unigram(str string) float64 {
-	return lm.unigrams.relative(str)
+	return lm.Unigrams.relative(str)
 }
 
 // Trigram looks up the trigrams of the given token and returns the
@@ -105,7 +105,7 @@ func (lm *LanguageModel) Trigram(str string) float64 {
 	}
 	ret := 1.0
 	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
-		ret *= lm.ngrams.relative(string(tmp[i:j]))
+		ret *= lm.Ngrams.relative(string(tmp[i:j]))
 	}
 	return ret
 }
@@ -119,7 +119,7 @@ func (lm *LanguageModel) EachTrigram(str string, f func(float64)) {
 		end = len(tmp)
 	}
 	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
-		f(lm.ngrams.relative(string(tmp[i:j])))
+		f(lm.Ngrams.relative(string(tmp[i:j])))
 	}
 }
 
@@ -136,7 +136,7 @@ func (lm *LanguageModel) LoadGzippedNGram(path string) error {
 		return fmt.Errorf("load ngrams %s: %v", path, err)
 	}
 	defer gz.Close()
-	if err := lm.ngrams.loadCSV(gz); err != nil {
+	if err := lm.Ngrams.loadCSV(gz); err != nil {
 		return fmt.Errorf("load ngrams: %s: %v", path, err)
 	}
 	return nil

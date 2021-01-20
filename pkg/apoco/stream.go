@@ -333,7 +333,7 @@ func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
 		err := EachTokenGroup(ctx, in, func(group string, tokens ...T) error {
 			loader := lmLoader{
 				config: c,
-				lm:     &LanguageModel{ngrams: ngrams},
+				lm:     &LanguageModel{Ngrams: ngrams},
 				tokens: tokens,
 			}
 			if err := loader.loadAndSend(ctx, out); err != nil {
