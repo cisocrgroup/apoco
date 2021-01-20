@@ -235,6 +235,7 @@ func cacheProfile(fg string, profile gofiler.Profile) {
 	}
 	defer out.Close()
 	w := gzip.NewWriter(out)
+	defer w.Close()
 	if err := json.NewEncoder(w).Encode(profile); err != nil {
 		return
 	}

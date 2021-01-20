@@ -71,6 +71,7 @@ func writeJSON(name string, profile gofiler.Profile) error {
 	}
 	defer out.Close()
 	w := gzip.NewWriter(out)
+	defer w.Close()
 	if err := json.NewEncoder(w).Encode(profile); err != nil {
 		return fmt.Errorf("write json %s: %v", name, err)
 	}
