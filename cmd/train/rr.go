@@ -27,11 +27,11 @@ func rrRun(_ *cobra.Command, args []string) {
 	chk(err)
 	chk(pipe(context.Background(), flags.extensions, args,
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
-		apoco.Normalize,
+		apoco.Normalize(),
 		apoco.FilterShort(4),
 		apoco.ConnectLM(c, m.Ngrams),
-		apoco.FilterLexiconEntries,
-		apoco.ConnectCandidates,
+		apoco.FilterLexiconEntries(),
+		apoco.ConnectCandidates(),
 		rrTrain(c, m, flags.update)))
 }
 

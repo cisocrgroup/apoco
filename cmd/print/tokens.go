@@ -36,7 +36,7 @@ func init() {
 func runTokens(_ *cobra.Command, args []string) {
 	var stream []apoco.StreamFunc
 	if tokensFlags.normalize {
-		stream = append(stream, apoco.Normalize)
+		stream = append(stream, apoco.Normalize())
 	}
 	if flags.json {
 		stream = append(stream, pjson())

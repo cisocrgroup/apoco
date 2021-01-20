@@ -186,30 +186,33 @@ func SendTokens(ctx context.Context, out chan<- T, tokens ...T) error {
 	return nil
 }
 
-// Normalize trims all leading and subsequent punctionation from the
-// tokens, converts them to lowercase and replaces any whitespace
-// (in the case of merges due to alignment) with a '_'.
-func Normalize(ctx context.Context, in <-chan T, out chan<- T) error {
-	err := EachToken(ctx, in, func(t T) error {
-		for i := range t.Tokens {
-			if i == 0 { // handle master OCR in a special way
-				t.Chars = normalizeChars(t.Chars)
+// Normalize returns a stream function that trims all leading and
+// subsequent punctionation from the tokens, converts them to
+// lowercase and replaces any whitespace (in the case of merges due to
+// alignment) with a '_'.
+func Normalize() StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachToken(ctx, in, func(t T) error {
+			for i := range t.Tokens {
+				if i == 0 { // handle master OCR in a special way
+					t.Chars = normalizeChars(t.Chars)
+				}
+				t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
+					return unicode.IsPunct(r) || unicode.IsSpace(r)
+				})
+				t.Tokens[i] = strings.ReplaceAll(
+					strings.ToLower(t.Tokens[i]), " ", "_")
 			}
-			t.Tokens[i] = strings.TrimFunc(t.Tokens[i], func(r rune) bool {
-				return unicode.IsPunct(r) || unicode.IsSpace(r)
-			})
-			t.Tokens[i] = strings.ReplaceAll(
-				strings.ToLower(t.Tokens[i]), " ", "_")
-		}
-		if err := SendTokens(ctx, out, t); err != nil {
-			return fmt.Errorf("normalize: send tokens: %v", err)
+			if err := SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("normalize: send tokens: %v", err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("normalize: each token: %v", err)
 		}
 		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("normalize: each token: %v", err)
 	}
-	return nil
 }
 
 func charsToString(chars Chars) string {
@@ -276,45 +279,50 @@ func FilterShort(min int) StreamFunc {
 	}
 }
 
-// FilterLexiconEntries filters all tokens that are lexicon entries
-// from the stream.
-func FilterLexiconEntries(ctx context.Context, in <-chan T, out chan<- T) error {
-	err := EachToken(ctx, in, func(t T) error {
-		if t.IsLexiconEntry() {
+// FilterLexiconEntries returns a stream function that filters all
+// tokens that are lexicon entries from the stream.
+func FilterLexiconEntries() StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachToken(ctx, in, func(t T) error {
+			if t.IsLexiconEntry() {
+				return nil
+			}
+			if err := SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("filterLexiconEntry: %v", err)
+			}
 			return nil
-		}
-		if err := SendTokens(ctx, out, t); err != nil {
+		})
+		if err != nil {
 			return fmt.Errorf("filterLexiconEntry: %v", err)
 		}
 		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("filterLexiconEntry: %v", err)
 	}
-	return nil
 }
 
-// ConnectCandidates connects tokens with their respective candidates
-// to the stream.  Tokens with no candidates or tokens with only a
-// modern interpretation are filtered from the stream.
-func ConnectCandidates(ctx context.Context, in <-chan T, out chan<- T) error {
-	err := EachToken(ctx, in, func(t T) error {
-		interp, ok := t.LM.Profile[t.Tokens[0]]
-		if !ok { // no suggestions (too short or unknown)
-			return nil
-		}
-		for i := range interp.Candidates {
-			t.Payload = &interp.Candidates[i]
-			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("add candidate: %v", err)
+// ConnectCandidates returns a stream function that connects tokens
+// with their respective candidates to the stream.  Tokens with no
+// candidates or tokens with only a modern interpretation are filtered
+// from the stream.
+func ConnectCandidates() StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachToken(ctx, in, func(t T) error {
+			interp, ok := t.LM.Profile[t.Tokens[0]]
+			if !ok { // no suggestions (too short or unknown)
+				return nil
 			}
+			for i := range interp.Candidates {
+				t.Payload = &interp.Candidates[i]
+				if err := SendTokens(ctx, out, t); err != nil {
+					return fmt.Errorf("add candidate: %v", err)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("add candidate: %v", err)
 		}
 		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("add candidate: %v", err)
 	}
-	return nil
 }
 
 // ConnectLM loads the language model for the tokens and adds them to
