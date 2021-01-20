@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"context"
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -196,7 +196,7 @@ func cachePath(dir string) (string, bool) {
 		return "", false
 	}
 	name := strings.ReplaceAll(abs, "/", "-")[1:]
-	return filepath.Join(cacheDir, "apoco", name), true
+	return filepath.Join(cacheDir, "apoco", name+".json.gz"), true
 }
 
 func readCachedProfile(fg string) (gofiler.Profile, bool) {
@@ -204,13 +204,17 @@ func readCachedProfile(fg string) (gofiler.Profile, bool) {
 	if !ok {
 		return nil, false
 	}
-	is, err := os.Open(path)
+	in, err := os.Open(path)
 	if err != nil {
 		return nil, false
 	}
-	defer is.Close()
+	defer in.Close()
+	r, err := gzip.NewReader(in)
+	if err != nil {
+		return nil, false
+	}
 	var profile gofiler.Profile
-	if err := gob.NewDecoder(is).Decode(&profile); err != nil {
+	if err := json.NewDecoder(r).Decode(&profile); err != nil {
 		return nil, false
 	}
 	log.Printf("read %d profile tokens from %s", len(profile), path)
@@ -230,7 +234,8 @@ func cacheProfile(fg string, profile gofiler.Profile) {
 		return
 	}
 	defer out.Close()
-	if err := gob.NewEncoder(out).Encode(profile); err != nil {
+	w := gzip.NewWriter(out)
+	if err := json.NewEncoder(w).Encode(profile); err != nil {
 		return
 	}
 	log.Printf("cached %d profile tokens to %s", len(profile), path)
