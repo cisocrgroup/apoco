@@ -1,11 +1,11 @@
 package print
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"os"
 
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +32,7 @@ func init() {
 
 func runProfile(_ *cobra.Command, args []string) {
 	for _, name := range args {
-		profile, err := readProfile(name)
+		profile, err := apoco.ReadProfile(name)
 		chk(err)
 		if flags.json {
 			printprofilejson(name, profile)
@@ -70,23 +70,6 @@ func printprofilejson(name string, profile gofiler.Profile) {
 		st.Profile = profile
 	}
 	chk(json.NewEncoder(os.Stdout).Encode(st))
-}
-
-func readProfile(name string) (gofiler.Profile, error) {
-	in, err := os.Open(name)
-	if err != nil {
-		return nil, fmt.Errorf("read profile %s: %v", name, err)
-	}
-	defer in.Close()
-	r, err := gzip.NewReader(in)
-	if err != nil {
-		return nil, fmt.Errorf("read profile %s: %v", name, err)
-	}
-	var profile gofiler.Profile
-	if err := json.NewDecoder(r).Decode(&profile); err != nil {
-		return nil, fmt.Errorf("read profile %s: %v", name, err)
-	}
-	return profile, nil
 }
 
 type profilest struct {

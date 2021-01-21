@@ -204,17 +204,8 @@ func readCachedProfile(fg string) (gofiler.Profile, bool) {
 	if !ok {
 		return nil, false
 	}
-	in, err := os.Open(path)
+	profile, err := ReadProfile(path)
 	if err != nil {
-		return nil, false
-	}
-	defer in.Close()
-	r, err := gzip.NewReader(in)
-	if err != nil {
-		return nil, false
-	}
-	var profile gofiler.Profile
-	if err := json.NewDecoder(r).Decode(&profile); err != nil {
 		return nil, false
 	}
 	log.Printf("read %d profile tokens from %s", len(profile), path)
@@ -229,17 +220,44 @@ func cacheProfile(fg string, profile gofiler.Profile) {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return
 	}
-	out, err := os.Create(path)
-	if err != nil {
+	if err := WriteProfile(path, profile); err != nil {
 		return
+	}
+	log.Printf("cached %d profile tokens to %s", len(profile), path)
+}
+
+// ReadProfile reads the profile from a gzipped json formatted file.
+func ReadProfile(name string) (gofiler.Profile, error) {
+	in, err := os.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("read profile %s: %v", name, err)
+	}
+	defer in.Close()
+	r, err := gzip.NewReader(in)
+	if err != nil {
+		return nil, fmt.Errorf("read profile %s: %v", name, err)
+	}
+	defer r.Close()
+	var profile gofiler.Profile
+	if err := json.NewDecoder(r).Decode(&profile); err != nil {
+		return nil, fmt.Errorf("read profile %s: %v", name, err)
+	}
+	return profile, nil
+}
+
+// WriteProfile writes the profile as gzipped json formatted file.
+func WriteProfile(name string, profile gofiler.Profile) error {
+	out, err := os.Create(name)
+	if err != nil {
+		return fmt.Errorf("write profile %s: %v", name, err)
 	}
 	defer out.Close()
 	w := gzip.NewWriter(out)
 	defer w.Close()
 	if err := json.NewEncoder(w).Encode(profile); err != nil {
-		return
+		return fmt.Errorf("write profile %s: %v", name, err)
 	}
-	log.Printf("cached %d profile tokens to %s", len(profile), path)
+	return nil
 }
 
 type logger struct {

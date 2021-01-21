@@ -1,18 +1,14 @@
 package correct
 
 import (
-	"compress/gzip"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
-	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 )
 
@@ -176,7 +172,7 @@ func connectlm(c *apoco.Config, ngrams apoco.FreqList, profile string) apoco.Str
 	}
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		lm := apoco.LanguageModel{Ngrams: ngrams}
-		prof, err := readProfile(profile)
+		prof, err := apoco.ReadProfile(profile)
 		if err != nil {
 			return err
 		}
@@ -187,23 +183,6 @@ func connectlm(c *apoco.Config, ngrams apoco.FreqList, profile string) apoco.Str
 			return apoco.SendTokens(ctx, out, t)
 		})
 	}
-}
-
-func readProfile(name string) (gofiler.Profile, error) {
-	in, err := os.Open(name)
-	if err != nil {
-		return nil, fmt.Errorf("read profile %s: %v", name, err)
-	}
-	defer in.Close()
-	r, err := gzip.NewReader(in)
-	if err != nil {
-		return nil, fmt.Errorf("read profile %s: %v", name, err)
-	}
-	var profile gofiler.Profile
-	if err := json.NewDecoder(r).Decode(&profile); err != nil {
-		return nil, fmt.Errorf("read profile %s: %v", name, err)
-	}
-	return profile, nil
 }
 
 func pipe(ctx context.Context, mets string, ifgs, exts, dirs []string, fns ...apoco.StreamFunc) error {

@@ -1,17 +1,12 @@
 package profile
 
 import (
-	"compress/gzip"
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
-	"os"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
-	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 )
 
@@ -59,22 +54,8 @@ func writeProfile(c *apoco.Config, name string) apoco.StreamFunc {
 		if err := lm.LoadProfile(ctx, c.ProfilerBin, c.ProfilerConfig, false, ts...); err != nil {
 			return err
 		}
-		return writeJSON(name, lm.Profile)
+		return apoco.WriteProfile(name, lm.Profile)
 	}
-}
-
-func writeJSON(name string, profile gofiler.Profile) error {
-	out, err := os.Create(name)
-	if err != nil {
-		return fmt.Errorf("write json %s: %v", name, err)
-	}
-	defer out.Close()
-	w := gzip.NewWriter(out)
-	defer w.Close()
-	if err := json.NewEncoder(w).Encode(profile); err != nil {
-		return fmt.Errorf("write json %s: %v", name, err)
-	}
-	return nil
 }
 
 func pipe(ctx context.Context, exts, dirs []string, fns ...apoco.StreamFunc) error {
