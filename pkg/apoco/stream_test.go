@@ -82,7 +82,7 @@ func TestNormalize(t *testing.T) {
 		t.Run(fmttoks(tc.test...), func(t *testing.T) {
 			var got []T
 			err := Pipe(context.Background(),
-				sendtoks(tc.test...), Normalize, readtoks(&got))
+				sendtoks(tc.test...), Normalize(), readtoks(&got))
 			if err != nil {
 				t.Fatalf("got error: %v", err)
 			}
@@ -151,7 +151,7 @@ func TestCombine(t *testing.T) {
 			err := Pipe(
 				ctx,
 				sendtoks(tc.test...),
-				Combine(ctx, FilterBad(3), Normalize),
+				Combine(ctx, FilterBad(3), Normalize()),
 				readtoks(&got))
 			if err != nil {
 				t.Fatalf("got error: %v", err)
