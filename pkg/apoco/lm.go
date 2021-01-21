@@ -168,12 +168,7 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 			return nil
 		}
 	}
-	var profilerTokens []gofiler.Token
-	for _, token := range tokens {
-		profilerTokens = append(profilerTokens, gofiler.Token{OCR: token.Tokens[0]})
-	}
-	profiler := gofiler.Profiler{Exe: exe, Types: true, Log: logger{}}
-	profile, err := profiler.Run(ctx, config, profilerTokens)
+	profile, err := RunProfiler(ctx, exe, config, tokens...)
 	if err != nil {
 		return fmt.Errorf("load profile: %v", err)
 	}
@@ -184,6 +179,22 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 	cacheProfile(tokens[0].Group, profile)
 	lm.calculateLexicality(tokens...)
 	return nil
+}
+
+// RunProfiler runs the profiler over the given tokens (using the
+// token entries at index 0) with the given executable and config
+// file.  The profiler's output is logged to stderr.
+func RunProfiler(ctx context.Context, exe, config string, tokens ...T) (gofiler.Profile, error) {
+	var profilerTokens []gofiler.Token
+	for _, token := range tokens {
+		profilerTokens = append(profilerTokens, gofiler.Token{OCR: token.Tokens[0]})
+	}
+	profiler := gofiler.Profiler{Exe: exe, Types: true, Log: logger{}}
+	profile, err := profiler.Run(ctx, config, profilerTokens)
+	if err != nil {
+		return nil, fmt.Errorf("run profiler %s %s: %v", exe, config, err)
+	}
+	return profile, nil
 }
 
 func cachePath(dir string) (string, bool) {

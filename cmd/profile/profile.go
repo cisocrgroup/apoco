@@ -50,11 +50,11 @@ func writeProfile(c *apoco.Config, name string) apoco.StreamFunc {
 		if err != nil {
 			return err
 		}
-		var lm apoco.LanguageModel
-		if err := lm.LoadProfile(ctx, c.ProfilerBin, c.ProfilerConfig, false, ts...); err != nil {
+		profile, err := apoco.RunProfiler(ctx, c.ProfilerBin, c.ProfilerConfig, ts...)
+		if err != nil {
 			return err
 		}
-		return apoco.WriteProfile(name, lm.Profile)
+		return apoco.WriteProfile(name, profile)
 	}
 }
 
