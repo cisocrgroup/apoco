@@ -406,11 +406,3 @@ func printErrors(skipped, short, lex, cor bool, rank int, ocr, sug, gt string) {
 		write("successful_correction ")
 	}
 }
-
-func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
-	_, err := fmt.Sscanf(dtd, dtdFormat, skip, short, lex, cor, rank, ocr, sug, gt)
-	if err != nil {
-		return fmt.Errorf("parseDTD: cannot parse %q: %v", dtd, err)
-	}
-	return nil
-}

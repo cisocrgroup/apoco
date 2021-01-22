@@ -2,7 +2,6 @@ package main
 
 import (
 	"git.sr.ht/~flobar/apoco/cmd/align"
-	"git.sr.ht/~flobar/apoco/cmd/charset"
 	"git.sr.ht/~flobar/apoco/cmd/correct"
 	"git.sr.ht/~flobar/apoco/cmd/eval"
 	"git.sr.ht/~flobar/apoco/cmd/print"
@@ -20,7 +19,6 @@ var root = &cobra.Command{
 func init() {
 	root.AddCommand(
 		align.CMD,
-		charset.CMD,
 		correct.CMD,
 		eval.CMD,
 		print.CMD,

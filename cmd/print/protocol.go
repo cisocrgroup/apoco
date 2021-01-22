@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/spf13/cobra"
@@ -107,11 +106,4 @@ func catp(name string) {
 
 		chk(err)
 	}
-}
-
-func e(str string) string {
-	if str == "" {
-		return "ε"
-	}
-	return strings.ToLower(strings.Replace(str, " ", "_", -1))
 }

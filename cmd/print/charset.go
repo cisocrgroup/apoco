@@ -1,9 +1,9 @@
-package charset
+package print
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strings"
@@ -12,15 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var flags = struct {
-	ifgs, extensions []string
-	mets, parameters string
-	nocr             int
-	cache, normalize bool
-}{}
-
-// CMD runs the apoco charset command.
-var CMD = &cobra.Command{
+// charsetCMD runs the apoco print charset subcommand.
+var charsetCMD = &cobra.Command{
 	Use:   "charset",
 	Short: "Extract differences in character sets",
 	Run:   run,
@@ -29,10 +22,9 @@ var CMD = &cobra.Command{
 func run(_ *cobra.Command, args []string) {
 	s := bufio.NewScanner(os.Stdin)
 	gtset := make(cset)
-	var corrs []struct {
-		ocr, sug, gt string
-		taken        bool
-	}
+	ocrset := make(cset)
+	sugset := make(cset)
+	var corrs []corr
 	for s.Scan() {
 		line := s.Text()
 		if line == "" || line[0] == '#' {
@@ -43,24 +35,51 @@ func run(_ *cobra.Command, args []string) {
 		var ocr, sug, gt string
 		chk(parseDTD(line, &skip, &short, &lex, &cor, &rank, &ocr, &sug, &gt))
 		gtset.add(gt)
+		ocrset.add(ocr)
+		sugset.add(sug)
 		if skip {
 			continue
 		}
 		if sug == gt {
 			continue
 		}
-		corrs = append(corrs, struct {
-			ocr, sug, gt string
-			taken        bool
-		}{ocr, sug, gt, cor})
+		corrs = append(corrs, corr{ocr, sug, gt, "", cor, false})
 	}
 	chk(s.Err())
-	for _, cor := range corrs {
-		chars := gtset.extractNotInSet(cor.sug)
-		bad := chars != ""
-		fmt.Printf("badchars=%t taken=%t ocr=%s sug=%s gt=%s\n", bad, cor.taken, cor.ocr, cor.sug, cor.gt)
+	if flags.json {
+		printCharsetJSON(corrs, gtset, ocrset, sugset)
+	} else {
+		printCharset(corrs, gtset, ocrset, sugset)
 	}
-	fmt.Printf("gtcharset=%q\n", gtset)
+}
+
+func printCharset(corrs []corr, gtset, ocrset, sugset cset) {
+	for _, c := range corrs {
+		chars := gtset.extractNotInSet(c.Sug)
+		bad := chars != ""
+		fmt.Printf("badchars=%t taken=%t ocr=%s sug=%s gt=%s chars=%s\n",
+			bad, c.Taken, c.OCR, c.Sug, c.GT, e(chars))
+	}
+	fmt.Printf("gtcharset=%s\n", gtset)
+	fmt.Printf("ocrcharset=%s\n", ocrset)
+	fmt.Printf("sugcharset=%s\n", sugset)
+}
+
+func printCharsetJSON(corrs []corr, gtset, ocrset, sugset cset) {
+	for i := range corrs {
+		corrs[i].Chars = gtset.extractNotInSet(corrs[i].Sug)
+		corrs[i].BadChars = corrs[i].Chars != ""
+	}
+	data := struct {
+		Corrs                 []corr
+		GTSet, OCRSet, SugSet string
+	}{corrs, gtset.String(), ocrset.String(), sugset.String()}
+	chk(json.NewEncoder(os.Stdout).Encode(data))
+}
+
+type corr struct {
+	OCR, Sug, GT, Chars string
+	Taken, BadChars     bool
 }
 
 type cset map[string]struct{}
@@ -123,19 +142,4 @@ func (s cset) String() string {
 		b.WriteString(str)
 	}
 	return b.String()
-}
-
-func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
-	const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
-	_, err := fmt.Sscanf(dtd, dtdFormat, skip, short, lex, cor, rank, ocr, sug, gt)
-	if err != nil {
-		return fmt.Errorf("parseDTD: cannot parse %q: %v", dtd, err)
-	}
-	return nil
-}
-
-func chk(err error) {
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
 }
