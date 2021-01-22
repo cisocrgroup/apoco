@@ -1,15 +1,11 @@
 package eval
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"log"
 
-	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
 	"github.com/spf13/cobra"
 )
 
@@ -40,16 +36,6 @@ func init() {
 		"enable caching of profiles (overwrites the setting in the configuration file)")
 	// Subcommands
 	CMD.AddCommand(rrCMD, dmCMD)
-}
-
-func pipe(ctx context.Context, exts, dirs []string, fns ...apoco.StreamFunc) error {
-	if len(exts) == 1 && exts[0] == ".xml" {
-		fns = append([]apoco.StreamFunc{pagexml.TokenizeDirs(exts[0], dirs...)}, fns...)
-	} else {
-		e := snippets.Extensions(exts)
-		fns = append([]apoco.StreamFunc{e.ReadLines(dirs...), e.TokenizeLines}, fns...)
-	}
-	return apoco.Pipe(ctx, fns...)
 }
 
 type stats struct {

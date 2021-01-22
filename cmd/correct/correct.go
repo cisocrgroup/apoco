@@ -6,9 +6,8 @@ import (
 	"log"
 	"unicode/utf8"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
 	"github.com/spf13/cobra"
 )
 
@@ -55,11 +54,14 @@ func run(_ *cobra.Command, args []string) {
 	dmlr, dmfs, err := m.Get("dm", c.Nocr)
 	chk(err)
 	infoMap := make(infoMap)
-	chk(pipe(context.Background(),
-		flags.mets,
-		flags.ifgs,
-		flags.extensions,
-		args,
+	p := internal.Piper{
+		IFGS: flags.ifgs,
+		METS: flags.mets,
+		Exts: flags.extensions,
+		Dirs: args,
+	}
+	chk(p.Pipe(
+		context.Background(),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		register(infoMap),
@@ -183,18 +185,6 @@ func connectlm(c *apoco.Config, ngrams apoco.FreqList, profile string) apoco.Str
 			return apoco.SendTokens(ctx, out, t)
 		})
 	}
-}
-
-func pipe(ctx context.Context, mets string, ifgs, exts, dirs []string, fns ...apoco.StreamFunc) error {
-	if len(ifgs) != 0 {
-		fns = append([]apoco.StreamFunc{pagexml.Tokenize(mets, ifgs...)}, fns...)
-	} else if len(exts) == 1 && exts[0] == ".xml" {
-		fns = append([]apoco.StreamFunc{pagexml.TokenizeDirs(exts[0], dirs...)}, fns...)
-	} else {
-		e := snippets.Extensions(exts)
-		fns = append([]apoco.StreamFunc{e.ReadLines(dirs...), e.TokenizeLines}, fns...)
-	}
-	return apoco.Pipe(ctx, fns...)
 }
 
 func chk(err error) {

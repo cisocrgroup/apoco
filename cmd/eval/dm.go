@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/spf13/cobra"
@@ -26,7 +27,12 @@ func dmRun(_ *cobra.Command, args []string) {
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)
 	chk(err)
-	chk(pipe(context.Background(), flags.extensions, args,
+	p := internal.Piper{
+		Exts: flags.extensions,
+		Dirs: args,
+	}
+	chk(p.Pipe(
+		context.Background(),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(4),
@@ -34,7 +40,8 @@ func dmRun(_ *cobra.Command, args []string) {
 		apoco.FilterLexiconEntries(),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(lr, fs, c.Nocr),
-		dmEval(c, m)))
+		dmEval(c, m),
+	))
 }
 
 func dmEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {

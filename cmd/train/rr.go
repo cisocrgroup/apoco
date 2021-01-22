@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/finkf/gofiler"
@@ -25,14 +26,20 @@ func rrRun(_ *cobra.Command, args []string) {
 	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
-	chk(pipe(context.Background(), flags.extensions, args,
+	p := internal.Piper{
+		Exts: flags.extensions,
+		Dirs: args,
+	}
+	chk(p.Pipe(
+		context.Background(),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(4),
 		apoco.ConnectLM(c, m.Ngrams),
 		apoco.FilterLexiconEntries(),
 		apoco.ConnectCandidates(),
-		rrTrain(c, m, flags.update)))
+		rrTrain(c, m, flags.update),
+	))
 }
 
 func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {

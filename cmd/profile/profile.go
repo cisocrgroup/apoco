@@ -4,9 +4,8 @@ import (
 	"context"
 	"log"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/snippets"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +32,12 @@ func init() {
 func runProfile(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameters)
 	chk(err)
-	chk(pipe(context.Background(), flags.extensions, args[:len(args)-1],
+	p := internal.Piper{
+		Exts: flags.extensions,
+		Dirs: args[:len(args)-1],
+	}
+	chk(p.Pipe(
+		context.Background(),
 		apoco.FilterBad(1),
 		apoco.Normalize(),
 		apoco.FilterShort(4),
@@ -57,16 +61,6 @@ func writeProfile(c *apoco.Config, name string) apoco.StreamFunc {
 		}
 		return apoco.WriteProfile(name, profile)
 	}
-}
-
-func pipe(ctx context.Context, exts, dirs []string, fns ...apoco.StreamFunc) error {
-	if len(exts) == 1 && exts[0] == ".xml" {
-		fns = append([]apoco.StreamFunc{pagexml.TokenizeDirs(exts[0], dirs...)}, fns...)
-	} else {
-		e := snippets.Extensions(exts)
-		fns = append([]apoco.StreamFunc{e.ReadLines(dirs...), e.TokenizeLines}, fns...)
-	}
-	return apoco.Pipe(ctx, fns...)
 }
 
 func chk(err error) {

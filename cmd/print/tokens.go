@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/spf13/cobra"
 )
@@ -43,9 +44,13 @@ func runTokens(_ *cobra.Command, args []string) {
 	} else {
 		stream = append(stream, cat(tokensFlags.file))
 	}
-	chk(pipe(context.Background(),
-		tokensFlags.mets, tokensFlags.ifgs,
-		tokensFlags.extensions, args, stream...))
+	p := internal.Piper{
+		METS: tokensFlags.mets,
+		IFGS: tokensFlags.ifgs,
+		Exts: tokensFlags.extensions,
+		Dirs: args,
+	}
+	chk(p.Pipe(context.Background(), stream...))
 }
 
 func cat(file bool) apoco.StreamFunc {
