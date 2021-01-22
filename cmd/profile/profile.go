@@ -34,6 +34,7 @@ func runProfile(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameters)
 	chk(err)
 	chk(pipe(context.Background(), flags.extensions, args[:len(args)-1],
+		apoco.FilterBad(1),
 		apoco.Normalize(),
 		apoco.FilterShort(4),
 		writeProfile(c, args[len(args)-1]),
