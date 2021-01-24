@@ -21,13 +21,16 @@ var register = map[string]FeatureFunc{
 	"OCRMinTrigramFreq":              OCRMaxTrigramFreq,
 	"OCRMaxCharConf":                 OCRMaxCharConf,
 	"OCRMinCharConf":                 OCRMinCharConf,
+	"OCRLevenshteinDist":             OCRLevenshteinDist,
 	"CandidateProfilerWeight":        CandidateProfilerWeight,
 	"CandidateUnigramFreq":           CandidateUnigramFreq,
 	"CandidateTrigramFreq":           CandidateTrigramFreq,
+	"CandidateTrigramFreqLog":        CandidateTrigramFreqLog,
 	"CandidateAgreeingOCR":           CandidateAgreeingOCR,
 	"CandidateOCRPatternConf":        CandidateOCRPatternConf,
 	"CandidateOCRPatternConfLog":     CandidateOCRPatternConfLog,
 	"CandidateHistPatternConf":       CandidateHistPatternConf,
+	"CandidateHistPatternConfLog":    CandidateHistPatternConfLog,
 	"CandidateLevenshteinDist":       CandidateLevenshteinDist,
 	"CandidateMaxTrigramFreq":        CandidateMaxTrigramFreq,
 	"CandidateMinTrigramFreq":        CandidateMinTrigramFreq,
@@ -202,6 +205,16 @@ func CandidateTrigramFreq(t T, i, n int) (float64, bool) {
 	return t.LM.Trigram(candidate.Suggestion), true
 }
 
+// CandidateTrigramFreqLog returns the product of the candidate's
+// trigrams.
+func CandidateTrigramFreqLog(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	candidate := mustGetCandidate(t)
+	return t.LM.TrigramLog(candidate.Suggestion), true
+}
+
 // CandidateAgreeingOCR returns the number of OCR tokens that agree
 // with the specific profiler candidate of the token.
 func CandidateAgreeingOCR(t T, i, n int) (float64, bool) {
@@ -236,9 +249,28 @@ func CandidateHistPatternConf(t T, i, n int) (float64, bool) {
 	return prod, true
 }
 
+// CandidateHistPatternConfLog returns the sum of the logrithm of the
+// confidences of the primary OCR characters for the assumed
+// historical rewrite pattern of the connected candidate.
+func CandidateHistPatternConfLog(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	candidate := mustGetCandidate(t)
+	if len(candidate.HistPatterns) == 0 {
+		return 0, true
+	}
+	var sum float64
+	for _, p := range candidate.HistPatterns {
+		sum += math.Log(averagePosPatternConf(t.Chars, p))
+	}
+	return sum, true
+}
+
 // CandidateOCRPatternConf returns the product of the confidences of
 // the primary OCR characters for the assumed OCR error pattern of the
 // connected candidate.
+// TODO: rename to CandiateErrPatternConf
 func CandidateOCRPatternConf(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
@@ -304,6 +336,15 @@ func averagePosPatternConf(chars Chars, p gofiler.Pattern) float64 {
 func CandidateMatchesOCR(t T, i, n int) (float64, bool) {
 	candidate := mustGetCandidate(t)
 	return ml.Bool(candidate.Suggestion == t.Tokens[i]), true
+}
+
+// OCRLevenshteinDist returns the levenshtein distance between the
+// secondary OCRs with the primary OCR.
+func OCRLevenshteinDist(t T, i, n int) (float64, bool) {
+	if i == 0 {
+		return 0, false
+	}
+	return float64(lev.Distance(t.Tokens[i], t.Tokens[0])), true
 }
 
 // CandidateLevenshteinDist returns the levenshtein distance between

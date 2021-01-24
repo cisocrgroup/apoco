@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -108,6 +109,16 @@ func (lm *LanguageModel) Trigram(str string) float64 {
 		ret *= lm.Ngrams.relative(string(tmp[i:j]))
 	}
 	return ret
+}
+
+// TrigramLog looks up the trigrams of the given token and returns the
+// sum of the logarithmic relative frequency of the token's trigrams.
+func (lm *LanguageModel) TrigramLog(str string) float64 {
+	var sum float64
+	lm.EachTrigram(str, func(freq float64) {
+		sum += math.Log(freq)
+	})
+	return sum
 }
 
 // EachTrigram looks up the trigrams of the given token and returns the
