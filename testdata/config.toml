@@ -1,45 +1,45 @@
-##############################
-# Post-correction parameters #
-##############################
+# Path to the model (overwrite with -M/--model)
+model = "model.gz"
 
-# Path to the model.
-model = "testdata/model.bin"
-
-# Number of parallel OCRs.
+# Number of parallel OCRs (overwrite with -n/--nocr)
 nocr = 2
 
-# Settings for the profiler.
+# Cautious or courageous decision maker training (overwrite with -a/--cautious)
+cautious = false
+
+# Enable/disable caching (overwrite with -c/--cache)
+cache = true
+
+# Path to the 3-gram model csv file.
+ngrams = "data/3gs.csv.gz"
+
+# Profiler settings.
 profilerBin = "/usr/share/bin/profiler"
 profilerConfig = "/etc/profiler/german.ini"
 
-# Set caching of profiler suggestions.
-cache = false
-
-#######################
-# Training parameters #
-#######################
-
-# Cautious or courageous decision maker training
-cautious = true
-
-# Path to the 3-gram model csv file.
-ngrams = "/etc/profiler/german/3gs.csv.gz"
-
-# Settings for the training variables.
+#
+# Training parameters
+#
 learningRate = 0.01
 ntrain = 1000
 
-# Features for the reranker training.
+# Feature list for the reranker training.
 rrFeatures = [
-"CandidateOCRPatternConf",
+"CandidateOCRPatternConfLog",
+# "CandidateHistPatternConfLog",
+"CandidateAgreeingOCR",
 "CandidateLevenshteinDist",
 "CandidateMatchesOCR",
+"OCRLevenshteinDist",
 ]
 
-# Features for the decision maker training.
+# Feature list for the decision maker training.
 dmFeatures = [
 "RankingConf",
-"CandidateOCRPatternConf",
+"CandidateOCRPatternConfLog",
+# "CandidateHistPatternConfLog",
+"CandidateAgreeingOCR",
 "CandidateLevenshteinDist",
 "CandidateMatchesOCR",
+"OCRLevenshteinDist",
 ]
