@@ -21,7 +21,7 @@ var flags = struct {
 // CMD runs the apoco correct command.
 var CMD = &cobra.Command{
 	Use:   "correct [DIRS...]",
-	Short: "Automatically correct documents",
+	Short: "Automatically post-correct documents",
 	Run:   run,
 }
 

@@ -27,7 +27,7 @@ var flags = struct {
 // CMD defines the apoco align command.
 var CMD = &cobra.Command{
 	Use:   "align",
-	Short: "Align multiple input file groups word-wise",
+	Short: "Align multiple input file groups",
 	Run:   run,
 }
 

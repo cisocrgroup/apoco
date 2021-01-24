@@ -12,7 +12,7 @@ import (
 // CMD defines the apoco eval command.
 var CMD = &cobra.Command{
 	Use:   "eval",
-	Short: "Evaluate models",
+	Short: "Evaluate post-correction models",
 }
 
 var flags = struct {

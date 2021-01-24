@@ -9,7 +9,7 @@ import (
 // CMD defines the apoco train command.
 var CMD = &cobra.Command{
 	Use:   "train",
-	Short: "Train models",
+	Short: "Train post-correction models ",
 }
 
 var flags = struct {
