@@ -291,7 +291,8 @@ func (s *stats) stat(dtd string) error {
 func (s *stats) write(name string) {
 	s.ErrorRateBefore = float64(s.TotalErrBefore) / float64(s.Total)
 	s.ErrorRateAfter = float64(s.TotalErrAfter) / float64(s.Total)
-	s.Improvement = float64(s.TotalErrBefore-s.TotalErrAfter) / float64(s.TotalErrAfter) * 100
+	corbefore, corafter := s.Total-s.TotalErrBefore, s.Total-s.TotalErrAfter
+	s.Improvement = (float64(corafter-corbefore) / float64(corbefore)) * 100.0
 	s.AccuracyBefore = 1.0 - s.ErrorRateBefore
 	s.AccuracyAfter = 1.0 - s.ErrorRateAfter
 	if flags.json {
@@ -303,8 +304,7 @@ func (s *stats) write(name string) {
 	fmt.Printf("error rate (before/after)         = %f/%f\n", s.ErrorRateBefore, s.ErrorRateAfter)
 	fmt.Printf("accuracy (before/after)           = %f/%f\n", s.AccuracyBefore, s.AccuracyAfter)
 	fmt.Printf("Total errors (before/after)       = %d/%d\n", s.TotalErrBefore, s.TotalErrAfter)
-	fmt.Printf("correct (before/after)            = %d/%d\n",
-		s.Total-s.TotalErrBefore, s.Total-s.TotalErrAfter)
+	fmt.Printf("correct (before/after)            = %d/%d\n", corbefore, corafter)
 	fmt.Printf("missing correction                = %d\n",
 		s.DodgedBulletsMC+s.DisimprovementMC+s.DoNotCareMC+s.SkippedDoNotCareMC)
 	fmt.Printf("bad rank                          = %d\n",
