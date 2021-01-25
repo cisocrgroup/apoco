@@ -16,10 +16,10 @@ import (
 var charsetCMD = &cobra.Command{
 	Use:   "charset",
 	Short: "Extract differences in character sets",
-	Run:   run,
+	Run:   runCharset,
 }
 
-func run(_ *cobra.Command, args []string) {
+func runCharset(_ *cobra.Command, args []string) {
 	s := bufio.NewScanner(os.Stdin)
 	gtset := make(cset)
 	ocrset := make(cset)
