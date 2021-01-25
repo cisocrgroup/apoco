@@ -121,17 +121,25 @@ func (lm *LanguageModel) TrigramLog(str string) float64 {
 	return sum
 }
 
+// EachTrigram calls the given callback function for each trigram in
+// the given string.
+func EachTrigram(str string, f func(string)) {
+	runes := []rune("$" + str + "$")
+	begin, end := 0, 3
+	if end > len(runes) {
+		end = len(runes)
+	}
+	for i, j := begin, end; j <= len(runes); i, j = i+1, j+1 {
+		f(string(runes[i:j]))
+	}
+}
+
 // EachTrigram looks up the trigrams of the given token and returns the
 // product of the token's trigrams.
 func (lm *LanguageModel) EachTrigram(str string, f func(float64)) {
-	tmp := []rune("$" + str + "$")
-	begin, end := 0, 3
-	if end > len(tmp) {
-		end = len(tmp)
-	}
-	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
-		f(lm.Ngrams.relative(string(tmp[i:j])))
-	}
+	EachTrigram(str, func(trigram string) {
+		f(lm.Ngrams.relative(trigram))
+	})
 }
 
 // LoadGzippedNGram loads the (gzipped) ngram model file.  The expected format
