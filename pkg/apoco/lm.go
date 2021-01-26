@@ -53,10 +53,7 @@ func (f *FreqList) relative(str string) float64 {
 		return 0
 	}
 	abs := f.absolute(str)
-	if abs == 0 {
-		return 1.0 / float64(f.Total)
-	}
-	return float64(abs) / float64(f.Total)
+	return float64(abs+1) / float64(f.Total+len(f.FreqList))
 }
 
 func (f *FreqList) loadCSV(in io.Reader) error {
