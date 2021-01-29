@@ -123,11 +123,10 @@ func (lms lms) globalOCRPatternMeans() map[string]float64 {
 }
 
 func means(xs []map[string]float64) map[string]float64 {
-	n := len(xs)
-	if n == 0 {
+	switch len(xs) {
+	case 0:
 		return nil
-	}
-	if n == 1 {
+	case 1:
 		return xs[0]
 	}
 	keys := make(map[string]struct{})
