@@ -123,26 +123,25 @@ func (lms lms) globalOCRPatternMeans() map[string]float64 {
 }
 
 func means(xs []map[string]float64) map[string]float64 {
-	switch len(xs) {
-	case 0:
+	if len(xs) == 0 {
 		return nil
-	case 1:
+	}
+	if len(xs) == 1 {
 		return xs[0]
 	}
-	keys := make(map[string]struct{})
+	means := make(map[string]float64)
 	for _, x := range xs {
 		for key := range x {
-			keys[key] = struct{}{}
+			means[key] = 0.0
 		}
 	}
-	means := make(map[string]float64)
-	for key := range keys {
+	for key := range means {
 		sum := 0.0
 		for _, x := range xs {
 			val, _ := x[key]
 			sum += val
 		}
-		means[key] = sum / float64(n)
+		means[key] = sum / float64(len(xs))
 	}
 	return means
 }
