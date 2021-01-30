@@ -23,10 +23,9 @@ type FreqList struct {
 }
 
 func (f *FreqList) init() {
-	if f.FreqList != nil {
-		return
+	if f.FreqList == nil {
+		f.FreqList = make(map[string]int)
 	}
-	f.FreqList = make(map[string]int)
 }
 
 func (f *FreqList) add(strs ...string) {
@@ -34,6 +33,17 @@ func (f *FreqList) add(strs ...string) {
 	for _, str := range strs {
 		f.Total++
 		f.FreqList[str]++
+	}
+}
+
+// clean removes all elements from the frequency list that have a
+// frequency <= t.
+func (f *FreqList) clean(t int) {
+	for k, v := range f.FreqList {
+		if v <= t {
+			delete(f.FreqList, k)
+			f.Total -= v
+		}
 	}
 }
 
