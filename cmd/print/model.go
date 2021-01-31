@@ -128,6 +128,7 @@ func mktok(typ string, nocr int) apoco.T {
 	case "dm":
 		return apoco.T{
 			Tokens: make([]string, nocr),
+			LM:     new(apoco.LanguageModel),
 			Payload: []apoco.Ranking{
 				apoco.Ranking{Candidate: new(gofiler.Candidate)},
 			},
@@ -135,6 +136,7 @@ func mktok(typ string, nocr int) apoco.T {
 	default:
 		return apoco.T{
 			Tokens:  make([]string, nocr),
+			LM:      new(apoco.LanguageModel),
 			Payload: new(gofiler.Candidate),
 		}
 	}
