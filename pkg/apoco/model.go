@@ -38,7 +38,7 @@ func ReadModel(model, ngrams string) (Model, error) {
 				model, err)
 		}
 		m.Ngrams.clean(3)
-		return m, nillm
+		return m, nil
 	}
 	if err != nil {
 		return Model{}, fmt.Errorf("read model %s: %s", model, err)
