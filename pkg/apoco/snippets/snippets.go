@@ -34,7 +34,8 @@ func (e Extensions) Tokenize(ctx context.Context, dirs ...string) apoco.StreamFu
 // If a extension ends with `.txt`, one line is read from the text
 // file (no confidences); if the file ends with `.json`, calamari's
 // extended data format is assumed. Otherwise the file is read as a
-// TSV file expecting one char and its confidence on each line.
+// TSV file expecting a char (or a sequence thereof) and its
+// confidence on each line.
 func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
 		for _, dir := range dirs {
@@ -197,19 +198,30 @@ func readTSV(is io.Reader) (apoco.Chars, error) {
 	s := bufio.NewScanner(is)
 	for s.Scan() {
 		var c apoco.Char
-		if _, err := fmt.Sscanf(s.Text(), "%c\t%f", &c.Char, &c.Conf); err != nil {
-			// The TSV files contain artifacts of the form "\t%f".
-			// Skip these.
-			var tmp float64
-			if _, err := fmt.Sscanf(s.Text(), "\t%f", &tmp); err != nil {
-				return nil, fmt.Errorf("readTSV: %v", err)
-			}
+		_, err := fmt.Sscanf(s.Text(), "%c\t%f", &c.Char, &c.Conf)
+		if err == nil {
+			chars = appendChar(chars, c)
 			continue
 		}
-		chars = appendChar(chars, c)
+		// The TSV files contain also some artifacts of the
+		// form "%c%c\t%f"
+		var c1, c2 rune
+		var conf float64
+		_, err = fmt.Sscanf(s.Text(), "%c%c\t%f", &c1, &c2, &conf)
+		if err == nil {
+			chars = appendChar(chars, apoco.Char{Conf: conf, Char: c1})
+			chars = appendChar(chars, apoco.Char{Conf: conf, Char: c1})
+			continue
+		}
+		// The TSV files contain artifacts of the form "\t%f".
+		// We skip these.
+		_, err = fmt.Sscanf(s.Text(), "\t%f", &conf)
+		if err != nil {
+			return nil, fmt.Errorf("read tsv: %v", err)
+		}
 	}
 	if s.Err() != nil {
-		return nil, fmt.Errorf("readTSV: %v", s.Err())
+		return nil, fmt.Errorf("read tsv: %v", s.Err())
 	}
 	return trim(chars), nil
 }
