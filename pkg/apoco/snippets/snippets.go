@@ -205,12 +205,13 @@ func readTSV(is io.Reader) (apoco.Chars, error) {
 		}
 		// The TSV files contain also some artifacts of the
 		// form "%c%c\t%f"
-		var c1, c2 rune
+		var str string
 		var conf float64
-		_, err = fmt.Sscanf(s.Text(), "%c%c\t%f", &c1, &c2, &conf)
+		_, err = fmt.Sscanf(s.Text(), "%s\t%f", &str, &conf)
 		if err == nil {
-			chars = appendChar(chars, apoco.Char{Conf: conf, Char: c1})
-			chars = appendChar(chars, apoco.Char{Conf: conf, Char: c1})
+			for _, c := range str {
+				chars = appendChar(chars, apoco.Char{Conf: conf, Char: c})
+			}
 			continue
 		}
 		// The TSV files contain artifacts of the form "\t%f".
