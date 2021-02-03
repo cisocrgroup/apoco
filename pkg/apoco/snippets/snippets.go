@@ -217,7 +217,7 @@ func readTSV(is io.Reader) (apoco.Chars, error) {
 		// We skip these.
 		_, err = fmt.Sscanf(s.Text(), "\t%f", &conf)
 		if err != nil {
-			return nil, fmt.Errorf("read tsv: %v", err)
+			return nil, fmt.Errorf("read tsv: bad line %s: %v", s.Text(), err)
 		}
 	}
 	if s.Err() != nil {
