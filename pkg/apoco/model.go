@@ -24,7 +24,7 @@ type ModelData struct {
 	Model    *ml.LR
 }
 
-// ReadModel reads a model from a gzip compressed input file.  If the
+// ReadModel reads a model from a gob compressed input file.  If the
 // given file does not exist, an empty model is returned.  If the
 // model does not contain a valid ngram frequency list, the list is
 // loaded from the given path.
@@ -50,20 +50,23 @@ func ReadModel(model, ngrams string) (Model, error) {
 	return m, nil
 }
 
-func (m *Model) readGzippedNgrams(path string) error {
-	log.Printf("reading ngrams from %s", path)
-	is, err := os.Open(path)
+func (m *Model) readGzippedNgrams(name string) error {
+	if name == "" { // Do not load the trigram model.
+		return nil
+	}
+	log.Printf("reading ngrams from %s", name)
+	is, err := os.Open(name)
 	if err != nil {
-		return fmt.Errorf("readGzippedNGrams %s: %v", path, err)
+		return fmt.Errorf("readGzippedNGrams %s: %v", name, err)
 	}
 	defer is.Close()
 	gz, err := gzip.NewReader(is)
 	if err != nil {
-		return fmt.Errorf("readGzippedNGrams %s: %v", path, err)
+		return fmt.Errorf("readGzippedNGrams %s: %v", name, err)
 	}
 	defer gz.Close()
 	if err := m.Ngrams.loadCSV(gz); err != nil {
-		return fmt.Errorf("readGzippedNGrams: %s: %v", path, err)
+		return fmt.Errorf("readGzippedNGrams: %s: %v", name, err)
 	}
 	return nil
 }
