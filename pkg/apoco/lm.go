@@ -23,10 +23,9 @@ type FreqList struct {
 }
 
 func (f *FreqList) init() {
-	if f.FreqList != nil {
-		return
+	if f.FreqList == nil {
+		f.FreqList = make(map[string]int)
 	}
-	f.FreqList = make(map[string]int)
 }
 
 func (f *FreqList) add(strs ...string) {
@@ -34,6 +33,17 @@ func (f *FreqList) add(strs ...string) {
 	for _, str := range strs {
 		f.Total++
 		f.FreqList[str]++
+	}
+}
+
+// clean removes all elements from the frequency list that have a
+// frequency <= t.
+func (f *FreqList) clean(t int) {
+	for k, v := range f.FreqList {
+		if v <= t {
+			delete(f.FreqList, k)
+			f.Total -= v
+		}
 	}
 }
 
@@ -53,10 +63,7 @@ func (f *FreqList) relative(str string) float64 {
 		return 0
 	}
 	abs := f.absolute(str)
-	if abs == 0 {
-		return 1.0 / float64(f.Total)
-	}
-	return float64(abs) / float64(f.Total)
+	return float64(abs+1) / float64(f.Total+len(f.FreqList))
 }
 
 func (f *FreqList) loadCSV(in io.Reader) error {
@@ -121,17 +128,25 @@ func (lm *LanguageModel) TrigramLog(str string) float64 {
 	return sum
 }
 
+// EachTrigram calls the given callback function for each trigram in
+// the given string.
+func EachTrigram(str string, f func(string)) {
+	runes := []rune("$" + str + "$")
+	begin, end := 0, 3
+	if end > len(runes) {
+		end = len(runes)
+	}
+	for i, j := begin, end; j <= len(runes); i, j = i+1, j+1 {
+		f(string(runes[i:j]))
+	}
+}
+
 // EachTrigram looks up the trigrams of the given token and returns the
 // product of the token's trigrams.
 func (lm *LanguageModel) EachTrigram(str string, f func(float64)) {
-	tmp := []rune("$" + str + "$")
-	begin, end := 0, 3
-	if end > len(tmp) {
-		end = len(tmp)
-	}
-	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
-		f(lm.Ngrams.relative(string(tmp[i:j])))
-	}
+	EachTrigram(str, func(trigram string) {
+		f(lm.Ngrams.relative(trigram))
+	})
 }
 
 // LoadGzippedNGram loads the (gzipped) ngram model file.  The expected format
