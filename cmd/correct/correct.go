@@ -179,10 +179,14 @@ func connectlm(c *apoco.Config, ngrams apoco.FreqList, profile string) apoco.Str
 			return err
 		}
 		lm.Profile = prof
-		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			t.LM = &lm
-			t.LM.AddUnigram(t.Tokens[0])
-			return apoco.SendTokens(ctx, out, t)
+		return apoco.EachTokenGroup(ctx, in, func(g string, ts ...apoco.T) error {
+			for _, t := range ts {
+				lm.AddUnigram(t.Tokens[0])
+			}
+			for i := range ts {
+				ts[i].LM = &lm
+			}
+			return apoco.SendTokens(ctx, out, ts...)
 		})
 	}
 }
