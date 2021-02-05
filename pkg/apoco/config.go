@@ -24,22 +24,22 @@ type Config struct {
 	Cautious       bool     `json:"cautious"`
 }
 
-// ReadConfig reads the config from a json file.
-func ReadConfig(file string) (*Config, error) {
-	is, err := os.Open(file)
+// ReadConfig reads the config from a json or toml file.
+func ReadConfig(name string) (*Config, error) {
+	is, err := os.Open(name)
 	if err != nil {
-		return nil, fmt.Errorf("readConfig %s: %v", file, err)
+		return nil, fmt.Errorf("readConfig %s: %v", name, err)
 	}
 	defer is.Close()
 	var config Config
-	if strings.HasSuffix(file, ".toml") {
+	if strings.HasSuffix(name, ".toml") {
 		if _, err := toml.DecodeReader(is, &config); err != nil {
-			return nil, fmt.Errorf("readConfig %s: %v", file, err)
+			return nil, fmt.Errorf("readConfig %s: %v", name, err)
 		}
 		return &config, nil
 	}
 	if err := json.NewDecoder(is).Decode(&config); err != nil {
-		return nil, fmt.Errorf("readConfig %s: %v", file, err)
+		return nil, fmt.Errorf("readConfig %s: %v", name, err)
 	}
 	return &config, nil
 }
