@@ -47,6 +47,7 @@ func ReadModel(model, ngrams string) (Model, error) {
 	if err := gob.NewDecoder(in).Decode(&m); err != nil {
 		return Model{}, fmt.Errorf("read model %s: %s", model, err)
 	}
+	log.Printf("read model from %s", model)
 	return m, nil
 }
 
