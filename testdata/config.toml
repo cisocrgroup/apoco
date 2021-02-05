@@ -4,17 +4,26 @@ model = "model.gz"
 # Number of parallel OCRs (overwrite with -n/--nocr)
 nocr = 2
 
-# Cautious or courageous decision maker training (overwrite with -a/--cautious)
+# Cautious or courageous decision maker training (overwrite with
+# -a/--cautious)
 cautious = false
 
 # Enable/disable caching (overwrite with -c/--cache)
 cache = true
 
-# Path to the 3-gram model csv file.
+# Path to the 3-gram model csv file. Set it to the empty string to
+# disable the usage of trigrams.  This reduces the size of the model
+# files, but you cannot use any of the *Trigram* features.
 ngrams = "data/3gs.csv.gz"
 
+#
 # Profiler settings.
+#
+
+# Path to the profiler binary.
 profilerBin = "/usr/share/bin/profiler"
+
+# Path to the profiler language configuration file.
 profilerConfig = "/etc/profiler/german.ini"
 
 #
