@@ -10,6 +10,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var trigramsFlags = struct {
+	clean int
+}{}
+
+func init() {
+	trigramsCMD.Flags().IntVarP(&trigramsFlags.clean, "clean", "c",
+		0, "remove trigrams with less than arg occurences")
+}
+
 // trigramsCMD runs the apoco print trigrams subcommand.
 var trigramsCMD = &cobra.Command{
 	Run:   runTrigrams,
@@ -30,6 +39,13 @@ func runTrigrams(_ *cobra.Command, args []string) {
 		})
 	}
 	chk(s.Err())
+	if trigramsFlags.clean > 0 {
+		clean(trigrams, trigramsFlags.clean)
+	}
+	if flags.json {
+		chk(json.NewEncoder(os.Stdout).Encode(trigrams))
+		return
+	}
 	if flags.json {
 		chk(json.NewEncoder(os.Stdout).Encode(trigrams))
 		return
@@ -37,5 +53,13 @@ func runTrigrams(_ *cobra.Command, args []string) {
 	for k, v := range trigrams {
 		_, err := fmt.Printf("%d,%s\n", v, k)
 		chk(err)
+	}
+}
+
+func clean(trigrams map[string]int, t int) {
+	for k, v := range trigrams {
+		if v <= t {
+			delete(trigrams, k)
+		}
 	}
 }
