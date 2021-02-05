@@ -27,20 +27,26 @@ var CMD = &cobra.Command{
 
 func init() {
 	var loglevel string
-	CMD.Flags().StringVarP(&loglevel, "log-level", "l", "INFO", "set log level [ignored]")
-	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
-	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
-		"set input file extensions")
-	CMD.Flags().StringVarP(&flags.ofg, "output-file-grp", "O", "", "set output file group")
-	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to the mets file")
-	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
-		"set path to the configuration file")
-	CMD.Flags().StringVarP(&flags.profile, "profile", "p", "", "set external profile file")
-	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n", 0,
-		"set nocr (overwrites setting in the configuration file)")
+	CMD.Flags().StringVarP(&loglevel, "log-level", "l",
+		"INFO", "set log level [ignored]")
+	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I",
+		nil, "set input file groups")
+	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e",
+		[]string{".xml"}, "set input file extensions")
+	CMD.Flags().StringVarP(&flags.ofg, "output-file-grp", "O",
+		"", "set output file group")
+	CMD.Flags().StringVarP(&flags.mets, "mets", "m",
+		"mets.xml", "set path to the mets file")
+	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P",
+		"config.toml", "set path to the configuration file")
+	CMD.Flags().StringVarP(&flags.profile, "profile", "p",
+		"", "set external profile file")
+	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n",
+		0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "",
 		"set model path (overwrites setting in the configuration file)")
-	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
+	CMD.Flags().BoolVarP(&flags.cache, "cache", "c",
+		false, "enable caching of profile")
 }
 
 func run(_ *cobra.Command, args []string) {
