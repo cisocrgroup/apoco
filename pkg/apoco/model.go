@@ -71,7 +71,7 @@ func (m *Model) readGzippedNgrams(name string) error {
 	return nil
 }
 
-// Write writes the model as json encoded, gziped file to the given
+// Write writes the model as gob encoded, gziped file to the given
 // path overwriting any previous existing models.
 func (m Model) Write(name string) (err error) {
 	out, err := os.Create(name)
