@@ -36,7 +36,7 @@ func (lr *LR) gradient(x *mat.Dense, y, p *mat.VecDense) *mat.VecDense {
 	r, _ := x.Dims()
 	var gradient, dif mat.VecDense
 	dif.SubVec(p, y)
-	// log.Printf("error = %f", averageError(&dif))
+	// apoco.L("error = %f", averageError(&dif))
 	gradient.MulVec(x.T(), &dif)
 	gradient.ScaleVec(1.0/float64(r), &gradient)
 	return &gradient

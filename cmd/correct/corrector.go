@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -281,7 +280,7 @@ func (cor *corrector) addFileToStructMap(path, newID, ifg string) {
 	}
 	fptr = cor.mets.FindFptr(oldID)
 	if fptr == nil {
-		log.Printf("[warning] cannot find fptr for %s", oldID)
+		apoco.L("[warning] cannot find fptr for %s", oldID)
 		return
 	}
 	newFptr := &xmlquery.Node{

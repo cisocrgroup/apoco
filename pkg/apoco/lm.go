@@ -241,11 +241,12 @@ func readCachedProfile(fg string) (gofiler.Profile, bool) {
 	if !ok {
 		return nil, false
 	}
+	L("reading profile from %s", path)
 	profile, err := ReadProfile(path)
 	if err != nil {
 		return nil, false
 	}
-	log.Printf("read %d profile tokens from %s", len(profile), path)
+	L("read %d profile tokens from %s", len(profile), path)
 	return profile, true
 }
 
@@ -260,7 +261,7 @@ func cacheProfile(fg string, profile gofiler.Profile) {
 	if err := WriteProfile(path, profile); err != nil {
 		return
 	}
-	log.Printf("cached %d profile tokens to %s", len(profile), path)
+	L("cached %d profile tokens to %s", len(profile), path)
 }
 
 // ReadProfile reads the profile from a gzipped json formatted file.

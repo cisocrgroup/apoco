@@ -3,7 +3,6 @@ package train
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -65,10 +64,10 @@ func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("rrtrain: %v", err)
 		}
-		log.Printf("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
+		apoco.L("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
 			n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 		lr.Fit(x, y)
-		log.Printf("rrtrain: fitted %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
+		apoco.L("rrtrain: fitted %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
 			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
 		m.Put("rr", c.Nocr, lr, c.RRFeatures)
 		m.GlobalHistPatterns = lms.globalHistPatternMeans()

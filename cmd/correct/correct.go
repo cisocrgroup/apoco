@@ -26,9 +26,6 @@ var CMD = &cobra.Command{
 }
 
 func init() {
-	var loglevel string
-	CMD.Flags().StringVarP(&loglevel, "log-level", "l",
-		"INFO", "set log level [ignored]")
 	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I",
 		nil, "set input file groups")
 	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e",
@@ -80,7 +77,7 @@ func run(_ *cobra.Command, args []string) {
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
 		correct(infoMap),
 	))
-	log.Printf("correcting %d pages (%d tokens)", len(infoMap), infoMap.numberOfTokens())
+	apoco.L("correcting %d pages (%d tokens)", len(infoMap), infoMap.numberOfTokens())
 	if len(flags.ifgs) == 0 {
 		for _, ids := range infoMap {
 			for _, info := range ids {

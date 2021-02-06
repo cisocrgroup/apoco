@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/align"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
@@ -32,8 +33,6 @@ var CMD = &cobra.Command{
 }
 
 func init() {
-	var loglevel string
-	CMD.Flags().StringVarP(&loglevel, "log-level", "l", "INFO", "set log level [ignored]")
 	CMD.Flags().StringVarP(&flags.ofg, "out-file-grp", "O", "", "set output file group of alignments")
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to mets file")
 	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
@@ -482,7 +481,7 @@ func addFileToStructMap(m mets.METS, id, newID string) {
 	// Find fptr for the aligned id and append the new id.
 	fptr = m.FindFptr(id)
 	if fptr == nil {
-		log.Printf("[warning] cannot find fptr for %s", id)
+		apoco.L("[warning] cannot find fptr for %s", id)
 		return
 	}
 	newFptr := &xmlquery.Node{

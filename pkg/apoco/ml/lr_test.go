@@ -25,7 +25,7 @@ func TestLR(t *testing.T) {
 		y := mat.NewVecDense(3, tc.y)
 		lr := LR{LearningRate: 0.05, Ntrain: 5}
 		lr.Fit(x, y)
-		// log.Printf("weight: %v", lr.weights.RawVector().Data)
+		// apoco.L("weight: %v", lr.weights.RawVector().Data)
 		got := lr.Predict(x, 0.5)
 		if !reflect.DeepEqual(got.RawVector().Data, tc.y) {
 			t.Fatalf("expected %v; got %v", tc.y, got.RawVector().Data)

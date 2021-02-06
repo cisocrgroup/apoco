@@ -115,7 +115,7 @@ func (nn *NN) forwardBackward(xs, ys *mat.Dense) {
 	_, c = nn.wout.Dims()
 	outputLayerInput := mat.NewDense(r, c, nil)
 	// rr, cc := nn.wout.Dims()
-	// log.Printf("mul: %dx%d X %dx%d", r, c, rr, cc)
+	// apoco.L("mul: %dx%d X %dx%d", r, c, rr, cc)
 	outputLayerInput.Mul(hiddenLayerActivations, nn.wout)
 	addBOut := func(_, col int, v float64) float64 { return v + nn.bout.At(0, col) }
 	outputLayerInput.Apply(addBOut, outputLayerInput)

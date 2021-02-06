@@ -98,11 +98,11 @@ func Lreg(xs [][]float64, ys []float64, alpha float64, ntrain int) (Weights, err
 			copy(dx, x)
 			floats.Scale(scale, dx)
 			// w.AddVec(w, dx)
-			// log.Printf("###")
-			// log.Printf("scale = %f, perr = %f", scale, perr)
-			// log.Printf("old weights     = %v", ws)
+			// apoco.L("###")
+			// apoco.L("scale = %f, perr = %f", scale, perr)
+			// apoco.L("old weights     = %v", ws)
 			floats.Add(ws, dx)
-			// log.Printf("updated weights = %v", ws)
+			// apoco.L("updated weights = %v", ws)
 		}
 	}
 	return ws, nil
