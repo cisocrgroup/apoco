@@ -32,14 +32,14 @@ type LR struct {
 	Ntrain       int
 }
 
-func (lr *LR) gradient(x *mat.Dense, y, p *mat.VecDense) *mat.VecDense {
+func (lr *LR) gradient(x *mat.Dense, y, p *mat.VecDense) (*mat.VecDense, float64) {
 	r, _ := x.Dims()
 	var gradient, dif mat.VecDense
 	dif.SubVec(p, y)
-	// apoco.L("error = %f", averageError(&dif))
+	err := averageError(&dif)
 	gradient.MulVec(x.T(), &dif)
 	gradient.ScaleVec(1.0/float64(r), &gradient)
-	return &gradient
+	return &gradient, err
 }
 
 func averageError(dif *mat.VecDense) float64 {
@@ -83,16 +83,26 @@ func (lr *LR) Predict(x *mat.Dense, t float64) *mat.VecDense {
 	return tmp
 }
 
-// Fit fits the linear regression model.
-func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) {
+// Fit fits the linear regression model and returns its final error.
+func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 	_, c := x.Dims()
 	lr.weights = mat.NewVecDense(c, nil)
+	errb := math.MaxFloat64
 	for i := 0; i < lr.Ntrain; i++ {
 		pred := lr.PredictProb(x)
-		gradient := lr.gradient(x, y, pred)
+		gradient, err := lr.gradient(x, y, pred)
+		if errb < err {
+			// log.Printf("[%d] break %e/%e", i, errb, err)
+			return errb
+		}
 		gradient.ScaleVec(lr.LearningRate, gradient)
 		lr.weights.SubVec(lr.weights, gradient)
+		// if i%100 == 0 {
+		// 	log.Printf("[%d] %e/%e", i, errb, err)
+		// }
+		errb = err
 	}
+	return errb
 }
 
 type lrdata struct {
