@@ -68,9 +68,8 @@ func dmTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		}
 		apoco.L("dmtrain: fitting %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d, cautious=%t",
 			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, flags.cautious)
-		lr.Fit(x, y)
-		apoco.L("dmtrain: fitted %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
-			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain)
+		ferr := lr.Fit(x, y)
+		apoco.L("dmtrain: remaining error %f", ferr)
 		m.Put("dm", c.Nocr, lr, c.DMFeatures)
 		if err := m.Write(c.Model); err != nil {
 			return fmt.Errorf("traindm: %v", err)
