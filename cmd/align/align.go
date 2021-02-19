@@ -51,17 +51,7 @@ func getPaths(m mets.METS, ifgs []string) ([][]file, error) {
 	var tmp [][]file
 	for _, ifg := range ifgs {
 		flocats := m.FindFlocats(ifg)
-		files := make([]file, len(flocats))
-		for i := range flocats {
-			id, _ := node.LookupAttr(flocats[i].Parent, xml.Name{Local: "ID"})
-			files[i] = file{
-				path: m.FlocatGetPath(flocats[i]),
-				id:   id,
-			}
-		}
-		sort.Slice(files, func(i, j int) bool {
-			return filepath.Base(files[i].path) < filepath.Base(files[j].path)
-		})
+		files := mkfiles(m, flocats)
 		tmp = append(tmp, files)
 	}
 	// Check that we have the same number of files for each input
@@ -86,6 +76,21 @@ func getPaths(m mets.METS, ifgs []string) ([][]file, error) {
 		}
 	}
 	return ret, nil
+}
+
+func mkfiles(m mets.METS, flocats []*xmlquery.Node) []file {
+	files := make([]file, len(flocats))
+	for i := range flocats {
+		id, _ := node.LookupAttr(flocats[i].Parent, xml.Name{Local: "ID"})
+		files[i] = file{
+			path: m.FlocatGetPath(flocats[i]),
+			id:   id,
+		}
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return filepath.Base(files[i].path) < filepath.Base(files[j].path)
+	})
+	return files
 }
 
 const agent = "apoco align " + internal.Version
