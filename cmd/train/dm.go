@@ -63,6 +63,9 @@ func dmTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		}
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
+		if flags.correlation {
+			fmt.Printf("%.2g\n", mat.Formatted(correlationMat(x)))
+		}
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("traindm: %v", err)
 		}

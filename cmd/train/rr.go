@@ -61,6 +61,9 @@ func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		n := len(ys) // number or training tokens
 		x := mat.NewDense(n, len(xs)/n, xs)
 		y := mat.NewVecDense(n, ys)
+		if flags.correlation {
+			fmt.Printf("%.2g\n", mat.Formatted(correlationMat(x)))
+		}
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("rrtrain: %v", err)
 		}

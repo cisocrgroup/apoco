@@ -4,6 +4,8 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat"
 )
 
 // CMD defines the apoco train command.
@@ -13,10 +15,10 @@ var CMD = &cobra.Command{
 }
 
 var flags = struct {
-	extensions              []string
-	parameters, model       string
-	nocr                    int
-	cache, cautious, update bool
+	extensions                           []string
+	parameters, model                    string
+	nocr                                 int
+	cache, cautious, update, correlation bool
 }{}
 
 func init() {
@@ -35,8 +37,39 @@ func init() {
 		"use cautious training (overwrites the setting in the configuration file)")
 	CMD.PersistentFlags().BoolVarP(&flags.update, "update", "u", false,
 		"update the model if it already exists")
+	CMD.PersistentFlags().BoolVarP(&flags.correlation, "correlation", "C", false,
+		"print correlation matrix for features")
 	// Subcommands
 	CMD.AddCommand(rrCMD, dmCMD)
+}
+
+func correlationMat(m *mat.Dense) *mat.Dense {
+	_, c := m.Dims()
+	ret := mat.NewDense(c, c, nil)
+	for i := 0; i < c; i++ {
+		for j := 0; j < c; j++ {
+			ret.Set(i, j, pearson(m, i, j))
+		}
+	}
+	return ret
+}
+
+func pearson(m *mat.Dense, x, y int) float64 {
+	xs := col(m, x)
+	ys := col(m, y)
+	cov := stat.Covariance(xs, ys, nil)
+	σx := stat.StdDev(xs, nil)
+	σy := stat.StdDev(ys, nil)
+	return cov / (σx * σy)
+}
+
+func col(m *mat.Dense, c int) []float64 {
+	r, _ := m.Dims()
+	ret := make([]float64, r)
+	for i := 0; i < r; i++ {
+		ret[i] = m.At(i, c)
+	}
+	return ret
 }
 
 func chk(err error) {
