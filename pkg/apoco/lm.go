@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -304,12 +303,12 @@ type logger struct {
 func (logger) Log(str string) {
 	const prefix = "[profiler] "
 	if strings.Index(str, "additional lexicon entries") != -1 {
-		log.Print(prefix, str)
+		L("%s %s", prefix, str)
 	}
 	if strings.Index(str, "iteration") != -1 {
-		log.Print(prefix, str)
+		L("%s %s", prefix, str)
 	}
 	if strings.Index(str, "cmd:") != -1 {
-		log.Print(prefix, str)
+		L("%s %s", prefix, str)
 	}
 }
