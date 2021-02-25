@@ -23,7 +23,7 @@ var statsFlags = struct {
 	skipShort bool
 }{}
 
-// CMD runs the apoco stats command.
+// statsCMD runs the apoco stats command.
 var statsCMD = &cobra.Command{
 	Use:   "stats [DIRS...]",
 	Short: "Extract correction stats",
