@@ -22,7 +22,7 @@ func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.json, "json", "J", false, "set json output")
 	// Subcommands
 	CMD.AddCommand(statsCMD, tokensCMD, modelCMD, protocolCMD, profileCMD, charsetCMD,
-		trigramsCMD)
+		typesCMD, trigramsCMD)
 }
 
 func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {

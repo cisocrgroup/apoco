@@ -19,7 +19,6 @@ var statsFlags = struct {
 	ifgs      []string
 	mets      string
 	limit     int
-	info      bool
 	skipShort bool
 }{}
 
@@ -36,7 +35,6 @@ func init() {
 	statsCMD.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
 	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "skip-short", "s", false,
 		"exclude short tokens (len<3) from the evaluation")
-	statsCMD.Flags().BoolVarP(&statsFlags.info, "info", "i", false, "print out correction information")
 }
 
 func runStats(_ *cobra.Command, args []string) {
@@ -58,18 +56,13 @@ func handleSimple() {
 			if _, err := fmt.Sscanf(dtd, "#filename=%s", &tmp); err != nil {
 				continue
 			}
-			if filename != "" && !statsFlags.info {
-				s.write(filename)
-			}
 			filename = tmp
 			s = stats{}
 			continue
 		}
 		chk(s.stat(dtd))
 	}
-	if !statsFlags.info {
-		s.write(filename)
-	}
+	s.write(filename)
 }
 
 func handleIFGs(ifgs []string) {
@@ -78,9 +71,7 @@ func handleIFGs(ifgs []string) {
 	for _, ifg := range ifgs {
 		var s stats
 		chk(eachWord(m, ifg, s.stat))
-		if !statsFlags.info {
-			s.write(ifg)
-		}
+		s.write(ifg)
 	}
 }
 
@@ -158,10 +149,6 @@ func (s *stats) stat(dtd string) error {
 	}
 	if err := checkSanity(skipped, short, lex, cor); err != nil {
 		return err
-	}
-	if statsFlags.info {
-		printErrors(skipped, short, lex, cor, rank, ocr, sug, gt)
-		return nil
 	}
 	// Exclude short tokens from the complete evaluation if
 	// the statsFlags.skipShort option is set.
@@ -382,27 +369,3 @@ func checkSanity(skipped, short, lex, cor bool) error {
 }
 
 const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
-
-func printErrors(skipped, short, lex, cor bool, rank int, ocr, sug, gt string) {
-	write := func(pre string) {
-		fmt.Printf(pre+dtdFormat+"\n", skipped, short, lex, cor, rank, ocr, sug, gt)
-	}
-	if !skipped && rank == 0 {
-		write("missing_correction ")
-	}
-	if !skipped && rank > 1 {
-		write("bad_rank ")
-	}
-	if !skipped && rank == 0 {
-		write("missing_correction ")
-	}
-	if !skipped && cor && gt == ocr && sug != gt {
-		write("disimprovement ")
-	}
-	if !skipped && !cor && ocr != gt && sug == gt {
-		write("missed_opportunity ")
-	}
-	if !skipped && cor && gt != ocr && sug == gt {
-		write("successful_correction ")
-	}
-}
