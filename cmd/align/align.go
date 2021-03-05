@@ -401,15 +401,18 @@ func readMETS(name, ofg string) (mets.METS, *xmlquery.Node, error) {
 	if err != nil {
 		return mets.METS{}, nil, err
 	}
-	// Check if the given file group already exists and overwrite it.
-	existing := xmlquery.FindOne(m.Root, fmt.Sprintf("//*[local-name()='fileGrp'][@USE=%q]", ofg))
+	// Check if the given file group already exists and overwrite
+	// it if it already exists.
+	expr := fmt.Sprintf("//*[local-name()='fileGrp'][@USE=%q]", ofg)
+	existing := xmlquery.FindOne(m.Root, expr)
 	if existing != nil {
 		// Delete all children.
 		existing.FirstChild = nil
 		existing.LastChild = nil
 		return m, existing, nil
 	}
-	// Add a new filegroup entry.
+	// The given output file group does not yet exist. Add a new
+	// filegroup entry.
 	fileGrps := xmlquery.Find(m.Root, "//*[local-name()='fileGrp']")
 	if len(fileGrps) == 0 {
 		return mets.METS{}, nil, fmt.Errorf("missing file grp in %s", m.Name)
