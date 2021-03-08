@@ -1,8 +1,11 @@
 package profile
 
 import (
+	"bufio"
 	"context"
+	"io"
 	"log"
+	"os"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -25,13 +28,24 @@ var flags = struct {
 func init() {
 	CMD.PersistentFlags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
 		"set the path to the configuration file")
-	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
+	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", nil,
 		"set the input file extensions")
 }
 
 func runProfile(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameters)
 	chk(err)
+	if len(flags.extensions) == 0 {
+		chk(apoco.Pipe(
+			context.Background(),
+			readStoks(args[0:len(args)-1]),
+			apoco.FilterBad(1),
+			apoco.Normalize(),
+			apoco.FilterShort(4),
+			writeProfile(c, args[len(args)-1]),
+		))
+		return
+	}
 	p := internal.Piper{
 		Exts: flags.extensions,
 		Dirs: args[:len(args)-1],
@@ -61,6 +75,48 @@ func writeProfile(c *apoco.Config, name string) apoco.StreamFunc {
 		}
 		return apoco.WriteProfile(name, profile)
 	}
+}
+
+func readStoks(names []string) apoco.StreamFunc {
+	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
+		sendtoks := func(stok internal.Stok) error {
+			t := apoco.T{
+				Tokens: []string{stok.OCR, stok.GT},
+			}
+			if !stok.Skipped && !stok.Cor {
+				t.Cor = stok.Sug
+			}
+			return apoco.SendTokens(ctx, out, t)
+		}
+		if len(names) == 0 {
+			return eachStok(os.Stdin, sendtoks)
+		}
+		for _, name := range names {
+			in, err := os.Open(name)
+			if err != nil {
+				return err
+			}
+			defer in.Close()
+			if err := eachStok(in, sendtoks); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func eachStok(in io.Reader, f func(internal.Stok) error) error {
+	scanner := bufio.NewScanner(in)
+	for scanner.Scan() {
+		t, err := internal.NewStok(scanner.Text())
+		if err != nil {
+			return err
+		}
+		if err := f(t); err != nil {
+			return err
+		}
+	}
+	return scanner.Err()
 }
 
 func chk(err error) {

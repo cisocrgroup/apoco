@@ -212,7 +212,10 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 func RunProfiler(ctx context.Context, exe, config string, tokens ...T) (gofiler.Profile, error) {
 	var profilerTokens []gofiler.Token
 	for _, token := range tokens {
-		profilerTokens = append(profilerTokens, gofiler.Token{OCR: token.Tokens[0]})
+		profilerTokens = append(profilerTokens, gofiler.Token{
+			OCR: token.Tokens[0],
+			COR: token.Cor,
+		})
 	}
 	profiler := gofiler.Profiler{Exe: exe, Types: true, Log: logger{}}
 	profile, err := profiler.Run(ctx, config, profilerTokens)

@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 const stokFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
 
@@ -25,5 +28,13 @@ func NewStok(line string) (Stok, error) {
 }
 
 func (s Stok) String() string {
-	return fmt.Sprintf(stokFormat, s.Skipped, s.Short, s.Lex, s.Cor, s.Rank, s.OCR, s.Sug, s.GT)
+	return fmt.Sprintf(stokFormat, s.Skipped, s.Short, s.Lex, s.Cor, s.Rank,
+		E(s.OCR), E(s.Sug), E(s.GT))
+}
+
+func E(str string) string {
+	if str == "" {
+		return "ε"
+	}
+	return strings.ToLower(strings.Replace(str, " ", "_", -1))
 }
