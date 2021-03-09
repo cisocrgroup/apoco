@@ -14,9 +14,9 @@ import (
 
 // CMD defines the apoco profile command.
 var CMD = &cobra.Command{
-	Use:   "profile DIR [DIRS...] OUT",
+	Use:   "profile [DIRS...] OUT",
 	Short: "Create profiles of documents",
-	Args:  cobra.MinimumNArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	Run:   runProfile,
 }
 
@@ -35,10 +35,12 @@ func init() {
 func runProfile(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameters)
 	chk(err)
-	if len(flags.extensions) == 0 {
+	// If called with only one output file, read stat tokens from
+	// stdin.
+	if len(args) == 1 {
 		chk(apoco.Pipe(
 			context.Background(),
-			readStoks(args[0:len(args)-1]),
+			readStoks(os.Stdin),
 			apoco.FilterBad(1),
 			apoco.Normalize(),
 			apoco.FilterShort(4),
@@ -77,9 +79,9 @@ func writeProfile(c *apoco.Config, name string) apoco.StreamFunc {
 	}
 }
 
-func readStoks(names []string) apoco.StreamFunc {
+func readStoks(in io.Reader) apoco.StreamFunc {
 	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
-		sendtoks := func(stok internal.Stok) error {
+		return eachStok(in, func(stok internal.Stok) error {
 			t := apoco.T{
 				Tokens: []string{stok.OCR, stok.GT},
 			}
@@ -87,21 +89,7 @@ func readStoks(names []string) apoco.StreamFunc {
 				t.Cor = stok.Sug
 			}
 			return apoco.SendTokens(ctx, out, t)
-		}
-		if len(names) == 0 {
-			return eachStok(os.Stdin, sendtoks)
-		}
-		for _, name := range names {
-			in, err := os.Open(name)
-			if err != nil {
-				return err
-			}
-			defer in.Close()
-			if err := eachStok(in, sendtoks); err != nil {
-				return err
-			}
-		}
-		return nil
+		})
 	}
 }
 
