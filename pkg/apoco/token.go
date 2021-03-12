@@ -12,6 +12,7 @@ import (
 type T struct {
 	LM      *LanguageModel // language model for this token
 	Payload interface{}    // token payload; *gofiler.Candidate, []Ranking or Correction
+	Cor     string         // Correction for the token.
 	File    string         // the file of the token
 	Group   string         // file group of the token
 	ID      string         // id of the token in this file

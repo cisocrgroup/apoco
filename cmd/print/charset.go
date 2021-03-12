@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -30,20 +31,18 @@ func runCharset(_ *cobra.Command, args []string) {
 		if line == "" || line[0] == '#' {
 			continue
 		}
-		var skip, short, lex, cor bool
-		var rank int
-		var ocr, sug, gt string
-		chk(parseDTD(line, &skip, &short, &lex, &cor, &rank, &ocr, &sug, &gt))
-		gtset.add(gt)
-		ocrset.add(ocr)
-		sugset.add(sug)
-		if skip {
+		t, err := internal.NewStok(line)
+		chk(err)
+		gtset.add(t.GT)
+		ocrset.add(t.OCR)
+		sugset.add(t.Sug)
+		if t.Skipped {
 			continue
 		}
-		if sug == gt {
+		if t.Sug == t.GT {
 			continue
 		}
-		corrs = append(corrs, corr{ocr, sug, gt, "", cor, false})
+		corrs = append(corrs, corr{t.OCR, t.Sug, t.GT, "", t.Cor, false})
 	}
 	chk(s.Err())
 	if flags.json {
@@ -58,7 +57,7 @@ func printCharset(corrs []corr, gtset, ocrset, sugset cset) {
 		chars := gtset.extractNotInSet(c.Sug)
 		bad := chars != ""
 		fmt.Printf("badchars=%t taken=%t ocr=%s sug=%s gt=%s chars=%s\n",
-			bad, c.Taken, c.OCR, c.Sug, c.GT, e(chars))
+			bad, c.Taken, c.OCR, c.Sug, c.GT, chars)
 	}
 	fmt.Printf("gtcharset=%s\n", gtset)
 	fmt.Printf("ocrcharset=%s\n", ocrset)

@@ -1,9 +1,7 @@
 package print
 
 import (
-	"fmt"
 	"log"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -22,22 +20,7 @@ func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.json, "json", "J", false, "set json output")
 	// Subcommands
 	CMD.AddCommand(statsCMD, tokensCMD, modelCMD, protocolCMD, profileCMD, charsetCMD,
-		trigramsCMD)
-}
-
-func parseDTD(dtd string, skip, short, lex, cor *bool, rank *int, ocr, sug, gt *string) error {
-	_, err := fmt.Sscanf(dtd, dtdFormat, skip, short, lex, cor, rank, ocr, sug, gt)
-	if err != nil {
-		return fmt.Errorf("parseDTD: cannot parse %q: %v", dtd, err)
-	}
-	return nil
-}
-
-func e(str string) string {
-	if str == "" {
-		return "ε"
-	}
-	return strings.ToLower(strings.Replace(str, " ", "_", -1))
+		typesCMD, trigramsCMD)
 }
 
 func chk(err error) {

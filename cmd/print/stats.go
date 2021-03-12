@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
@@ -19,11 +20,11 @@ var statsFlags = struct {
 	ifgs      []string
 	mets      string
 	limit     int
-	info      bool
 	skipShort bool
+	verbose   bool
 }{}
 
-// CMD runs the apoco stats command.
+// statsCMD runs the apoco stats command.
 var statsCMD = &cobra.Command{
 	Use:   "stats [DIRS...]",
 	Short: "Extract correction stats",
@@ -36,7 +37,8 @@ func init() {
 	statsCMD.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
 	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "skip-short", "s", false,
 		"exclude short tokens (len<3) from the evaluation")
-	statsCMD.Flags().BoolVarP(&statsFlags.info, "info", "i", false, "print out correction information")
+	statsCMD.Flags().BoolVarP(&statsFlags.verbose, "verbose", "v", false,
+		"enable more verbose error and correction output")
 }
 
 func runStats(_ *cobra.Command, args []string) {
@@ -58,18 +60,13 @@ func handleSimple() {
 			if _, err := fmt.Sscanf(dtd, "#filename=%s", &tmp); err != nil {
 				continue
 			}
-			if filename != "" && !statsFlags.info {
-				s.write(filename)
-			}
 			filename = tmp
 			s = stats{}
 			continue
 		}
 		chk(s.stat(dtd))
 	}
-	if !statsFlags.info {
-		s.write(filename)
-	}
+	s.write(filename)
 }
 
 func handleIFGs(ifgs []string) {
@@ -78,9 +75,7 @@ func handleIFGs(ifgs []string) {
 	for _, ifg := range ifgs {
 		var s stats
 		chk(eachWord(m, ifg, s.stat))
-		if !statsFlags.info {
-			s.write(ifg)
-		}
+		s.write(ifg)
 	}
 }
 
@@ -150,141 +145,132 @@ type stats struct {
 }
 
 func (s *stats) stat(dtd string) error {
-	var skipped, short, lex, cor bool
-	var rank int
-	var ocr, sug, gt string
-	if err := parseDTD(dtd, &skipped, &short, &lex, &cor, &rank, &ocr, &sug, &gt); err != nil {
-		return fmt.Errorf("stat: %v", err)
-	}
-	if err := checkSanity(skipped, short, lex, cor); err != nil {
+	t, err := internal.NewStok(dtd)
+	if err != nil {
 		return err
-	}
-	if statsFlags.info {
-		printErrors(skipped, short, lex, cor, rank, ocr, sug, gt)
-		return nil
 	}
 	// Exclude short tokens from the complete evaluation if
 	// the statsFlags.skipShort option is set.
-	if statsFlags.skipShort && skipped && short {
+	if statsFlags.skipShort && t.Skipped && t.Short {
 		return nil
 	}
 	// Update counts.
 	s.Total++
-	if skipped {
+	if t.Skipped {
 		s.Skipped++
 	}
-	if skipped && short {
+	if t.Skipped && t.Short {
 		s.Short++
 	}
-	if skipped && short && ocr != gt {
+	if t.Skipped && t.Short && t.OCR != t.GT {
 		s.ShortErr++
 	}
-	if skipped && !short && !lex {
+	if t.Skipped && !t.Short && !t.Lex {
 		s.NoCands++
 	}
-	if skipped && !short && !lex && ocr != gt {
+	if t.Skipped && !t.Short && !t.Lex && t.OCR != t.GT {
 		s.NoCandsErr++
 	}
-	if skipped && !short && lex {
+	if t.Skipped && !t.Short && t.Lex {
 		s.Lex++
 	}
-	if skipped && !short && lex && ocr != gt {
+	if t.Skipped && !t.Short && t.Lex && t.OCR != t.GT {
 		s.LexErr++
 	}
-	if skipped && strings.Index(gt, "_") != -1 {
+	if t.Skipped && strings.Index(t.GT, "_") != -1 {
 		s.SkippedMerges++
 	}
-	if !skipped && strings.Index(gt, "_") == 0 {
+	if !t.Skipped && strings.Index(t.GT, "_") == 0 {
 		s.Merges++
 	}
-	if skipped && gt != ocr && gt == s.lastGT {
+	if t.Skipped && t.GT != t.OCR && t.GT == s.lastGT {
 		s.SkippedSplits++
 	}
-	if !skipped && gt != ocr && gt == s.lastGT {
+	if !t.Skipped && t.GT != t.OCR && t.GT == s.lastGT {
 		s.Splits++
 	}
-	if !skipped {
+	if !t.Skipped {
 		s.Suspicious++
 	}
-	if !skipped && cor {
+	if !t.Skipped && t.Cor {
 		s.Replaced++
 	}
-	if !skipped && cor && gt == ocr {
+	if !t.Skipped && t.Cor && t.GT == t.OCR {
 		s.OCRCorrect++
 	}
-	if !skipped && cor && gt == ocr && sug == gt {
+	if !t.Skipped && t.Cor && t.GT == t.OCR && t.Sug == t.GT {
 		s.RedundandCorr++
 	}
-	if !skipped && cor && gt == ocr && sug != gt {
+	if !t.Skipped && t.Cor && t.GT == t.OCR && t.Sug != t.GT {
 		s.Disimprovement++
 		updateSubErrors(
 			statsFlags.limit,
-			rank,
+			t.Rank,
 			&s.DisimprovementMC,
 			&s.DisimprovementBR,
 			&s.DisimprovementBL,
 		)
 	}
-	if !skipped && cor && gt != ocr {
+	if !t.Skipped && t.Cor && t.GT != t.OCR {
 		s.OCRIncorrect++
 	}
-	if !skipped && cor && gt != ocr && sug == gt {
+	if !t.Skipped && t.Cor && t.GT != t.OCR && t.Sug == t.GT {
 		s.SuccessfulCorr++
 	}
-	if !skipped && cor && gt != ocr && sug != gt {
+	if !t.Skipped && t.Cor && t.GT != t.OCR && t.Sug != t.GT {
 		s.DoNotCare++
 		updateSubErrors(
 			statsFlags.limit,
-			rank,
+			t.Rank,
 			&s.DoNotCareMC,
 			&s.DoNotCareBR,
 			&s.DoNotCareBL,
 		)
 	}
-	if !skipped && !cor {
+	if !t.Skipped && !t.Cor {
 		s.NotReplaced++
 	}
-	if !skipped && !cor && ocr == gt {
+	if !t.Skipped && !t.Cor && t.OCR == t.GT {
 		s.OCRCorrectNR++
 	}
-	if !skipped && !cor && ocr == gt && sug == gt {
+	if !t.Skipped && !t.Cor && t.OCR == t.GT && t.Sug == t.GT {
 		s.OCRAccept++
 	}
-	if !skipped && !cor && ocr == gt && sug != gt {
+	if !t.Skipped && !t.Cor && t.OCR == t.GT && t.Sug != t.GT {
 		s.DodgedBullets++
 		updateSubErrors(
 			statsFlags.limit,
-			rank,
+			t.Rank,
 			&s.DodgedBulletsMC,
 			&s.DodgedBulletsBR,
 			&s.DodgedBulletsBL,
 		)
 	}
-	if !skipped && !cor && ocr != gt {
+	if !t.Skipped && !t.Cor && t.OCR != t.GT {
 		s.OCRIncorrectNR++
 	}
-	if !skipped && !cor && ocr != gt && sug == gt {
+	if !t.Skipped && !t.Cor && t.OCR != t.GT && t.Sug == t.GT {
 		s.MissedOpportunity++
 	}
-	if !skipped && !cor && ocr != gt && sug != gt {
+	if !t.Skipped && !t.Cor && t.OCR != t.GT && t.Sug != t.GT {
 		s.SkippedDoNotCare++
 		updateSubErrors(
 			statsFlags.limit,
-			rank,
+			t.Rank,
 			&s.SkippedDoNotCareMC,
 			&s.SkippedDoNotCareBR,
 			&s.SkippedDoNotCareBL,
 		)
 	}
-	if ocr != gt {
+	if t.OCR != t.GT {
 		s.TotalErrBefore++
 	}
-	if (skipped && ocr != gt) || // errors in skipped tokens
-		(!skipped && cor && sug != gt) || // infelicitous correction
-		(!skipped && !cor && ocr != gt) { // not corrected and false
+	if (t.Skipped && t.OCR != t.GT) || // errors in skipped tokens
+		(!t.Skipped && t.Cor && t.Sug != t.GT) || // infelicitous correction
+		(!t.Skipped && !t.Cor && t.OCR != t.GT) { // not corrected and false
 		s.TotalErrAfter++
 	}
-	s.lastGT = gt
+	s.lastGT = t.GT
 	return nil
 }
 
@@ -313,6 +299,9 @@ func (s *stats) write(name string) {
 		s.DodgedBulletsBL+s.DisimprovementBL+s.DoNotCareBL+s.SkippedDoNotCareBL)
 	fmt.Printf("merges                          = %d\n", s.SkippedMerges+s.Merges)
 	fmt.Printf("splits                          = %d\n", s.SkippedSplits+s.Splits)
+	if !statsFlags.verbose {
+		return
+	}
 	fmt.Printf("Total tokens                    = %d\n", s.Total)
 	fmt.Printf("├─ skipped                      = %d\n", s.Skipped)
 	fmt.Printf("│  ├─ short                     = %d\n", s.Short)
@@ -379,30 +368,4 @@ func checkSanity(skipped, short, lex, cor bool) error {
 		return fmt.Errorf("invalid stat: skipped and corrected")
 	}
 	return nil
-}
-
-const dtdFormat = "skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s"
-
-func printErrors(skipped, short, lex, cor bool, rank int, ocr, sug, gt string) {
-	write := func(pre string) {
-		fmt.Printf(pre+dtdFormat+"\n", skipped, short, lex, cor, rank, ocr, sug, gt)
-	}
-	if !skipped && rank == 0 {
-		write("missing_correction ")
-	}
-	if !skipped && rank > 1 {
-		write("bad_rank ")
-	}
-	if !skipped && rank == 0 {
-		write("missing_correction ")
-	}
-	if !skipped && cor && gt == ocr && sug != gt {
-		write("disimprovement ")
-	}
-	if !skipped && !cor && ocr != gt && sug == gt {
-		write("missed_opportunity ")
-	}
-	if !skipped && cor && gt != ocr && sug == gt {
-		write("successful_correction ")
-	}
 }

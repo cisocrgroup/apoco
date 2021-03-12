@@ -6,6 +6,7 @@ import (
 	"os"
 	"unicode/utf8"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -93,7 +94,7 @@ func catp(name string) {
 		gt := e(t.GT.GT)
 		rank := t.rank()
 		if ranking, ok := d.Corrections[id]; ok {
-			trank := ranking.rank(gt)
+			trank := ranking.rank(t.GT.GT)
 			if trank != 0 {
 				rank = trank
 			}
@@ -101,9 +102,21 @@ func catp(name string) {
 		nosuggs := len(t.Candidates) == 0
 		short := utf8.RuneCountInString(t.OCR) <= 3
 		lex := t.lex()
-		_, err := fmt.Printf("skipped=%t short=%t lex=%t cor=%t rank=%d ocr=%s sug=%s gt=%s\n",
-			lex || short || nosuggs, short, lex, t.Taken, rank, e(t.OCR), e(t.Cor), gt)
-
+		stok := internal.Stok{
+			Skipped: lex || short || nosuggs,
+			Short:   short,
+			Lex:     lex,
+			Cor:     t.Taken,
+			Rank:    rank,
+			OCR:     t.OCR,
+			Sug:     t.Cor,
+			GT:      gt,
+		}
+		_, err := fmt.Printf("%s\n", stok)
 		chk(err)
 	}
+}
+
+func e(str string) string {
+	return internal.E(str)
 }
