@@ -21,6 +21,7 @@ var statsFlags = struct {
 	mets      string
 	limit     int
 	skipShort bool
+	verbose   bool
 }{}
 
 // statsCMD runs the apoco stats command.
@@ -36,6 +37,8 @@ func init() {
 	statsCMD.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
 	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "skip-short", "s", false,
 		"exclude short tokens (len<3) from the evaluation")
+	statsCMD.Flags().BoolVarP(&statsFlags.verbose, "verbose", "v", false,
+		"enable more verbose error and correction output")
 }
 
 func runStats(_ *cobra.Command, args []string) {
@@ -296,6 +299,9 @@ func (s *stats) write(name string) {
 		s.DodgedBulletsBL+s.DisimprovementBL+s.DoNotCareBL+s.SkippedDoNotCareBL)
 	fmt.Printf("merges                          = %d\n", s.SkippedMerges+s.Merges)
 	fmt.Printf("splits                          = %d\n", s.SkippedSplits+s.Splits)
+	if !statsFlags.verbose {
+		return
+	}
 	fmt.Printf("Total tokens                    = %d\n", s.Total)
 	fmt.Printf("├─ skipped                      = %d\n", s.Skipped)
 	fmt.Printf("│  ├─ short                     = %d\n", s.Short)
