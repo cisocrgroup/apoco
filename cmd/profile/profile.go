@@ -85,7 +85,7 @@ func readStoks(in io.Reader) apoco.StreamFunc {
 			t := apoco.T{
 				Tokens: []string{stok.OCR, stok.GT},
 			}
-			if !stok.Skipped && !stok.Cor {
+			if !stok.Skipped && stok.Cor {
 				t.Cor = stok.Sug
 			}
 			return apoco.SendTokens(ctx, out, t)
