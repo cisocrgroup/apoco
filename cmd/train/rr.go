@@ -62,12 +62,12 @@ func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		x := mat.NewDense(n, len(xs)/n, xs)
 		y := mat.NewVecDense(n, ys)
 		if flags.correlation {
-			fmt.Printf("%.2g\n", mat.Formatted(correlationMat(x)))
+			chk(printCorrelationMat(c, fs, x, false))
 		}
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("rrtrain: %v", err)
 		}
-		apoco.L("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d",
+		apoco.L("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d",
 			n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 		ferr := lr.Fit(x, y)
 		apoco.L("rrtrain: remaining error %f", ferr)

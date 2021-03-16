@@ -1,8 +1,12 @@
 package train
 
 import (
+	"fmt"
 	"log"
+	"os"
+	"text/tabwriter"
 
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/spf13/cobra"
 	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/gonum/stat"
@@ -41,6 +45,42 @@ func init() {
 		"print correlation matrix for features")
 	// Subcommands
 	CMD.AddCommand(rrCMD, dmCMD)
+}
+
+func printCorrelationMat(c *apoco.Config, fs apoco.FeatureSet, x *mat.Dense, dm bool) error {
+	var names []string
+	if dm {
+		names = fs.Names(c.DMFeatures, c.Nocr, dm)
+	} else {
+		names = fs.Names(c.RRFeatures, c.Nocr, dm)
+	}
+	cor := correlationMat(x)
+	w := tabwriter.NewWriter(os.Stdout, 2, 2, 1, ' ', tabwriter.AlignRight)
+	_, cols := cor.Dims()
+	var maxlen int
+	for _, name := range names {
+		if len(name) > maxlen {
+			maxlen = len(name)
+		}
+	}
+	for i := 0; i < maxlen; i++ {
+		for j := 0; j < cols; j++ {
+			if i+len(names[j]) >= maxlen {
+				fmt.Fprintf(w, "\t%c", names[j][i-maxlen+len(names[j])])
+			} else {
+				fmt.Fprintf(w, "\t")
+			}
+		}
+		fmt.Fprintf(w, "\t\n")
+	}
+	for i, name := range names {
+		fmt.Fprintf(w, "%s", name)
+		for j := 0; j < cols; j++ {
+			fmt.Fprintf(w, "\t%.2g", cor.At(i, j))
+		}
+		fmt.Fprintf(w, "\t\n")
+	}
+	return w.Flush()
 }
 
 func correlationMat(m *mat.Dense) *mat.Dense {

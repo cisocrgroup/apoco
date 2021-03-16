@@ -83,6 +83,29 @@ func (fs FeatureSet) Calculate(xs []float64, t T, n int) []float64 {
 	return xs
 }
 
+// Names returns the names of the features including the features for
+// different values of OCR's.
+func (fs FeatureSet) Names(names []string, nocr int, dm bool) []string {
+	if len(names) != len(fs) {
+		panic("bad names")
+	}
+	var ret []string
+	t := T{Tokens: make([]string, nocr+1)}
+	if dm {
+		t.Payload = []Ranking{Ranking{Candidate: new(gofiler.Candidate)}}
+	} else {
+		t.Payload = new(gofiler.Candidate)
+	}
+	for fi, f := range fs {
+		for i := 0; i < nocr; i++ {
+			if _, ok := f(t, i, nocr); ok {
+				ret = append(ret, fmt.Sprintf("%s(%d)", names[fi], i+1))
+			}
+		}
+	}
+	return ret
+}
+
 // OCRTokenLen returns the length of the OCR token.  It operates on
 // any configuration.
 func OCRTokenLen(t T, i, n int) (float64, bool) {
