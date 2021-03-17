@@ -6,8 +6,8 @@ import (
 
 // Pos represents the start and end position of an alignment.
 type Pos struct {
-	B, E int
-	str  []rune
+	B, E int    // Start end end positions of the alignment slice.
+	str  []rune // Reference string of the alignment.
 }
 
 // mkpos creates a new Pos instance with leading and subsequent
@@ -30,7 +30,7 @@ func Do(master []rune, other ...[]rune) [][]Pos {
 	for i, j := strip(0, len(master), master); i < j; i++ {
 		if unicode.IsSpace(master[i]) {
 			spaces = append(spaces, i)
-			words = append(words, []Pos{mkpos(b+1, i, master)}) //{B: b + 1, E: i, str: master}})
+			words = append(words, []Pos{mkpos(b+1, i, master)})
 			// Skip subsequent whitespace.
 			for i+1 < len(master) && unicode.IsSpace(master[i+1]) {
 				i++
@@ -38,7 +38,7 @@ func Do(master []rune, other ...[]rune) [][]Pos {
 			b = i
 		}
 	}
-	words = append(words, []Pos{mkpos(b+1, len(master), master)}) //{B: b + 1, E: len(master), str: master}})
+	words = append(words, []Pos{mkpos(b+1, len(master), master)})
 	for i := 0; i < len(other); i++ {
 		alignments := alignAt(spaces, other[i])
 		for j := range words {
@@ -50,7 +50,7 @@ func Do(master []rune, other ...[]rune) [][]Pos {
 
 func alignAt(spaces []int, str []rune) []Pos {
 	// If str is empty, each alignment is the empty string.  We
-	// still need to return a slice with the right lenght.
+	// still need to return a slice with the right length.
 	if len(str) == 0 {
 		return make([]Pos, len(spaces)+1)
 	}
