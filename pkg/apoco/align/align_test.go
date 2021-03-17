@@ -17,9 +17,22 @@ func Test(t *testing.T) {
 		{"ab cd", "ab cd", []string{"ab", "ab", "cd", "cd"}},
 		{"ab cd", "abcd", []string{"ab", "abcd", "cd", "abcd"}},
 		{"abcd", "ab cd", []string{"abcd", "ab cd"}},
+		{" ab  cd  ", "ab cd", []string{"ab", "ab", "cd", "cd"}},
 		{"n uch ter in", "nuchter in",
 			[]string{"n", "nuchter", "uch", "nuchter", "ter", "nuchter", "in", "in"}},
 		{"a bc  d", "a b d", []string{"a", "a", "bc", "b", "d", "d"}},
+		{" H ergen ser g i eß u n g en", "Herzengießungen", []string{
+			"H", "Herzengießungen",
+			"ergen", "Herzengießungen",
+			"ser", "Herzengießungen",
+			"g", "Herzengießungen",
+			"i", "Herzengießungen",
+			"eß", "Herzengießungen",
+			"u", "Herzengießungen",
+			"n", "Herzengießungen",
+			"g", "Herzengießungen",
+			"en", "Herzengießungen",
+		}},
 	} {
 		t.Run(tc.master, func(t *testing.T) {
 			pos := Do([]rune(tc.master), []rune(tc.other))
@@ -34,7 +47,7 @@ func Test(t *testing.T) {
 				}
 			}
 			if !reflect.DeepEqual(got, tc.want) {
-				t.Fatalf("expected %v; got %v", tc.want, got)
+				t.Fatalf("expected %#v; got %#v", tc.want, got)
 			}
 		})
 	}
