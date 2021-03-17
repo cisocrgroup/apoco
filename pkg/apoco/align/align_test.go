@@ -42,18 +42,23 @@ func TestDo3(t *testing.T) {
 		master, other1, other2 string
 		want                   []string
 	}{
-		{" H ergen ser g i eß u n g en", "  er;en oer g ieß u n gen", "Herzengießungen", []string{
-			"H", "er;en", "Herzengießungen",
-			"ergen", "oer", "Herzengießungen",
-			"ser", "g", "Herzengießungen",
-			"g", "ieß", "Herzengießungen",
-			"i", "u", "Herzengießungen",
-			"eß", "n", "Herzengießungen",
-			"u", "n", "Herzengießungen",
-			"n", "gen", "Herzengießungen",
-			"g", "gen", "Herzengießungen",
-			"en", "gen", "Herzengießungen",
-		}},
+		{
+			" H ergen ser g i eß u n g en",
+			"  er;en oer g ieß u n gen",
+			"Herzengießungen",
+			[]string{
+				"H", "er;en", "Herzengießungen",
+				"ergen", "oer", "Herzengießungen",
+				"ser", "g", "Herzengießungen",
+				"g", "ieß", "Herzengießungen",
+				"i", "u", "Herzengießungen",
+				"eß", "n", "Herzengießungen",
+				"u", "n", "Herzengießungen",
+				"n", "gen", "Herzengießungen",
+				"g", "gen", "Herzengießungen",
+				"en", "gen", "Herzengießungen",
+			},
+		},
 	} {
 		t.Run(tc.master, func(t *testing.T) {
 			pos := Do([]rune(tc.master), []rune(tc.other1), []rune(tc.other2))
