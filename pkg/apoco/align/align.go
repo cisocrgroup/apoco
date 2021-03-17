@@ -40,7 +40,8 @@ func Do(master []rune, other ...[]rune) [][]Pos {
 	}
 	words = append(words, []Pos{mkpos(b+1, len(master), master)})
 	for i := 0; i < len(other); i++ {
-		alignments := alignAt(spaces, other[i])
+		b, e := strip(0, len(other[i]), other[i])
+		alignments := alignAt(spaces, other[i][b:e])
 		for j := range words {
 			words[j] = append(words[j], alignments[j])
 		}

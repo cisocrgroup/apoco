@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test(t *testing.T) {
+func TestDo2(t *testing.T) {
 	for _, tc := range []struct {
 		master, other string
 		want          []string
@@ -21,29 +21,46 @@ func Test(t *testing.T) {
 		{"n uch ter in", "nuchter in",
 			[]string{"n", "nuchter", "uch", "nuchter", "ter", "nuchter", "in", "in"}},
 		{"a bc  d", "a b d", []string{"a", "a", "bc", "b", "d", "d"}},
-		{" H ergen ser g i eß u n g en", "Herzengießungen", []string{
-			"H", "Herzengießungen",
-			"ergen", "Herzengießungen",
-			"ser", "Herzengießungen",
-			"g", "Herzengießungen",
-			"i", "Herzengießungen",
-			"eß", "Herzengießungen",
-			"u", "Herzengießungen",
-			"n", "Herzengießungen",
-			"g", "Herzengießungen",
-			"en", "Herzengießungen",
-		}},
 	} {
 		t.Run(tc.master, func(t *testing.T) {
 			pos := Do([]rune(tc.master), []rune(tc.other))
 			var got []string
 			for i := range pos {
 				for j := range pos[i] {
-					if j == 0 {
-						got = append(got, string(pos[i][j].Slice()))
-					} else {
-						got = append(got, string(pos[i][j].Slice()))
-					}
+					got = append(got, string(pos[i][j].Slice()))
+				}
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("expected %#v; got %#v", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestDo3(t *testing.T) {
+	for _, tc := range []struct {
+		master, other1, other2 string
+		want                   []string
+	}{
+		{" H ergen ser g i eß u n g en", "  er;en oer g ieß u n gen", "Herzengießungen", []string{
+			"H", "er;en", "Herzengießungen",
+			"ergen", "oer", "Herzengießungen",
+			"ser", "g", "Herzengießungen",
+			"g", "ieß", "Herzengießungen",
+			"i", "u", "Herzengießungen",
+			"eß", "n", "Herzengießungen",
+			"u", "n", "Herzengießungen",
+			"n", "gen", "Herzengießungen",
+			"g", "gen", "Herzengießungen",
+			"en", "gen", "Herzengießungen",
+		}},
+	} {
+		t.Run(tc.master, func(t *testing.T) {
+			pos := Do([]rune(tc.master), []rune(tc.other1), []rune(tc.other2))
+			var got []string
+			for i := range pos {
+				for j := range pos[i] {
+					got = append(got, string(pos[i][j].Slice()))
 				}
 			}
 			if !reflect.DeepEqual(got, tc.want) {
