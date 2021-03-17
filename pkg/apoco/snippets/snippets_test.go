@@ -7,7 +7,10 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 )
 
-const testDir = "testdata/dir"
+const (
+	testDir  = "testdata/dir"
+	testDir2 = "testdata/dir2"
+)
 
 func iterate(fn func(apoco.T) error) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
@@ -17,7 +20,7 @@ func iterate(fn func(apoco.T) error) apoco.StreamFunc {
 
 // testdata/dir/a/00001.gt.txt:Fritſch, ein unverheyratheter Mann von hoͤchſt ein—1
 // testdata/dir/b/00002.gt.txt:Da in der Bundes-Acte zu Wien ſo Guͤnſtiges
-func TestTokenize(t *testing.T) {
+func TestTokenizeDir(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
 	n, want := 0, 16
 	ctx := context.Background()
@@ -70,5 +73,30 @@ func TestCalamari(t *testing.T) {
 	}
 	if i != len(want) {
 		t.Fatalf("invalid number of tokens: expected %d; got %d", len(want), i)
+	}
+}
+
+func TestTokenizeDir2(t *testing.T) {
+	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
+	n, want := 0, 16
+	ctx := context.Background()
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir2), iterate(func(tok apoco.T) error {
+		n++
+		if len(tok.Tokens) != 3 {
+			t.Fatalf("bad token: %s", tok)
+		}
+		if tok.Group != "dir2" {
+			t.Fatalf("bad group: %s", tok.Group)
+		}
+		if tok.File != "testdata/dir2/00001.prob.1" {
+			t.Fatalf("bad file: %s", tok.File)
+		}
+		return nil
+	}))
+	if err != nil {
+		t.Fatalf("got error: %v", err)
+	}
+	if n != want {
+		t.Fatalf("invalid number of tokens: expected %d; got %d", want, n)
 	}
 }
