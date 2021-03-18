@@ -57,8 +57,9 @@ func printCorrelationMat(c *apoco.Config, fs apoco.FeatureSet, x *mat.Dense, dm 
 	cor := correlationMat(x)
 	w := tabwriter.NewWriter(os.Stdout, 2, 2, 1, ' ', tabwriter.AlignRight)
 	_, cols := cor.Dims()
+	fmt.Fprintf(w, "\t")
 	for i := 0; i < cols; i++ {
-		fmt.Fprintf(w, "\t\t[%d]", i+1)
+		fmt.Fprintf(w, "\t[%d]", i+1)
 	}
 	fmt.Fprintln(w, "\t")
 	for i, name := range names {
