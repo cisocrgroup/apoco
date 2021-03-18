@@ -180,7 +180,7 @@ func SendTokens(ctx context.Context, out chan<- T, tokens ...T) error {
 		select {
 		case out <- t:
 		case <-ctx.Done():
-			return fmt.Errorf("sendToken: %v", ctx.Err())
+			return fmt.Errorf("sendTokens: %v", ctx.Err())
 		}
 	}
 	return nil
@@ -204,12 +204,12 @@ func Normalize() StreamFunc {
 					strings.ToLower(t.Tokens[i]), " ", "_")
 			}
 			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("normalize: send tokens: %v", err)
+				return fmt.Errorf("normalize: %v", err)
 			}
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("normalize: each token: %v", err)
+			return fmt.Errorf("normalize: %v", err)
 		}
 		return nil
 	}
