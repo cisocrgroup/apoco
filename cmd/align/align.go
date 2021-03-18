@@ -489,7 +489,7 @@ func addFileToStructMap(m mets.METS, id, newID string) {
 	// Find fptr for the aligned id and append the new id.
 	fptr = m.FindFptr(id)
 	if fptr == nil {
-		apoco.L("[warning] cannot find fptr for %s", id)
+		apoco.Log("[warning] cannot find fptr for %s", id)
 		return
 	}
 	newFptr := &xmlquery.Node{

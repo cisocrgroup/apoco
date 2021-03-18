@@ -9,8 +9,8 @@ func SetLog(enable bool) {
 	enableLog = enable
 }
 
-// L logs the given message if logging is enabled.
-func L(f string, args ...interface{}) {
+// Log logs the given message if logging is enabled.
+func Log(f string, args ...interface{}) {
 	if enableLog {
 		log.Printf(f, args...)
 	}
