@@ -92,7 +92,7 @@ func (fs FeatureSet) Names(names []string, nocr int, dm bool) []string {
 	var ret []string
 	t := T{Tokens: make([]string, nocr+1)}
 	if dm {
-		t.Payload = []Ranking{Ranking{Candidate: new(gofiler.Candidate)}}
+		t.Payload = []Ranking{{Candidate: new(gofiler.Candidate)}}
 	} else {
 		t.Payload = new(gofiler.Candidate)
 	}
