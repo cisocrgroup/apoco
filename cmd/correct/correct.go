@@ -77,7 +77,7 @@ func run(_ *cobra.Command, args []string) {
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
 		correct(infoMap),
 	))
-	apoco.L("correcting %d pages (%d tokens)", len(infoMap), infoMap.numberOfTokens())
+	apoco.Log("correcting %d pages (%d tokens)", len(infoMap), infoMap.numberOfTokens())
 	if len(flags.ifgs) == 0 {
 		for _, ids := range infoMap {
 			for _, info := range ids {

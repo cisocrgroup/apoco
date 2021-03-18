@@ -280,7 +280,7 @@ func (cor *corrector) addFileToStructMap(path, newID, ifg string) {
 	}
 	fptr = cor.mets.FindFptr(oldID)
 	if fptr == nil {
-		apoco.L("[warning] cannot find fptr for %s", oldID)
+		apoco.Log("[warning] cannot find fptr for %s", oldID)
 		return
 	}
 	newFptr := &xmlquery.Node{

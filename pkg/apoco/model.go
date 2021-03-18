@@ -28,7 +28,7 @@ type ModelData struct {
 // model does not contain a valid ngram frequency list, the list is
 // loaded from the given path.
 func ReadModel(model, ngrams string) (Model, error) {
-	L("reading model from %s", model)
+	Log("reading model from %s", model)
 	in, err := os.Open(model)
 	if os.IsNotExist(err) {
 		m := Model{Models: make(map[string]map[int]ModelData)}
@@ -46,7 +46,7 @@ func ReadModel(model, ngrams string) (Model, error) {
 	if err := gob.NewDecoder(in).Decode(&m); err != nil {
 		return Model{}, fmt.Errorf("read model %s: %s", model, err)
 	}
-	L("read model from %s", model)
+	Log("read model from %s", model)
 	return m, nil
 }
 
@@ -54,7 +54,7 @@ func (m *Model) readGzippedNgrams(name string) error {
 	if name == "" { // Do not load the trigram model.
 		return nil
 	}
-	L("reading ngrams from %s", name)
+	Log("reading ngrams from %s", name)
 	is, err := os.Open(name)
 	if err != nil {
 		return fmt.Errorf("readGzippedNGrams %s: %v", name, err)

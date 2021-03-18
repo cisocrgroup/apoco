@@ -67,10 +67,10 @@ func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("rrtrain: %v", err)
 		}
-		apoco.L("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d",
+		apoco.Log("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d",
 			n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 		ferr := lr.Fit(x, y)
-		apoco.L("rrtrain: remaining error %f", ferr)
+		apoco.Log("rrtrain: remaining error %f", ferr)
 		m.Put("rr", c.Nocr, lr, c.RRFeatures)
 		m.GlobalHistPatterns = lms.globalHistPatternMeans()
 		m.GlobalOCRPatterns = lms.globalOCRPatternMeans()

@@ -245,12 +245,12 @@ func readCachedProfile(fg string) (gofiler.Profile, bool) {
 	if !ok {
 		return nil, false
 	}
-	L("reading profile from %s", path)
+	Log("reading profile from %s", path)
 	profile, err := ReadProfile(path)
 	if err != nil {
 		return nil, false
 	}
-	L("read %d profile tokens from %s", len(profile), path)
+	Log("read %d profile tokens from %s", len(profile), path)
 	return profile, true
 }
 
@@ -265,7 +265,7 @@ func cacheProfile(fg string, profile gofiler.Profile) {
 	if err := WriteProfile(path, profile); err != nil {
 		return
 	}
-	L("cached %d profile tokens to %s", len(profile), path)
+	Log("cached %d profile tokens to %s", len(profile), path)
 }
 
 // ReadProfile reads the profile from a gzipped json formatted file.
@@ -308,12 +308,12 @@ type logger struct {
 func (logger) Log(str string) {
 	const prefix = "[profiler] "
 	if strings.Index(str, "additional lexicon entries") != -1 {
-		L("%s %s", prefix, str)
+		Log("%s %s", prefix, str)
 	}
 	if strings.Index(str, "iteration") != -1 {
-		L("%s %s", prefix, str)
+		Log("%s %s", prefix, str)
 	}
 	if strings.Index(str, "cmd:") != -1 {
-		L("%s %s", prefix, str)
+		Log("%s %s", prefix, str)
 	}
 }
