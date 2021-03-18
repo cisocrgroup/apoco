@@ -66,7 +66,7 @@ func printCorrelationMat(c *apoco.Config, fs apoco.FeatureSet, x *mat.Dense, dm 
 		for j := 0; j < cols; j++ {
 			fmt.Fprintf(w, "\t%.2g", cor.At(i, j))
 		}
-		fmt.Fprintf(w, "\t")
+		fmt.Fprintln(w, "\t")
 	}
 	return w.Flush()
 }
