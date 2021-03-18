@@ -215,11 +215,16 @@ func readTSV(is io.Reader) (apoco.Chars, error) {
 			continue
 		}
 		// The TSV files contain artifacts of the form "\t%f".
-		// We skip these.
+		// We add whitespaces in these cases. It would be
+		// better to treat these entries as empty strings and
+		// skip them, but in order to be compatible with the
+		// old java-version of the autoamtic post-correction,
+		// we use whitespace.
 		_, err = fmt.Sscanf(s.Text(), "\t%f", &conf)
 		if err != nil {
 			return nil, fmt.Errorf("read tsv: bad line %s: %v", s.Text(), err)
 		}
+		chars = appendChar(chars, apoco.Char{Conf: conf, Char: ' '})
 	}
 	if s.Err() != nil {
 		return nil, fmt.Errorf("read tsv: %v", s.Err())

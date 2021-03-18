@@ -19,10 +19,10 @@ func iterate(fn func(apoco.T) error) apoco.StreamFunc {
 }
 
 // testdata/dir/a/00001.gt.txt:Fritſch, ein unverheyratheter Mann von hoͤchſt ein—1
-// testdata/dir/b/00002.gt.txt:Da in der Bundes-Acte zu Wien ſo Guͤnſtiges
+// testdata/dir/b/00002.gt.txt:Da in der Bundes-Acte zu Wien ſo Guͤn nſtiges
 func TestTokenizeDir(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
-	n, want := 0, 16
+	n, want := 0, 17
 	ctx := context.Background()
 	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(func(tok apoco.T) error {
 		n++
@@ -78,7 +78,7 @@ func TestCalamari(t *testing.T) {
 
 func TestTokenizeDir2(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
-	n, want := 0, 16
+	n, want := 0, 10
 	ctx := context.Background()
 	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir2), iterate(func(tok apoco.T) error {
 		n++
