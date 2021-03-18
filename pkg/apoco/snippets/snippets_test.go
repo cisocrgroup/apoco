@@ -2,6 +2,7 @@ package snippets
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -32,8 +33,8 @@ func TestTokenizeDir(t *testing.T) {
 		if tok.Group != "dir" {
 			t.Fatalf("bad group: %s", tok.Group)
 		}
-		if tok.File != "testdata/dir/a/00001.prob.1" &&
-			tok.File != "testdata/dir/b/00002.prob.1" {
+		if tok.File != filepath.Join("testdata", "dir", "a", "00001.prob.1") &&
+			tok.File != filepath.Join("testdata", "dir", "b", "00002.prob.1") {
 			t.Fatalf("bad file: %s", tok.File)
 		}
 		return nil
@@ -59,7 +60,7 @@ func TestCalamari(t *testing.T) {
 		if tok.Group != "dir" {
 			t.Fatalf("bad group: %s", tok.Group)
 		}
-		if tok.File != "testdata/dir/a/00010.json" {
+		if tok.File != filepath.Join("testdata", "dir", "a", "00010.json") {
 			t.Fatalf("bad file: %s", tok.File)
 		}
 		if got := tok.Tokens[0]; got != want[i] {
@@ -88,7 +89,7 @@ func TestTokenizeDir2(t *testing.T) {
 		if tok.Group != "dir2" {
 			t.Fatalf("bad group: %s", tok.Group)
 		}
-		if tok.File != "testdata/dir2/00001.prob.1" {
+		if tok.File != filepath.Join("testdata", "dir2", "00001.prob.1") {
 			t.Fatalf("bad file: %s", tok.File)
 		}
 		return nil
