@@ -55,7 +55,7 @@ func printCorrelationMat(c *apoco.Config, fs apoco.FeatureSet, x *mat.Dense, dm 
 		names = fs.Names(c.RRFeatures, c.Nocr, dm)
 	}
 	cor := correlationMat(x)
-	w := tabwriter.NewWriter(os.Stdout, 2, 2, 1, ' ', tabwriter.AlignRight)
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', tabwriter.AlignRight)
 	_, cols := cor.Dims()
 	fmt.Fprintf(w, "\t")
 	for i := 0; i < cols; i++ {
