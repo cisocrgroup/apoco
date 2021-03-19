@@ -29,8 +29,8 @@ profilerConfig = "/etc/profiler/german.ini"
 #
 # Training parameters
 #
-learningRate = 0.01
-ntrain = 1000
+learningRate = 0.9
+ntrain = 100_000
 
 # Feature list for the reranker training.
 rrFeatures = [
