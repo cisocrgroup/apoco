@@ -8,7 +8,6 @@ import (
 	"math"
 
 	"gonum.org/v1/gonum/mat"
-	"gonum.org/v1/gonum/stat"
 )
 
 // Predefined values for true and false.
@@ -202,25 +201,6 @@ func meanNormalization(xs *mat.Dense) error {
 		for i := 0; i < r; i++ {
 			val := (xs.At(i, j) - means[j]) / diff[j]
 			xs.Set(i, j, val)
-		}
-	}
-	return nil
-}
-
-// TODO: Remove this
-func zScoreNormalization(xs *mat.Dense) error {
-	r, c := xs.Dims()
-	tmp := make([]float64, r)
-	for j := 0; j < c; j++ {
-		cols := xs.ColView(j)
-		for i := range tmp {
-			tmp[i] = cols.AtVec(i)
-		}
-		xbar, sigma := stat.MeanStdDev(tmp, nil)
-		for i := range tmp {
-			x := tmp[i]
-			xp := (x - xbar) / sigma
-			xs.Set(i, j, xp)
 		}
 	}
 	return nil
