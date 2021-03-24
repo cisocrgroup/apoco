@@ -27,6 +27,15 @@ func eqf64s(a, b []float64, epsilon float64) bool {
 	return true
 }
 
+func TestBool(t *testing.T) {
+	if Bool(true) != True {
+		t.Errorf("%f != %f", Bool(true), True)
+	}
+	if Bool(false) != False {
+		t.Errorf("%f != %f", Bool(false), False)
+	}
+}
+
 func TestWeights(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
