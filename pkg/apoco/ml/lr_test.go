@@ -2,6 +2,7 @@ package ml
 
 import (
 	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -94,7 +95,25 @@ func TestJSON(t *testing.T) {
 	if !reflect.DeepEqual(lr, lr2) {
 		t.Fatalf("expected %v; got %v", lr, lr2)
 	}
+}
 
+func TestGOB(t *testing.T) {
+	lr := LR{
+		LearningRate: 0.1,
+		Ntrain:       1000,
+		weights:      mat.NewVecDense(3, []float64{.1, .2, .3}),
+	}
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(&lr); err != nil {
+		t.Fatalf("got error: %v", err)
+	}
+	var lr2 LR
+	if err := gob.NewDecoder(&buf).Decode(&lr2); err != nil {
+		t.Fatalf("got error: %v", err)
+	}
+	if !reflect.DeepEqual(lr, lr2) {
+		t.Fatalf("expected %v; got %v", lr, lr2)
+	}
 }
 
 func TestNormalize(t *testing.T) {
