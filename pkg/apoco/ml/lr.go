@@ -31,14 +31,13 @@ type LR struct {
 	Ntrain       int
 }
 
-func (lr *LR) gradient(x *mat.Dense, y, p *mat.VecDense) (*mat.VecDense, float64) {
+func (lr *LR) gradient(x *mat.Dense, y, p, out *mat.VecDense) float64 {
 	r, _ := x.Dims()
-	var g mat.VecDense
 	p.SubVec(p, y)
 	err := averageError(p)
-	g.MulVec(x.T(), p)
-	g.ScaleVec(1.0/float64(r), &g)
-	return &g, err
+	out.MulVec(x.T(), p)
+	out.ScaleVec(1.0/float64(r), out)
+	return err
 }
 
 func averageError(dif *mat.VecDense) float64 {
@@ -91,16 +90,16 @@ func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 	_, c := x.Dims()
 	lr.weights = mat.NewVecDense(c, nil)
 	errb := math.MaxFloat64
-	var pred mat.VecDense
+	var pred, gradient mat.VecDense
 	for i := 0; i < lr.Ntrain; i++ {
 		lr.predictVec(x, &pred)
-		gradient, err := lr.gradient(x, y, &pred)
+		err := lr.gradient(x, y, &pred, &gradient)
 		if errb < err {
 			// log.Printf("[%d] break %e/%e", i, errb, err)
 			return errb
 		}
-		gradient.ScaleVec(lr.LearningRate, gradient)
-		lr.weights.SubVec(lr.weights, gradient)
+		gradient.ScaleVec(lr.LearningRate, &gradient)
+		lr.weights.SubVec(lr.weights, &gradient)
 		// if i%100 == 0 {
 		// 	log.Printf("[%d] %e/%e", i, errb, err)
 		// }
