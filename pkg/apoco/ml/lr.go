@@ -33,12 +33,12 @@ type LR struct {
 
 func (lr *LR) gradient(x *mat.Dense, y, p *mat.VecDense) (*mat.VecDense, float64) {
 	r, _ := x.Dims()
-	var gradient, dif mat.VecDense
-	dif.SubVec(p, y)
-	err := averageError(&dif)
-	gradient.MulVec(x.T(), &dif)
-	gradient.ScaleVec(1.0/float64(r), &gradient)
-	return &gradient, err
+	var g mat.VecDense
+	p.SubVec(p, y)
+	err := averageError(p)
+	g.MulVec(x.T(), p)
+	g.ScaleVec(1.0/float64(r), &g)
+	return &g, err
 }
 
 func averageError(dif *mat.VecDense) float64 {
@@ -59,14 +59,18 @@ func (lr *LR) sigmoid(x *mat.VecDense) *mat.VecDense {
 // Weights returns the weights of the logic regression model.
 func (lr *LR) Weights() []float64 {
 	return lr.weights.RawVector().Data
+}
 
+func (lr *LR) predictVec(x *mat.Dense, out *mat.VecDense) {
+	out.MulVec(x, lr.weights)
+	lr.sigmoid(out)
 }
 
 // PredictProb calculates the probablility predictions for the given values.
 func (lr *LR) PredictProb(x *mat.Dense) *mat.VecDense {
 	var tmp mat.VecDense
-	tmp.MulVec(x, lr.weights)
-	return lr.sigmoid(&tmp)
+	lr.predictVec(x, &tmp)
+	return &tmp
 }
 
 // Predict calculates the predictions for the given values.
@@ -87,9 +91,10 @@ func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 	_, c := x.Dims()
 	lr.weights = mat.NewVecDense(c, nil)
 	errb := math.MaxFloat64
+	var pred mat.VecDense
 	for i := 0; i < lr.Ntrain; i++ {
-		pred := lr.PredictProb(x)
-		gradient, err := lr.gradient(x, y, pred)
+		lr.predictVec(x, &pred)
+		gradient, err := lr.gradient(x, y, &pred)
 		if errb < err {
 			// log.Printf("[%d] break %e/%e", i, errb, err)
 			return errb

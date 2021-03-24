@@ -78,6 +78,7 @@ func TestPredict(t *testing.T) {
 		})
 	}
 }
+
 func TestJSON(t *testing.T) {
 	lr := LR{
 		LearningRate: 0.1,
