@@ -95,14 +95,10 @@ func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 		lr.predictVec(x, &pred)
 		err := lr.gradient(x, y, &pred, &gradient)
 		if errb < err {
-			// log.Printf("[%d] break %e/%e", i, errb, err)
 			return errb
 		}
 		gradient.ScaleVec(lr.LearningRate, &gradient)
 		lr.weights.SubVec(lr.weights, &gradient)
-		// if i%100 == 0 {
-		// 	log.Printf("[%d] %e/%e", i, errb, err)
-		// }
 		errb = err
 	}
 	return errb
