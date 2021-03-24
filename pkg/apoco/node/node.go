@@ -186,5 +186,5 @@ func SetAttr(node *xmlquery.Node, attr xml.Attr) {
 			return
 		}
 	}
-	node.Attr = append(node.Attr, attr)
+	node.Attr = append(node.Attr, xmlquery.Attr{Name: attr.Name, Value: attr.Value})
 }
