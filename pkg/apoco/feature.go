@@ -13,7 +13,6 @@ import (
 // registered names for feature functions
 var register = map[string]FeatureFunc{
 	"AgreeingOCRs":                   AgreeingOCRs,
-	"OCRTokenConf":                   OCRTokenConf,
 	"OCRTokenLen":                    OCRTokenLen,
 	"OCRUnigramFreq":                 OCRUnigramFreq,
 	"OCRTrigramFreq":                 OCRTrigramFreq,
@@ -110,12 +109,6 @@ func (fs FeatureSet) Names(names []string, nocr int, dm bool) []string {
 // any configuration.
 func OCRTokenLen(t T, i, n int) (float64, bool) {
 	return float64(len(t.Tokens[0])), true
-}
-
-// OCRTokenConf return the OCR-confidence for the the given
-// configuration.
-func OCRTokenConf(t T, i, n int) (float64, bool) {
-	return t.Confs[i], true
 }
 
 // AgreeingOCRs returns the number of OCRs that aggree with the master

@@ -94,7 +94,6 @@ func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.
 	}
 	err = apoco.SendTokens(ctx, out, apoco.T{
 		Chars:  lines[0],
-		Confs:  lines[0].Confs(),
 		Group:  filepath.Base(base),
 		File:   file,
 		ID:     filepath.Base(file),
@@ -128,7 +127,6 @@ func (e Extensions) TokenizeLines(ctx context.Context, in <-chan apoco.T, out ch
 			for j, p := range alignments[i] {
 				if j == 0 {
 					t.Chars = line.Chars[p.B:p.E]
-					t.Confs = line.Chars[p.B:p.E].Confs()
 				}
 				t.Tokens = append(t.Tokens, string(p.Slice()))
 			}

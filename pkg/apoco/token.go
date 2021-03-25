@@ -12,15 +12,12 @@ import (
 type T struct {
 	LM      *LanguageModel // language model for this token
 	Payload interface{}    // token payload; *gofiler.Candidate, []Ranking or Correction
-	Cor     string         // Correction for the token.
+	Cor     string         // Correction for the token
 	File    string         // the file of the token
 	Group   string         // file group of the token
 	ID      string         // id of the token in this file
-	Chars   Chars          // master OCR tokens with confidences
-	Confs   []float64      // master and support OCR confidences
+	Chars   Chars          // master OCR chars with their confidences
 	Tokens  []string       // master and support OCRs and gt
-	Lines   []string       // lines of the tokens
-	traits  TraitType      // token traits
 }
 
 // IsLexiconEntry returns true if this token is a normal lexicon entry
@@ -40,37 +37,6 @@ func (t T) IsLexiconEntry() bool {
 
 func (t T) String() string {
 	return fmt.Sprintf("%s", strings.Join(t.Tokens, "|"))
-}
-
-// TraitType is used to define different
-// traits for the tokens.
-type TraitType int64
-
-// Trait flags
-const (
-	FirstInLine = 1 << iota
-	LastInLine
-	LowerCase
-	UpperCase
-	TitleCase
-	MixedCase
-)
-
-// SetTrait sets a trait.
-func (t *T) SetTrait(i int, trait TraitType) {
-	if trait < LowerCase {
-		t.traits |= trait
-		return
-	}
-	t.traits |= trait << (i * 4)
-}
-
-// HasTrait returns true if the token has the given trait.
-func (t *T) HasTrait(i int, trait TraitType) bool {
-	if trait < LowerCase {
-		return (t.traits & trait) > 0
-	}
-	return (t.traits & (trait << (i * 4))) > 0
 }
 
 // Chars represents the master OCR chars with the respective confidences.

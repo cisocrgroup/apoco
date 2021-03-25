@@ -103,12 +103,6 @@ func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.T) e
 		if err != nil {
 			return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 		}
-		if !findPrevSibling(word, "Word") {
-			token.SetTrait(0, apoco.FirstInLine)
-		}
-		if !findNextSibling(word, "Word") {
-			token.SetTrait(0, apoco.LastInLine)
-		}
 		if err := apoco.SendTokens(ctx, out, token); err != nil {
 			return fmt.Errorf("tokenizePageXML: %v", err)
 		}
@@ -132,10 +126,7 @@ func newTokenFromNode(fg, file string, wordNode *xmlquery.Node) (apoco.T, error)
 			}
 			ret.Chars = chars
 		}
-		conf, _ := node.LookupAttrAsFloat(node.Parent(words[i]), xml.Name{Local: "conf"})
-		ret.Confs = append(ret.Confs, conf)
 		ret.Tokens = append(ret.Tokens, node.Data(node.FirstChild(words[i])))
-		ret.Lines = append(ret.Lines, node.Data(node.FirstChild(lines[i])))
 	}
 	return ret, nil
 }
