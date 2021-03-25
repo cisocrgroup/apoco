@@ -209,7 +209,7 @@ func readTSV(is io.Reader) (apoco.Chars, error) {
 		// We add whitespaces in these cases. It would be
 		// better to treat these entries as empty strings and
 		// skip them, but in order to be compatible with the
-		// old java-version of the autoamtic post-correction,
+		// old java-version of the automatic post-correction,
 		// we use whitespace.
 		_, err = fmt.Sscanf(s.Text(), "\t%f", &conf)
 		if err != nil {
