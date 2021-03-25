@@ -1,6 +1,6 @@
 module git.sr.ht/~flobar/apoco
 
-go 1.14
+go 1.16
 
 require (
 	git.sr.ht/~flobar/lev v1.0.0
