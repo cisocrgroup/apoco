@@ -206,6 +206,10 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 	return nil
 }
 
+// lengthOfWord gives the maximal length of words that the profiler
+// accepts (see lengthOfWord in Global.h in the profiler's source).
+const lengthOfWord = 64
+
 // RunProfiler runs the profiler over the given tokens (using the
 // token entries at index 0) with the given executable and config
 // file.  The profiler's output is logged to stderr.
@@ -213,6 +217,12 @@ func RunProfiler(ctx context.Context, exe, config string, tokens ...T) (gofiler.
 	var profilerTokens []gofiler.Token
 	var adaptive bool
 	for _, token := range tokens {
+		// Skip words that are too long for the profiler.  They are
+		// only skipped for the input for the profiler not from the
+		// general token stream.
+		if len(token.Tokens[0]) > lengthOfWord {
+			continue
+		}
 		profilerTokens = append(profilerTokens, gofiler.Token{
 			OCR: token.Tokens[0],
 			COR: token.Cor,
