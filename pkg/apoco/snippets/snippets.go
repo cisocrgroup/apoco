@@ -49,31 +49,26 @@ func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 
 func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.T, base string) error {
 	// Use a dir path stack to iterate over all dirs in the tree.
-	dirs := []string{base}
-	for len(dirs) != 0 {
-		dir := dirs[len(dirs)-1]
-		dirs = dirs[0 : len(dirs)-1]
+	stack := []string{base}
+	for len(stack) != 0 {
+		dir := stack[len(stack)-1]
+		stack = stack[0 : len(stack)-1]
 		// Read all file info entries from the dir.
-		is, err := os.Open(dir)
-		if err != nil {
-			return fmt.Errorf("read lines from dir %s: %v", dir, err)
-		}
-		fis, err := is.Readdir(-1)
-		is.Close() // Unconditionally close the dir.
+		dirs, err := os.ReadDir(dir)
 		if err != nil {
 			return fmt.Errorf("read lines from dir %s: %v", dir, err)
 		}
 		// Either append new dirs to the stack or handle files with
 		// the master file extension at index 0. Skip all other files.
-		for _, fi := range fis {
-			if fi.IsDir() {
-				dirs = append(dirs, filepath.Join(dir, fi.Name()))
+		for i := range dirs {
+			if dirs[i].IsDir() {
+				stack = append(stack, filepath.Join(dir, dirs[i].Name()))
 				continue
 			}
-			if !strings.HasSuffix(fi.Name(), e[0]) {
+			if !strings.HasSuffix(dirs[i].Name(), e[0]) {
 				continue
 			}
-			file := filepath.Join(dir, fi.Name())
+			file := filepath.Join(dir, dirs[i].Name())
 			if err := e.readLinesFromSnippets(ctx, out, base, file); err != nil {
 				return fmt.Errorf("read lines from dir %s: %v", dir, err)
 			}
