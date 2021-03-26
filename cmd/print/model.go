@@ -75,7 +75,7 @@ func printmodeldata(name, typ string, ds map[int]apoco.ModelData) {
 
 func printpats(name, typ string, pats map[string]float64) {
 	for pat, prob := range pats {
-		_, err := fmt.Printf("%s %s %s %.13f\n", name, typ, pat, prob)
+		_, err := fmt.Printf("%s %s %s %g\n", name, typ, pat, prob)
 		chk(err)
 	}
 }
