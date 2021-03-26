@@ -65,6 +65,7 @@ func TestWeights(t *testing.T) {
 		})
 	}
 }
+
 func TestPredict(t *testing.T) {
 	for _, tc := range []struct {
 		name string
