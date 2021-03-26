@@ -88,21 +88,21 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	if info == nil {
 		return nil
 	}
-	if info.skipped {
+	if info.Skipped {
 		newStr.Data = ocr
 		node.SetAttr(newTE, xml.Attr{
 			Name:  xml.Name{Local: "dataTypeDetails"},
 			Value: info.String(),
 		})
 	} else {
-		if info.cor {
-			newStr.Data = apoco.ApplyOCRToCorrection(ocr, info.sug)
+		if info.Cor {
+			newStr.Data = apoco.ApplyOCRToCorrection(ocr, info.Sug)
 		} else {
 			newStr.Data = ocr
 		}
 		node.SetAttr(newTE, xml.Attr{
 			Name:  xml.Name{Local: "conf"},
-			Value: strconv.FormatFloat(info.conf, 'e', -1, 64),
+			Value: strconv.FormatFloat(info.Conf, 'e', -1, 64),
 		})
 		node.SetAttr(newTE, xml.Attr{
 			Name:  xml.Name{Local: "dataTypeDetails"},

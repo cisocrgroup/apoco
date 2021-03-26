@@ -103,10 +103,12 @@ func catp(name string) {
 		short := utf8.RuneCountInString(t.OCR) <= 3
 		lex := t.lex()
 		stok := internal.Stok{
+			ID:      id,
 			Skipped: lex || short || nosuggs,
 			Short:   short,
 			Lex:     lex,
 			Cor:     t.Taken,
+			Conf:    t.Conf,
 			Rank:    rank,
 			OCR:     t.OCR,
 			Sug:     t.Cor,

@@ -96,7 +96,7 @@ func readStoks(in io.Reader) apoco.StreamFunc {
 func eachStok(in io.Reader, f func(internal.Stok) error) error {
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
-		t, err := internal.NewStok(scanner.Text())
+		t, err := internal.MakeStok(scanner.Text())
 		if err != nil {
 			return err
 		}

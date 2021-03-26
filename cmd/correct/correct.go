@@ -78,6 +78,8 @@ func run(_ *cobra.Command, args []string) {
 		correct(infoMap),
 	))
 	apoco.Log("correcting %d pages (%d tokens)", len(infoMap), infoMap.numberOfTokens())
+	// If no input file groups are given, we do not need to correct
+	// the according page XML files.  We just output the stoks.
 	if len(flags.ifgs) == 0 {
 		for _, ids := range infoMap {
 			for _, info := range ids {
@@ -86,6 +88,7 @@ func run(_ *cobra.Command, args []string) {
 		}
 		return
 	}
+	// We need to correct the according page XML files.
 	cor := corrector{
 		info: infoMap,
 		ifgs: append(args, flags.ifgs...),
@@ -98,10 +101,10 @@ func correct(m infoMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			info := m.get(t)
-			info.skipped = false
-			info.cor = t.Payload.(apoco.Correction).Conf > 0.5
-			info.conf = t.Payload.(apoco.Correction).Conf
-			info.sug = t.Payload.(apoco.Correction).Candidate.Suggestion
+			info.Skipped = false
+			info.Cor = t.Payload.(apoco.Correction).Conf > 0.5
+			info.Conf = t.Payload.(apoco.Correction).Conf
+			info.Sug = t.Payload.(apoco.Correction).Candidate.Suggestion
 			return nil
 		})
 	}
@@ -113,7 +116,7 @@ func register(m infoMap) apoco.StreamFunc {
 			// Each token is skipped as default.
 			// If a token is not skipped, skipped
 			// must be explicitly set to false.
-			m.get(t).skipped = true
+			m.get(t).Skipped = true
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("register: %v", err)
 			}
@@ -126,7 +129,7 @@ func filterLex(m infoMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if t.IsLexiconEntry() {
-				m.get(t).lex = true
+				m.get(t).Lex = true
 				return nil
 			}
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -141,7 +144,7 @@ func filterShort(m infoMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
-				m.get(t).short = true
+				m.get(t).Short = true
 				return nil
 			}
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -162,7 +165,7 @@ func analyzeRankings(m infoMap) apoco.StreamFunc {
 					break
 				}
 			}
-			m.get(t).rank = rank
+			m.get(t).Rank = rank
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("analyzeRankings: %v", err)
 			}

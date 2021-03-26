@@ -31,7 +31,7 @@ func runCharset(_ *cobra.Command, args []string) {
 		if line == "" || line[0] == '#' {
 			continue
 		}
-		t, err := internal.NewStok(line)
+		t, err := internal.MakeStok(line)
 		chk(err)
 		gtset.add(t.GT)
 		ocrset.add(t.OCR)

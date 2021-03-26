@@ -145,7 +145,7 @@ type stats struct {
 }
 
 func (s *stats) stat(dtd string) error {
-	t, err := internal.NewStok(dtd)
+	t, err := internal.MakeStok(dtd)
 	if err != nil {
 		return err
 	}

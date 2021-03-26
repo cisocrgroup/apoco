@@ -40,7 +40,7 @@ func runTypes(_ *cobra.Command, _ []string) {
 func eachStok(in io.Reader, f func(internal.Stok)) {
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
-		s, err := internal.NewStok(scanner.Text())
+		s, err := internal.MakeStok(scanner.Text())
 		chk(err)
 		f(s)
 	}
