@@ -104,6 +104,9 @@ func jsonfeatures(typ string, ds map[int]apoco.ModelData) []feature {
 		fs, err := apoco.NewFeatureSet(data.Features...)
 		chk(err)
 		names := fs.Names(data.Features, nocr, typ == "dm")
+		if len(names) != len(ws) {
+			panic("bad feature names")
+		}
 		for i := range names {
 			features = append(features, feature{
 				Name:   names[i],
