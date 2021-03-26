@@ -56,7 +56,7 @@ func run(_ *cobra.Command, args []string) {
 	chk(err)
 	dmlr, dmfs, err := m.Get("dm", c.Nocr)
 	chk(err)
-	infoMap := make(infoMap)
+	stoks := make(stokMap)
 	p := internal.Piper{
 		IFGS: flags.ifgs,
 		METS: flags.mets,
@@ -67,21 +67,21 @@ func run(_ *cobra.Command, args []string) {
 		context.Background(),
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
-		register(infoMap),
-		filterShort(infoMap),
+		register(stoks),
+		filterShort(stoks),
 		connectlm(c, m.Ngrams, flags.profile),
-		filterLex(infoMap),
+		filterLex(stoks),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(rrlr, rrfs, c.Nocr),
-		analyzeRankings(infoMap),
+		analyzeRankings(stoks),
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
-		correct(infoMap),
+		correct(stoks),
 	))
-	apoco.Log("correcting %d pages (%d tokens)", len(infoMap), infoMap.numberOfTokens())
+	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
 	// If no input file groups are given, we do not need to correct
 	// the according page XML files.  We just output the stoks.
 	if len(flags.ifgs) == 0 {
-		for _, ids := range infoMap {
+		for _, ids := range stoks {
 			for _, info := range ids {
 				fmt.Printf("%s\n", info)
 			}
@@ -90,35 +90,35 @@ func run(_ *cobra.Command, args []string) {
 	}
 	// We need to correct the according page XML files.
 	cor := corrector{
-		info: infoMap,
-		ifgs: append(args, flags.ifgs...),
-		ofg:  flags.ofg,
+		stoks: stoks,
+		ifgs:  append(args, flags.ifgs...),
+		ofg:   flags.ofg,
 	}
 	chk(cor.correct(flags.mets))
 }
 
-func correct(m infoMap) apoco.StreamFunc {
+func correct(m stokMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			info := m.get(t)
-			info.Skipped = false
-			info.Cor = t.Payload.(apoco.Correction).Conf > 0.5
-			info.Conf = t.Payload.(apoco.Correction).Conf
-			info.Sug = t.Payload.(apoco.Correction).Candidate.Suggestion
+			stok := m.get(t)
+			stok.Skipped = false
+			stok.Cor = t.Payload.(apoco.Correction).Conf > 0.5
+			stok.Conf = t.Payload.(apoco.Correction).Conf
+			stok.Sug = t.Payload.(apoco.Correction).Candidate.Suggestion
 			return nil
 		})
 	}
 }
 
-func register(m infoMap) apoco.StreamFunc {
+func register(m stokMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			// Each token gets its ID and is skipped as default.
 			// If a token is not skipped, skipped
 			// must be explicitly set to false.
-			info := m.get(t)
-			info.ID = t.ID
-			info.Skipped = true
+			stok := m.get(t)
+			stok.ID = t.ID
+			stok.Skipped = true
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("register: %v", err)
 			}
@@ -127,7 +127,7 @@ func register(m infoMap) apoco.StreamFunc {
 	}
 }
 
-func filterLex(m infoMap) apoco.StreamFunc {
+func filterLex(m stokMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if t.IsLexiconEntry() {
@@ -142,7 +142,7 @@ func filterLex(m infoMap) apoco.StreamFunc {
 	}
 }
 
-func filterShort(m infoMap) apoco.StreamFunc {
+func filterShort(m stokMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
@@ -157,7 +157,7 @@ func filterShort(m infoMap) apoco.StreamFunc {
 	}
 }
 
-func analyzeRankings(m infoMap) apoco.StreamFunc {
+func analyzeRankings(m stokMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			var rank int

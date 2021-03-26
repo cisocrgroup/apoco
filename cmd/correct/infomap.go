@@ -7,11 +7,11 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 )
 
-var infoMapLock sync.Mutex
+var stokMapLock sync.Mutex
 
-type infoMap map[string]map[string]*internal.Stok // file -> id -> stok
+type stokMap map[string]map[string]*internal.Stok // file -> id -> stok
 
-func (m infoMap) numberOfTokens() int {
+func (m stokMap) numberOfTokens() int {
 	sum := 0
 	for _, x := range m {
 		sum += len(x)
@@ -19,9 +19,9 @@ func (m infoMap) numberOfTokens() int {
 	return sum
 }
 
-func (m infoMap) get(t apoco.T) *internal.Stok {
-	infoMapLock.Lock()
-	defer infoMapLock.Unlock()
+func (m stokMap) get(t apoco.T) *internal.Stok {
+	stokMapLock.Lock()
+	defer stokMapLock.Unlock()
 	if _, ok := m[t.File]; !ok {
 		m[t.File] = make(map[string]*internal.Stok)
 	}

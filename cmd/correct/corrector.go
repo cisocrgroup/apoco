@@ -19,7 +19,7 @@ import (
 )
 
 type corrector struct {
-	info    infoMap
+	stoks   stokMap
 	ofg     string
 	ifgs    []string
 	fileGrp *xmlquery.Node
@@ -83,7 +83,7 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	newStr := &xmlquery.Node{Type: xmlquery.TextNode}
 	ocr := node.Data(unicodes[0].FirstChild)
 
-	info := cor.info[file][id]
+	info := cor.stoks[file][id]
 	// Just skip words that we do not have any info about.
 	if info == nil {
 		return nil
