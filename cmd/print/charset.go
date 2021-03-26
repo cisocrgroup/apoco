@@ -53,21 +53,22 @@ func runCharset(_ *cobra.Command, args []string) {
 }
 
 func printCharset(corrs []corr, gtset, ocrset, sugset cset) {
+	e := internal.E
 	for _, c := range corrs {
 		chars := gtset.extractNotInSet(c.Sug)
 		bad := chars != ""
-		fmt.Printf("badchars=%t taken=%t ocr=%s sug=%s gt=%s chars=%s\n",
-			bad, c.Taken, c.OCR, c.Sug, c.GT, chars)
+		fmt.Printf("hasbadchars=%t taken=%t ocr=%s sug=%s gt=%s badchars=%s\n",
+			bad, c.Taken, e(c.OCR), e(c.Sug), e(c.GT), e(chars))
 	}
-	fmt.Printf("gtcharset=%s\n", gtset)
-	fmt.Printf("ocrcharset=%s\n", ocrset)
-	fmt.Printf("sugcharset=%s\n", sugset)
+	fmt.Printf("gtcharset=%s\n", e(gtset.String()))
+	fmt.Printf("ocrcharset=%s\n", e(ocrset.String()))
+	fmt.Printf("sugcharset=%s\n", e(sugset.String()))
 }
 
 func printCharsetJSON(corrs []corr, gtset, ocrset, sugset cset) {
 	for i := range corrs {
-		corrs[i].Chars = gtset.extractNotInSet(corrs[i].Sug)
-		corrs[i].BadChars = corrs[i].Chars != ""
+		corrs[i].BadChars = gtset.extractNotInSet(corrs[i].Sug)
+		corrs[i].HasBadChars = corrs[i].BadChars != ""
 	}
 	data := struct {
 		Corrs                 []corr
@@ -77,8 +78,8 @@ func printCharsetJSON(corrs []corr, gtset, ocrset, sugset cset) {
 }
 
 type corr struct {
-	OCR, Sug, GT, Chars string
-	Taken, BadChars     bool
+	OCR, Sug, GT, BadChars string
+	Taken, HasBadChars     bool
 }
 
 type cset map[string]struct{}
