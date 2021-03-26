@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
-	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
 )
 
@@ -61,17 +60,15 @@ func printmodeldata(name, typ string, ds map[int]apoco.ModelData) {
 		ws := data.Model.Weights()
 		fs, err := apoco.NewFeatureSet(data.Features...)
 		chk(err)
-		for f := range fs {
-			for i := 0; i < nocr; i++ {
-				_, ok := fs[f](mktok(typ, nocr), i, nocr)
-				if !ok {
-					continue
-				}
-				_, err := fmt.Printf("%s %s/%d %s(%d) %.13f\n",
-					name, typ, nocr, data.Features[f], i+1, ws[f+i])
-				chk(err)
+		names := fs.Names(data.Features, nocr, typ == "dm")
+		if len(names) != len(ws) {
+			panic("bad feature names")
+		}
+		for i := range names {
+			_, err := fmt.Printf("%s %s/%d %s %g\n",
+				name, typ, nocr, names[i], ws[i])
+			chk(err)
 
-			}
 		}
 	}
 }
@@ -106,38 +103,16 @@ func jsonfeatures(typ string, ds map[int]apoco.ModelData) []feature {
 		ws := data.Model.Weights()
 		fs, err := apoco.NewFeatureSet(data.Features...)
 		chk(err)
-		for f := range fs {
-			for i := 0; i < nocr; i++ {
-				_, ok := fs[f](mktok(typ, nocr), i, nocr)
-				if !ok {
-					continue
-				}
-				features = append(features, feature{
-					Name:   data.Features[f],
-					Nocr:   i + 1,
-					Weight: ws[f+i],
-				})
-			}
+		names := fs.Names(data.Features, nocr, typ == "dm")
+		for i := range names {
+			features = append(features, feature{
+				Name:   names[i],
+				Nocr:   nocr,
+				Weight: ws[i],
+			})
 		}
 	}
 	return features
-}
-
-func mktok(typ string, nocr int) apoco.T {
-	switch typ {
-	case "dm":
-		return apoco.T{
-			Tokens:  make([]string, nocr),
-			LM:      new(apoco.LanguageModel),
-			Payload: []apoco.Ranking{{Candidate: new(gofiler.Candidate)}},
-		}
-	default:
-		return apoco.T{
-			Tokens:  make([]string, nocr),
-			LM:      new(apoco.LanguageModel),
-			Payload: new(gofiler.Candidate),
-		}
-	}
 }
 
 type modelst struct {
