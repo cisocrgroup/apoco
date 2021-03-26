@@ -113,10 +113,12 @@ func correct(m infoMap) apoco.StreamFunc {
 func register(m infoMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			// Each token is skipped as default.
+			// Each token gets its ID and is skipped as default.
 			// If a token is not skipped, skipped
 			// must be explicitly set to false.
-			m.get(t).Skipped = true
+			info := m.get(t)
+			info.ID = t.ID
+			info.Skipped = true
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("register: %v", err)
 			}
