@@ -90,7 +90,10 @@ func (fs FeatureSet) Names(names []string, nocr int, dm bool) []string {
 		panic("bad names")
 	}
 	var ret []string
-	t := T{Tokens: make([]string, nocr+1)}
+	t := T{
+		Tokens: make([]string, nocr+1),
+		LM:     new(LanguageModel),
+	}
 	if dm {
 		t.Payload = []Ranking{{Candidate: new(gofiler.Candidate)}}
 	} else {
