@@ -1,5 +1,7 @@
 // Package node provides helper functions to work with queryxml.Node
-// pointers.  All functions explicitly handle nil nodes and therefore
+// pointers.  
+// 
+// All functions explicitly handle nil nodes and therefore
 // allow for deep nesting of these function calls.
 package node
 
