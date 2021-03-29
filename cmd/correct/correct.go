@@ -78,9 +78,12 @@ func run(_ *cobra.Command, args []string) {
 		correct(stoks),
 	))
 	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
-	// If no input file groups are given, we do not need to correct
-	// the according page XML files.  We just output the stoks.
-	if len(flags.ifgs) == 0 {
+	// If no output file group is given, we do not need to correct
+	// the according page XML files.  We just output the stoks.  So
+	// if input file groups are given we output the stoks.  Only if 
+	// an output file group is given, we do correct the according page
+	// XML files within the output file group.
+	if flags.ofg == "" {
 		for _, ids := range stoks {
 			for _, info := range ids {
 				fmt.Printf("%s\n", info)
