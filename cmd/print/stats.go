@@ -285,20 +285,20 @@ func (s *stats) write(name string) {
 		chk(json.NewEncoder(os.Stdout).Encode(s))
 		return
 	}
-	fmt.Printf("name                            = %s\n", name)
-	fmt.Printf("improvement (percent)           = %f\n", s.Improvement)
-	fmt.Printf("error rate (before/after)       = %f/%f\n", s.ErrorRateBefore, s.ErrorRateAfter)
-	fmt.Printf("accuracy (before/after)         = %f/%f\n", s.AccuracyBefore, s.AccuracyAfter)
+	fmt.Printf("Name                            = %s\n", name)
+	fmt.Printf("Improvement (percent)           = %f\n", s.Improvement)
+	fmt.Printf("Error rate (before/after)       = %f/%f\n", s.ErrorRateBefore, s.ErrorRateAfter)
+	fmt.Printf("Accuracy (before/after)         = %f/%f\n", s.AccuracyBefore, s.AccuracyAfter)
 	fmt.Printf("Total errors (before/after)     = %d/%d\n", s.TotalErrBefore, s.TotalErrAfter)
-	fmt.Printf("correct (before/after)          = %d/%d\n", corbefore, corafter)
-	fmt.Printf("missing corr                    = %d\n",
+	fmt.Printf("Correct (before/after)          = %d/%d\n", corbefore, corafter)
+	fmt.Printf("Missing corrections             = %d\n",
 		s.DodgedBulletsMC+s.DisimprovementMC+s.DoNotCareMC+s.SkippedDoNotCareMC)
-	fmt.Printf("bad rank                        = %d\n",
+	fmt.Printf("Bad rank                        = %d\n",
 		s.DodgedBulletsBR+s.DisimprovementBR+s.DoNotCareBR+s.SkippedDoNotCareBR)
-	fmt.Printf("bad limit                       = %d\n",
+	fmt.Printf("Bad limit                       = %d\n",
 		s.DodgedBulletsBL+s.DisimprovementBL+s.DoNotCareBL+s.SkippedDoNotCareBL)
-	fmt.Printf("merges                          = %d\n", s.SkippedMerges+s.Merges)
-	fmt.Printf("splits                          = %d\n", s.SkippedSplits+s.Splits)
+	fmt.Printf("Merges                          = %d\n", s.SkippedMerges+s.Merges)
+	fmt.Printf("Splits                          = %d\n", s.SkippedSplits+s.Splits)
 	fmt.Printf("Total tokens                    = %d\n", s.Total)
 	if !statsFlags.verbose {
 		return
