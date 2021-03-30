@@ -299,10 +299,10 @@ func (s *stats) write(name string) {
 		s.DodgedBulletsBL+s.DisimprovementBL+s.DoNotCareBL+s.SkippedDoNotCareBL)
 	fmt.Printf("merges                          = %d\n", s.SkippedMerges+s.Merges)
 	fmt.Printf("splits                          = %d\n", s.SkippedSplits+s.Splits)
+	fmt.Printf("Total tokens                    = %d\n", s.Total)
 	if !statsFlags.verbose {
 		return
 	}
-	fmt.Printf("Total tokens                    = %d\n", s.Total)
 	fmt.Printf("├─ skipped                      = %d\n", s.Skipped)
 	fmt.Printf("│  ├─ short                     = %d\n", s.Short)
 	fmt.Printf("│  │  └─ errors                 = %d\n", s.ShortErr)
