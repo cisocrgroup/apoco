@@ -297,6 +297,9 @@ func (s *stats) write(name string) {
 		s.DodgedBulletsBR+s.DisimprovementBR+s.DoNotCareBR+s.SkippedDoNotCareBR)
 	fmt.Printf("Bad limit                       = %d\n",
 		s.DodgedBulletsBL+s.DisimprovementBL+s.DoNotCareBL+s.SkippedDoNotCareBL)
+	fmt.Printf("Short errors                    = %d\n", s.ShortErr)
+	fmt.Printf("Missing candidate errors        = %d\n", s.NoCandsErr)
+	fmt.Printf("False friends                   = %d\n", s.LexErr)
 	fmt.Printf("Merges                          = %d\n", s.SkippedMerges+s.Merges)
 	fmt.Printf("Splits                          = %d\n", s.SkippedSplits+s.Splits)
 	fmt.Printf("Total tokens                    = %d\n", s.Total)
