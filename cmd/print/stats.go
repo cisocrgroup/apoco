@@ -177,7 +177,7 @@ func (s *stats) stat(dtd string) error {
 	if t.Skipped && !t.Short && t.Lex && t.OCR != t.GT {
 		s.LexErr++
 	}
-	if t.Skipped && strings.Index(t.GT, "_") != -1 {
+	if t.Skipped && strings.Contains(t.GT, "_") {
 		s.SkippedMerges++
 	}
 	if !t.Skipped && strings.Index(t.GT, "_") == 0 {
@@ -358,17 +358,4 @@ func updateSubErrors(limit, rank int, mc, br, bl *int) {
 			*br++
 		}
 	}
-}
-
-func checkSanity(skipped, short, lex, cor bool) error {
-	if !skipped && short {
-		return fmt.Errorf("invalid stat: not skipped but short")
-	}
-	if !skipped && lex {
-		return fmt.Errorf("invalid stat: not skipped but lexical")
-	}
-	if skipped && cor {
-		return fmt.Errorf("invalid stat: skipped and corrected")
-	}
-	return nil
 }
