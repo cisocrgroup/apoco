@@ -3,22 +3,15 @@ package print
 import (
 	"bufio"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"os"
 	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
-	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
-	"github.com/antchfx/xmlquery"
 	"github.com/spf13/cobra"
 )
 
 var statsFlags = struct {
-	ifgs      []string
-	mets      string
 	limit     int
 	skipShort bool
 	verbose   bool
@@ -32,8 +25,6 @@ var statsCMD = &cobra.Command{
 }
 
 func init() {
-	statsCMD.Flags().StringVarP(&statsFlags.mets, "mets", "m", "mets.xml", "set path to the mets file")
-	statsCMD.Flags().StringSliceVarP(&statsFlags.ifgs, "input-file-grp", "I", nil, "set input file groups")
 	statsCMD.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
 	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "skip-short", "s", false,
 		"exclude short tokens (len<3) from the evaluation")
@@ -42,14 +33,6 @@ func init() {
 }
 
 func runStats(_ *cobra.Command, args []string) {
-	if len(statsFlags.ifgs) == 0 {
-		handleSimple()
-	} else {
-		handleIFGs(statsFlags.ifgs)
-	}
-}
-
-func handleSimple() {
 	scanner := bufio.NewScanner(os.Stdin)
 	var s stats
 	var filename string
@@ -67,58 +50,6 @@ func handleSimple() {
 		chk(s.stat(dtd))
 	}
 	s.write(filename)
-}
-
-func handleIFGs(ifgs []string) {
-	m, err := mets.Open(statsFlags.mets)
-	chk(err)
-	for _, ifg := range ifgs {
-		var s stats
-		chk(eachWord(m, ifg, s.stat))
-		s.write(ifg)
-	}
-}
-
-func eachWord(m mets.METS, inputFileGrp string, f func(string) error) error {
-	files, err := m.FilePathsForFileGrp(inputFileGrp)
-	if err != nil {
-		return fmt.Errorf("eachWord: %v", err)
-	}
-	for _, file := range files {
-		if err := eachTokenInFile(file, f); err != nil {
-			return fmt.Errorf("eachWord %s: %v", file, err)
-		}
-	}
-	return nil
-}
-
-func eachTokenInFile(path string, f func(string) error) error {
-	is, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer is.Close()
-	doc, err := xmlquery.Parse(is)
-	if err != nil {
-		return err
-	}
-	for _, word := range xmlquery.Find(doc, "//*[local-name()='Word']") {
-		// Simply skip this word if id does not contain any actionable
-		// data.
-		us := pagexml.FindUnicodesInRegionSorted(word)
-		if len(us) == 0 { // skip
-			return nil
-		}
-		te := us[0].Parent
-		dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
-		if dtd == "" || !found { // skip
-			return nil
-		}
-		if err := f(dtd); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 type stats struct {

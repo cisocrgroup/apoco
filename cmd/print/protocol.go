@@ -2,21 +2,83 @@ package print
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/mets"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
+	"git.sr.ht/~flobar/apoco/pkg/apoco/pagexml"
+	"github.com/antchfx/xmlquery"
 	"github.com/spf13/cobra"
 )
 
+var protocolFlags = struct {
+	mets string
+	ifgs []string
+}{}
+
 var protocolCMD = &cobra.Command{
 	Use:   "protocol [INPUT...]",
-	Short: "Output stats from a-i-pocoto protocol files",
+	Short: "Output stats from a-i-pocoto protocol or from page XML files",
 	Run:   runProtocol,
 }
 
+func init() {
+	protocolCMD.Flags().StringVarP(&protocolFlags.mets, "mets", "m", "mets.xml", "set path to the mets file")
+	protocolCMD.Flags().StringSliceVarP(&protocolFlags.ifgs, "input-file-grp", "I", nil, "set input file groups")
+}
+
 func runProtocol(_ *cobra.Command, args []string) {
+	switch {
+	case len(protocolFlags.ifgs) == 0:
+		aipocoto(args)
+	default:
+		ifgs(protocolFlags.mets, protocolFlags.ifgs)
+	}
+}
+
+func ifgs(METS string, ifgs []string) {
+	m, err := mets.Open(METS)
+	chk(err)
+	for _, ifg := range ifgs {
+		names, err := m.FilePathsForFileGrp(ifg)
+		chk(err)
+		for _, name := range names {
+			printStoksInPageXML(name)
+		}
+	}
+}
+
+func printStoksInPageXML(name string) {
+	is, err := os.Open(name)
+	chk(err)
+	defer is.Close()
+	doc, err := xmlquery.Parse(is)
+	chk(err)
+	for _, word := range xmlquery.Find(doc, "//*[local-name()='Word']") {
+		// Simply skip this word if id does not contain any actionable
+		// data.
+		us := pagexml.FindUnicodesInRegionSorted(word)
+		if len(us) == 0 { // skip
+			continue
+		}
+		te := us[0].Parent
+		dtd, found := node.LookupAttr(te, xml.Name{Local: "dataTypeDetails"})
+		if dtd == "" || !found { // skip
+			continue
+		}
+		if flags.json {
+
+		}
+		_, err := fmt.Println(dtd)
+		chk(err)
+	}
+}
+
+func aipocoto(args []string) {
 	for _, arg := range args {
 		catp(arg)
 	}
