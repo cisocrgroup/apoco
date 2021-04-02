@@ -93,7 +93,7 @@ func mkfiles(m mets.METS, flocats []*xmlquery.Node) []file {
 	return files
 }
 
-const agent = "apoco align " + internal.Version
+const agent = "ocrd/cis/apoco-align " + internal.Version
 
 func alignFiles(mpath, ofg string, ifgs []string) error {
 	m, fg, err := readMETS(mpath, ofg)

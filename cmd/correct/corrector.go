@@ -171,7 +171,7 @@ func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
 	return ioutil.WriteFile(ofile, []byte(xmlData), 0666)
 }
 
-const agent = "apoco correct " + internal.Version
+const agent = "ocrd/cis/apoco-correct " + internal.Version
 
 func (cor *corrector) readMETS(name string) error {
 	m, err := mets.Open(name)

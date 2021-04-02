@@ -40,7 +40,7 @@ func (mets METS) Write() error {
 // AddAgent adds an agent to the metsHdr of the mets tree.
 func (mets METS) AddAgent(pstep, agent string) error {
 	// Check if the according agent is already registered.
-	if mets.checkAgent(pstep, agent) {
+	if mets.findAgent(pstep, agent) {
 		return nil
 	}
 	// Get metsHdr node or create it if it does not exist, yet.
@@ -94,8 +94,8 @@ func (mets METS) addHdr() (*xmlquery.Node, error) {
 	return hdr, nil
 }
 
-// checkAgent checks for an existing agent entry in the header.
-func (mets METS) checkAgent(pstep, agent string) bool {
+// findAgent searches for an existing agent entry in the header.
+func (mets METS) findAgent(pstep, agent string) bool {
 	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='metsHdr']"+
 		"/*[local-name()='agent'][@OTHERROLE=%q]", pstep)
 	agents := xmlquery.Find(mets.Root, expr)
