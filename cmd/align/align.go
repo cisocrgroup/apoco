@@ -512,7 +512,7 @@ func writeToWS(doc *xmlquery.Node, mets, ofg, path string) error {
 	}
 	return ioutil.WriteFile(
 		filepath.Join(dir, filepath.Base(path)),
-		[]byte(doc.OutputXML(false)),
+		[]byte(node.PrettyPrint(doc, "", "\t")),
 		0666,
 	)
 }
