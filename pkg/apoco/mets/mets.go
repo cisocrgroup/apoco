@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco/node"
@@ -35,9 +34,7 @@ func Open(name string) (METS, error) {
 
 // Write writes the xml file.
 func (mets METS) Write() error {
-	data := mets.Root.OutputXML(false)
-	data = strings.ReplaceAll(data, "><", ">\n<")
-	return ioutil.WriteFile(mets.Name, []byte(data), 0666)
+	return ioutil.WriteFile(mets.Name, []byte(node.PrettyPrint(mets.Root, "", "  ")), 0666)
 }
 
 // AddAgent adds an agent to the metsHdr of the mets tree.

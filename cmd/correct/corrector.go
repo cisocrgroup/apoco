@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
@@ -167,8 +166,8 @@ func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
 	dir := filepath.Join(filepath.Dir(cor.mets.Name), cor.ofg)
 	ofile = filepath.Join(dir, ofile)
 	_ = os.MkdirAll(dir, 0777)
-	xmlData := doc.OutputXML(false)
-	xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
+	xmlData := node.PrettyPrint(doc, "", "  ") // doc.OutputXML(false)
+	// xmlData = strings.ReplaceAll(xmlData, "><", ">\n<")
 	return ioutil.WriteFile(ofile, []byte(xmlData), 0666)
 }
 

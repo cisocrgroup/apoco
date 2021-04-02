@@ -1,6 +1,6 @@
 // Package node provides helper functions to work with queryxml.Node
-// pointers.  
-// 
+// pointers.
+//
 // All functions explicitly handle nil nodes and therefore
 // allow for deep nesting of these function calls.
 package node
@@ -8,6 +8,7 @@ package node
 import (
 	"encoding/xml"
 	"strconv"
+	"strings"
 
 	"github.com/antchfx/xmlquery"
 )
@@ -189,4 +190,13 @@ func SetAttr(node *xmlquery.Node, attr xml.Attr) {
 		}
 	}
 	node.Attr = append(node.Attr, xmlquery.Attr{Name: attr.Name, Value: attr.Value})
+}
+
+// PrettyPrint pretty prints the given node and returns it.
+// If the given node is nil, an empty string is returned.
+func PrettyPrint(node *xmlquery.Node, prefix, indent string) string {
+	if node == nil {
+		return ""
+	}
+	return strings.ReplaceAll(node.OutputXML(false), "><", ">\n<")
 }
