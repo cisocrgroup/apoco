@@ -20,13 +20,15 @@ var typesCMD = &cobra.Command{
 }
 
 func runTypes(_ *cobra.Command, _ []string) {
-	if !flags.json {
-		eachStok(os.Stdin, func(s internal.Stok) {
-			_, err := fmt.Printf("%s type=%s\n", s, typ(s))
-			chk(err)
-		})
-		return
+	switch {
+	case flags.json:
+		printTypesJSON()
+	default:
+		printTypes()
 	}
+}
+
+func printTypesJSON() {
 	var stoks []stok
 	eachStok(os.Stdin, func(s internal.Stok) {
 		stoks = append(stoks, stok{
@@ -35,6 +37,13 @@ func runTypes(_ *cobra.Command, _ []string) {
 		})
 	})
 	chk(json.NewEncoder(os.Stdout).Encode(stoks))
+}
+
+func printTypes() {
+	eachStok(os.Stdin, func(s internal.Stok) {
+		_, err := fmt.Printf("%s type=%s\n", s, typ(s))
+		chk(err)
+	})
 }
 
 func eachStok(in io.Reader, f func(internal.Stok)) {
