@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
+	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
@@ -29,29 +29,41 @@ func runTypes(_ *cobra.Command, _ []string) {
 }
 
 func printTypesJSON() {
-	var stoks []stok
-	eachStok(os.Stdin, func(s internal.Stok) {
-		stoks = append(stoks, stok{
-			Stok: s,
-			Type: typ(s),
-		})
+	stoks := make(map[string][]stok)
+	var name string
+	eachLine(func(line string) {
+		switch {
+		case strings.HasPrefix(line, "#name="):
+			_, err := fmt.Sscanf(line, "#name=%s", &name)
+			chk(err)
+		default:
+			s, err := internal.MakeStok(line)
+			chk(err)
+			stoks[name] = append(stoks[name], stok{Stok: s, Type: typ(s)})
+		}
 	})
 	chk(json.NewEncoder(os.Stdout).Encode(stoks))
 }
 
 func printTypes() {
-	eachStok(os.Stdin, func(s internal.Stok) {
-		_, err := fmt.Printf("%s type=%s\n", s, typ(s))
-		chk(err)
+	eachLine(func(line string) {
+		switch {
+		case strings.HasPrefix(line, "#name="):
+			_, err := fmt.Println(line)
+			chk(err)
+		default:
+			s, err := internal.MakeStok(line)
+			chk(err)
+			_, err = fmt.Printf("%s type=%s\n", s, typ(s))
+			chk(err)
+		}
 	})
 }
 
-func eachStok(in io.Reader, f func(internal.Stok)) {
-	scanner := bufio.NewScanner(in)
+func eachLine(f func(string)) {
+	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		s, err := internal.MakeStok(scanner.Text())
-		chk(err)
-		f(s)
+		f(scanner.Text())
 	}
 	chk(scanner.Err())
 }

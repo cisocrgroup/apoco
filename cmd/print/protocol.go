@@ -47,18 +47,25 @@ func ifgs(METS string, ifgs []string) {
 		names, err := m.FilePathsForFileGrp(ifg)
 		chk(err)
 		for _, name := range names {
-			printStoksInPageXML(name)
+			printStoksInPageXML(ifg, name)
 		}
 	}
 }
 
-func printStoksInPageXML(name string) {
+func printStoksInPageXML(ifg, name string) {
 	is, err := os.Open(name)
 	chk(err)
 	defer is.Close()
 	doc, err := xmlquery.Parse(is)
 	chk(err)
-	var stoks []internal.Stok
+	var stoks map[string][]internal.Stok
+	switch {
+	case flags.json:
+		stoks = make(map[string][]internal.Stok)
+	default:
+		_, err := fmt.Println("#name=", ifg)
+		chk(err)
+	}
 	for _, word := range xmlquery.Find(doc, "//*[local-name()='Word']") {
 		// Simply skip this word if id does not contain any actionable
 		// data.
@@ -75,7 +82,7 @@ func printStoksInPageXML(name string) {
 		case flags.json:
 			stok, err := internal.MakeStok(dtd)
 			chk(err)
-			stoks = append(stoks, stok)
+			stoks[ifg] = append(stoks[ifg], stok)
 		default:
 			_, err := fmt.Println(dtd)
 			chk(err)
@@ -153,14 +160,19 @@ func (c *correction) rank(gt string) int {
 }
 
 func catp(name string) {
-	_, err := fmt.Printf("#filename=%s\n", name)
-	chk(err)
 	is, err := os.Open(name)
 	chk(err)
 	defer is.Close()
 	var d data
 	chk(json.NewDecoder(is).Decode(&d))
-	var stoks []internal.Stok
+	var stoks map[string][]internal.Stok
+	switch {
+	case flags.json:
+		stoks = make(map[string][]internal.Stok)
+	default:
+		_, err := fmt.Printf("#name=%s\n", name)
+		chk(err)
+	}
 	for id, t := range d.Tokens {
 		gt := e(t.GT.GT)
 		rank := t.rank()
@@ -187,7 +199,7 @@ func catp(name string) {
 		}
 		switch {
 		case flags.json:
-			stoks = append(stoks, stok)
+			stoks[name] = append(stoks[name], stok)
 		default:
 			_, err := fmt.Println(stok.String())
 			chk(err)

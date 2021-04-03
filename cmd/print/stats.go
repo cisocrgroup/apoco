@@ -40,7 +40,7 @@ func runStats(_ *cobra.Command, args []string) {
 		dtd := scanner.Text()
 		if dtd != "" && dtd[0] == '#' {
 			var tmp string
-			if _, err := fmt.Sscanf(dtd, "#filename=%s", &tmp); err != nil {
+			if _, err := fmt.Sscanf(dtd, "#name=%s", &tmp); err != nil {
 				continue
 			}
 			filename = tmp
