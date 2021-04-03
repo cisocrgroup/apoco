@@ -58,6 +58,7 @@ func printStoksInPageXML(name string) {
 	defer is.Close()
 	doc, err := xmlquery.Parse(is)
 	chk(err)
+	var stoks []internal.Stok
 	for _, word := range xmlquery.Find(doc, "//*[local-name()='Word']") {
 		// Simply skip this word if id does not contain any actionable
 		// data.
@@ -70,11 +71,18 @@ func printStoksInPageXML(name string) {
 		if dtd == "" || !found { // skip
 			continue
 		}
-		if flags.json {
-
+		switch {
+		case flags.json:
+			stok, err := internal.MakeStok(dtd)
+			chk(err)
+			stoks = append(stoks, stok)
+		default:
+			_, err := fmt.Println(dtd)
+			chk(err)
 		}
-		_, err := fmt.Println(dtd)
-		chk(err)
+	}
+	if flags.json {
+		chk(json.NewEncoder(os.Stdout).Encode(stoks))
 	}
 }
 
@@ -152,6 +160,7 @@ func catp(name string) {
 	defer is.Close()
 	var d data
 	chk(json.NewDecoder(is).Decode(&d))
+	var stoks []internal.Stok
 	for id, t := range d.Tokens {
 		gt := e(t.GT.GT)
 		rank := t.rank()
@@ -176,8 +185,16 @@ func catp(name string) {
 			Sug:     t.Cor,
 			GT:      gt,
 		}
-		_, err := fmt.Printf("%s\n", stok)
-		chk(err)
+		switch {
+		case flags.json:
+			stoks = append(stoks, stok)
+		default:
+			_, err := fmt.Println(stok.String())
+			chk(err)
+		}
+	}
+	if flags.json {
+		chk(json.NewEncoder(os.Stdout).Encode(stoks))
 	}
 }
 
