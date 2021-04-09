@@ -46,6 +46,8 @@ func ifgs(METS string, ifgs []string) {
 	for _, ifg := range ifgs {
 		names, err := m.FilePathsForFileGrp(ifg)
 		chk(err)
+		_, err = fmt.Println("#name=", ifg)
+		chk(err)
 		for _, name := range names {
 			printStoksInPageXML(ifg, name)
 		}
@@ -59,12 +61,8 @@ func printStoksInPageXML(ifg, name string) {
 	doc, err := xmlquery.Parse(is)
 	chk(err)
 	var stoks map[string][]internal.Stok
-	switch {
-	case flags.json:
+	if flags.json {
 		stoks = make(map[string][]internal.Stok)
-	default:
-		_, err := fmt.Println("#name=", ifg)
-		chk(err)
 	}
 	for _, word := range xmlquery.Find(doc, "//*[local-name()='Word']") {
 		// Simply skip this word if id does not contain any actionable
