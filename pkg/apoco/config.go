@@ -24,14 +24,27 @@ type Config struct {
 	Cautious       bool     `json:"cautious"`
 }
 
-// ReadConfig reads the config from a json or toml file.
+// ReadConfig reads the config from a json or toml file.  If
+// the name is empty, an empty configuration file is returned.
+// If name has the prefix '{' and the suffix '}' the name is
+// interpreted as a json string and parsed accordingly (OCR-D compability).
 func ReadConfig(name string) (*Config, error) {
+	var config Config
+	if name == "" {
+		return &config, nil
+	}
+	if strings.HasPrefix(name, "{") && strings.HasSuffix(name, "}") {
+		r := strings.NewReader(name)
+		if err := json.NewDecoder(r).Decode(&config); err != nil {
+			return nil, fmt.Errorf("readConfig %s: %v", name, err)
+		}
+		return &config, nil
+	}
 	is, err := os.Open(name)
 	if err != nil {
 		return nil, fmt.Errorf("readConfig %s: %v", name, err)
 	}
 	defer is.Close()
-	var config Config
 	if strings.HasSuffix(name, ".toml") {
 		if _, err := toml.DecodeReader(is, &config); err != nil {
 			return nil, fmt.Errorf("readConfig %s: %v", name, err)
