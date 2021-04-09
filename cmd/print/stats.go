@@ -222,21 +222,18 @@ func (s *stats) write(name string) {
 	fmt.Printf("Accuracy (before/after)         = %f/%f\n", s.AccuracyBefore, s.AccuracyAfter)
 	fmt.Printf("Total errors (before/after)     = %d/%d\n", s.TotalErrBefore, s.TotalErrAfter)
 	fmt.Printf("Correct (before/after)          = %d/%d\n", corbefore, corafter)
-	fmt.Printf("Missing corrections             = %d\n",
-		s.DodgedBulletsMC+s.DisimprovementMC+s.DoNotCareMC+s.SkippedDoNotCareMC)
-	fmt.Printf("Bad rank                        = %d\n",
-		s.DodgedBulletsBR+s.DisimprovementBR+s.DoNotCareBR+s.SkippedDoNotCareBR)
-	fmt.Printf("Bad limit                       = %d\n",
-		s.DodgedBulletsBL+s.DisimprovementBL+s.DoNotCareBL+s.SkippedDoNotCareBL)
-	fmt.Printf("Short errors                    = %d\n", s.ShortErr)
-	fmt.Printf("Missing candidate errors        = %d\n", s.NoCandsErr)
-	fmt.Printf("False friends                   = %d\n", s.LexErr)
-	fmt.Printf("Merges                          = %d\n", s.SkippedMerges+s.Merges)
-	fmt.Printf("Splits                          = %d\n", s.SkippedSplits+s.Splits)
-	fmt.Printf("Total tokens                    = %d\n", s.Total)
 	if !statsFlags.verbose {
+		fmt.Printf("Total tokens                    = %d\n", s.Total)
+		fmt.Printf("Successfull corrections         = %d\n", s.SuccessfulCorr)
+		fmt.Printf("Missed opportunities            = %d\n", s.MissedOpportunity)
+		fmt.Printf("Disimprovements                 = %d\n", s.Disimprovement)
+		fmt.Printf("False friends                   = %d\n", s.LexErr)
+		fmt.Printf("Short errors                    = %d\n", s.ShortErr)
+		fmt.Printf("Merges                          = %d\n", s.SkippedMerges+s.Merges)
+		fmt.Printf("Splits                          = %d\n", s.SkippedSplits+s.Splits)
 		return
 	}
+	fmt.Printf("Total tokens                    = %d\n", s.Total)
 	fmt.Printf("├─ skipped                      = %d\n", s.Skipped)
 	fmt.Printf("│  ├─ short                     = %d\n", s.Short)
 	fmt.Printf("│  │  └─ errors                 = %d\n", s.ShortErr)
