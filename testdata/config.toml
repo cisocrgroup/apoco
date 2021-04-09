@@ -4,10 +4,6 @@ model = "model.gz"
 # Number of parallel OCRs (overwrite with -n/--nocr)
 nocr = 2
 
-# Cautious or courageous decision maker training (overwrite with
-# -a/--cautious)
-cautious = false
-
 # Enable/disable caching (overwrite with -c/--cache)
 cache = true
 
@@ -31,6 +27,10 @@ profilerConfig = "/etc/profiler/german.ini"
 #
 learningRate = 0.9
 ntrain = 100_000
+
+# Cautious or courageous decision maker training (overwrite with
+# -a/--cautious)
+cautious = false
 
 # Feature list for the reranker training.
 rrFeatures = [
