@@ -12,10 +12,10 @@ import (
 )
 
 var flags = struct {
-	ifgs, extensions                      []string
-	ofg, mets, model, parameters, profile string
-	nocr                                  int
-	cache                                 bool
+	ifgs, extensions                     []string
+	ofg, mets, model, parameter, profile string
+	nocr                                 int
+	cache                                bool
 }{}
 
 // CMD runs the apoco correct command.
@@ -34,9 +34,9 @@ func init() {
 		"", "set output file group")
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m",
 		"mets.xml", "set path to the mets file")
-	CMD.Flags().StringVarP(&flags.parameters, "parameters", "P",
+	CMD.Flags().StringVarP(&flags.parameter, "parameter", "p",
 		"config.toml", "set path to the configuration file")
-	CMD.Flags().StringVarP(&flags.profile, "profile", "p",
+	CMD.Flags().StringVarP(&flags.profile, "profile", "f",
 		"", "set external profile file")
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n",
 		0, "set nocr (overwrites setting in the configuration file)")
@@ -47,7 +47,7 @@ func init() {
 }
 
 func run(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameters)
+	c, err := apoco.ReadConfig(flags.parameter)
 	chk(err)
 	c.Overwrite(flags.model, flags.nocr, false, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
@@ -80,7 +80,7 @@ func run(_ *cobra.Command, args []string) {
 	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
 	// If no output file group is given, we do not need to correct
 	// the according page XML files.  We just output the stoks.  So
-	// if input file groups are given we output the stoks.  Only if 
+	// if input file groups are given we output the stoks.  Only if
 	// an output file group is given, we do correct the according page
 	// XML files within the output file group.
 	if flags.ofg == "" {

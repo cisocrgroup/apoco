@@ -20,7 +20,7 @@ var rrCMD = &cobra.Command{
 }
 
 func rrRun(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameters)
+	c, err := apoco.ReadConfig(flags.parameter)
 	chk(err)
 	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)

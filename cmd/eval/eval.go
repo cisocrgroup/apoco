@@ -17,14 +17,14 @@ var CMD = &cobra.Command{
 
 var flags = struct {
 	extensions              []string
-	parameters, model       string
+	parameter, model        string
 	nocr                    int
 	cache, cautious, update bool
 }{}
 
 func init() {
 	// Eval flags
-	CMD.PersistentFlags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
+	CMD.PersistentFlags().StringVarP(&flags.parameter, "parameter", "p", "config.toml",
 		"set the path to the configuration file")
 	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
 		"set the input file extensions")

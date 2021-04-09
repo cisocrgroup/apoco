@@ -22,18 +22,18 @@ var CMD = &cobra.Command{
 
 var flags = struct {
 	extensions []string
-	parameters string
+	parameter  string
 }{}
 
 func init() {
-	CMD.PersistentFlags().StringVarP(&flags.parameters, "parameters", "P", "config.toml",
+	CMD.PersistentFlags().StringVarP(&flags.parameter, "parameter", "p", "config.toml",
 		"set the path to the configuration file")
 	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", nil,
 		"set the input file extensions")
 }
 
 func runProfile(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameters)
+	c, err := apoco.ReadConfig(flags.parameter)
 	chk(err)
 	// If called with only one output file, read stat tokens from
 	// stdin.
