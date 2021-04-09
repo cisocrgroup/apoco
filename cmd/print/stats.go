@@ -41,7 +41,7 @@ func runStats(_ *cobra.Command, args []string) {
 		if dtd != "" && dtd[0] == '#' {
 			var tmp string
 			if _, err := fmt.Sscanf(dtd, "#name=%s", &tmp); err != nil {
-				continue
+				continue // Treat lines starting with # as comments.
 			}
 			filename = tmp
 			s = stats{}
