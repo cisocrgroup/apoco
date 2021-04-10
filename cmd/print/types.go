@@ -70,10 +70,14 @@ func eachLine(f func(string)) {
 
 func typ(s internal.Stok) string {
 	t := s.Type()
-	if t.Skipped() {
+	switch {
+	case t.Skipped():
+		return t.String()
+	case t.Err():
+		return t.String() + s.Cause(0).String()
+	default:
 		return t.String()
 	}
-	return t.String() + s.Cause(0).String()
 }
 
 type stok struct {
