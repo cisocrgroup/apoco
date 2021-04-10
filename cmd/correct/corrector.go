@@ -87,6 +87,8 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	if info == nil {
 		return nil
 	}
+	prefix := internal.IDFromFilePath(file, cor.ofg)
+	info.ID = prefix + "_" + info.ID // Prefix the id with the output file group and the file name.
 	if info.Skipped {
 		newStr.Data = ocr
 		node.SetAttr(newTE, xml.Attr{
