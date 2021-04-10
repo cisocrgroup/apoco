@@ -91,7 +91,7 @@ func (s Stok) skippedErrOffset() StokType {
 func (s Stok) Cause(limit int) StokCause {
 	switch {
 	case s.Rank == 0:
-		return MissingCorrection
+		return NoCandidates
 	case limit > 0 && limit < s.Rank:
 		return BadLimit
 	default:
@@ -133,9 +133,9 @@ func (s StokType) Err() bool {
 type StokCause int
 
 const (
-	BadRank           StokCause = iota // Bad correction because of a bad rank.
-	BadLimit                           // Bad correction because of a bad limit for the correction candidates.
-	MissingCorrection                  // Bad correction because of a missing correct correction candidate.
+	BadRank      StokCause = iota // Bad correction because of a bad rank.
+	BadLimit                      // Bad correction because of a bad limit for the correction candidates.
+	NoCandidates                  // Bad correction because of a missing correct correction candidate.
 )
 
 func E(str string) string {

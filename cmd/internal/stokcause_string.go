@@ -10,12 +10,12 @@ func _() {
 	var x [1]struct{}
 	_ = x[BadRank-0]
 	_ = x[BadLimit-1]
-	_ = x[MissingCorrection-2]
+	_ = x[NoCandidates-2]
 }
 
-const _StokCause_name = "BadRankBadLimitMissingCorrection"
+const _StokCause_name = "BadRankBadLimitNoCandidates"
 
-var _StokCause_index = [...]uint8{0, 7, 15, 32}
+var _StokCause_index = [...]uint8{0, 7, 15, 27}
 
 func (i StokCause) String() string {
 	if i < 0 || i >= StokCause(len(_StokCause_index)-1) {
