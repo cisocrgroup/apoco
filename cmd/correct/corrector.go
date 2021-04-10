@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
@@ -56,14 +57,24 @@ func (cor *corrector) correctFile(file, ifg string) error {
 	if err != nil {
 		return fmt.Errorf("writeCorrections: %v", err)
 	}
-	words, err := xmlquery.QueryAll(doc, "//*[local-name()='Word']")
-	if err != nil {
-		return fmt.Errorf("correct %s: %v", file, err)
-	}
+	// Set correction to Word nodes.
+	words := xmlquery.Find(doc, "//*[local-name()='Word']")
 	for _, word := range words {
 		if err := cor.correctWord(word, file); err != nil {
 			return fmt.Errorf("correct %s: %v", file, err)
 		}
+	}
+	// Use corrected words to write new lines.
+	lines := xmlquery.Find(doc, "//*[local-name()='TextLine']")
+	for _, line := range lines {
+		words := gatherUnicodes(line, "./*[local-name()='Word']/*[local-name()='TextEquiv']/*[local-name()='Unicode']")
+		resetTextEquiv(line, strings.Join(words, " "))
+	}
+	// Use corrected lines to write new regions.
+	regions := xmlquery.Find(doc, "//*[local-name()='TextRegion']")
+	for _, region := range regions {
+		lines := gatherUnicodes(region, "./*[local-name()='TextLine']/*[local-name()='TextEquiv']/*[local-name()='Unicode']")
+		resetTextEquiv(region, strings.Join(lines, "\n"))
 	}
 	if err := cor.write(doc, file, ifg); err != nil {
 		return fmt.Errorf("correct %s: %v", file, err)
@@ -77,9 +88,8 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	if len(unicodes) == 0 {
 		return nil
 	}
-	newTE := cor.makeTextEquiv(unicodes)
-	newU := cor.makeUnicode(unicodes)
-	newStr := &xmlquery.Node{Type: xmlquery.TextNode}
+	newTE := cor.makeTextEquiv(unicodes[0].Parent)
+	newU := newUnicode(unicodes[0].Parent, "")
 	ocr := node.Data(unicodes[0].FirstChild)
 
 	info := cor.stoks[file][id]
@@ -90,16 +100,16 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	prefix := internal.IDFromFilePath(file, cor.ofg)
 	info.ID = prefix + "_" + info.ID // Prefix the id with the output file group and the file name.
 	if info.Skipped {
-		newStr.Data = ocr
+		newU.FirstChild.Data = ocr
 		node.SetAttr(newTE, xml.Attr{
 			Name:  xml.Name{Local: "dataTypeDetails"},
 			Value: info.String(),
 		})
 	} else {
 		if info.Cor {
-			newStr.Data = apoco.ApplyOCRToCorrection(ocr, info.Sug)
+			newU.FirstChild.Data = apoco.ApplyOCRToCorrection(ocr, info.Sug)
 		} else {
-			newStr.Data = ocr
+			newU.FirstChild.Data = ocr
 		}
 		node.SetAttr(newTE, xml.Attr{
 			Name:  xml.Name{Local: "conf"},
@@ -112,8 +122,6 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	}
 	newTE.FirstChild = newU
 	newU.Parent = newTE
-	newU.FirstChild = newStr
-	newStr.Parent = newU
 	node.PrependSibling(unicodes[0].Parent, newTE)
 	cor.cleanWord(word, unicodes)
 	return nil
@@ -130,18 +138,18 @@ func (cor *corrector) cleanWord(word *xmlquery.Node, unicodes []*xmlquery.Node) 
 	}
 }
 
-func (cor *corrector) makeTextEquiv(unicodes []*xmlquery.Node) *xmlquery.Node {
+func (cor *corrector) makeTextEquiv(p *xmlquery.Node) *xmlquery.Node {
 	newTE := &xmlquery.Node{ // TextEquiv
 		Type:         xmlquery.ElementNode,
-		Data:         unicodes[0].Parent.Data,
-		Prefix:       unicodes[0].Parent.Prefix,
-		NamespaceURI: unicodes[0].Parent.NamespaceURI,
+		Data:         p.Data,
+		Prefix:       p.Prefix,
+		NamespaceURI: p.NamespaceURI,
 	}
 	node.SetAttr(newTE, xml.Attr{
 		Name:  xml.Name{Local: "index"},
 		Value: "1",
 	})
-	conf, _ := node.LookupAttr(unicodes[0].Parent, xml.Name{Local: "conf"})
+	conf, _ := node.LookupAttr(p, xml.Name{Local: "conf"})
 	node.SetAttr(newTE, xml.Attr{
 		Name:  xml.Name{Local: "conf"},
 		Value: conf,
@@ -151,15 +159,6 @@ func (cor *corrector) makeTextEquiv(unicodes []*xmlquery.Node) *xmlquery.Node {
 		Value: "OCR-D-CIS-POST-CORRECTION",
 	})
 	return newTE
-}
-
-func (cor *corrector) makeUnicode(unicodes []*xmlquery.Node) *xmlquery.Node {
-	return &xmlquery.Node{
-		Type:         xmlquery.ElementNode,
-		Data:         "Unicode",
-		Prefix:       unicodes[0].Parent.Prefix,
-		NamespaceURI: unicodes[0].Parent.NamespaceURI,
-	}
 }
 
 func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
@@ -295,4 +294,47 @@ func (cor *corrector) addFileToStructMap(path, newID, ifg string) {
 		Value: newID,
 	})
 	node.AppendChild(fptr.Parent, newFptr)
+}
+
+func newUnicode(p *xmlquery.Node, data string) *xmlquery.Node {
+	unicode := &xmlquery.Node{
+		Type:         xmlquery.ElementNode,
+		Data:         "Unicode",
+		Prefix:       p.Prefix,
+		NamespaceURI: p.NamespaceURI,
+	}
+	text := &xmlquery.Node{Type: xmlquery.TextNode, Data: data}
+	node.AppendChild(unicode, text)
+	return unicode
+}
+
+func gatherUnicodes(p *xmlquery.Node, expr string) []string {
+	unicodes := xmlquery.Find(p, expr)
+	var ret []string
+	for _, u := range unicodes {
+		ret = append(ret, u.FirstChild.Data)
+	}
+	return ret
+}
+
+func resetTextEquiv(p *xmlquery.Node, data string) {
+	// Delete old TextEquiv nodes.
+	tes := xmlquery.Find(p, "./*[local-name()='TextEquiv']")
+	for _, te := range tes {
+		node.Delete(te)
+	}
+	// Create new TextEquiv/Unicode/Text node
+	te := &xmlquery.Node{ // TextEquiv
+		Type:         xmlquery.ElementNode,
+		Data:         "TextEquiv",
+		Prefix:       p.Prefix,
+		NamespaceURI: p.NamespaceURI,
+	}
+	node.SetAttr(te, xml.Attr{
+		Name:  xml.Name{Local: "index"},
+		Value: "1",
+	})
+	unicode := newUnicode(te, data)
+	node.AppendChild(te, unicode)
+	node.AppendChild(p, te)
 }
