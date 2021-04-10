@@ -69,41 +69,11 @@ func eachLine(f func(string)) {
 }
 
 func typ(s internal.Stok) string {
-	if s.Skipped {
-		var suf string
-		if s.OCR != s.GT {
-			suf = "-error"
-		}
-		if s.Lex {
-			return "skipped-lexical" + suf
-		}
-		if s.Short {
-			return "skipped-short" + suf
-		}
-		return "skipped-unkown" + suf
+	t := s.Type()
+	if t.Skipped() {
+		return t.String()
 	}
-	if s.Cor {
-		if s.OCR != s.GT {
-			if s.Sug == s.GT {
-				return "successful-correction"
-			}
-			return "do-not-care-correction"
-		}
-		if s.Sug == s.GT {
-			return "redundant-correction"
-		}
-		return "bad-correction"
-	}
-	if s.OCR != s.GT {
-		if s.Sug == s.GT {
-			return "missed-opportunity"
-		}
-		return "do-not-care"
-	}
-	if s.Sug == s.GT {
-		return "accept"
-	}
-	return "dodged-bullet"
+	return t.String() + s.Cause(0).String()
 }
 
 type stok struct {
