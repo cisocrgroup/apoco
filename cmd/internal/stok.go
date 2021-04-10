@@ -30,7 +30,7 @@ func MakeStok(line string) (Stok, error) {
 
 func (s Stok) String() string {
 	return fmt.Sprintf(stokFormat,
-		E(s.ID), s.Skipped, s.Short, s.Lex, s.Cor,
+		s.ID, s.Skipped, s.Short, s.Lex, s.Cor,
 		s.Conf, s.Rank, E(s.OCR), E(s.Sug), E(s.GT))
 }
 
