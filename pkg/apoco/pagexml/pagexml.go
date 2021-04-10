@@ -147,12 +147,6 @@ func readCharsFromNode(wordNode *xmlquery.Node) ([]apoco.Char, error) {
 	return ret, nil
 }
 
-func findFileGrpFLocatFromRoot(doc *xmlquery.Node, fg string) ([]*xmlquery.Node, error) {
-	expr := fmt.Sprintf("/*[local-name()='mets']/*[local-name()='fileSec']"+
-		"/*[local-name()='fileGrp'][@USE=%q]/*[local-name()='file']/*[local-name()='FLocat']", fg)
-	return node.QueryAll(doc, expr)
-}
-
 // FindUnicodesInRegionSorted searches for the TextEquiv / Unicode
 // nodes beneath a text region (TextRegion, Line, Word, Glyph).  The
 // returend node list is ordered by the TextEquiv's index entries
@@ -220,27 +214,4 @@ func SetMetadata(doc *xmlquery.Node, creator string, created, lastChange time.Ti
 	node.AppendChild(newMetadata, newLastChange)
 	node.Delete(metadata)
 	node.PrependChild(pcgts, newMetadata)
-}
-
-func findWordFromRoot(doc *xmlquery.Node, id string) (*xmlquery.Node, error) {
-	expr := fmt.Sprintf("//*[local-name()='Word'][@id=%q]", id)
-	return node.Query(doc, expr)
-}
-
-func findNextSibling(node *xmlquery.Node, data string) bool {
-	for n := node.NextSibling; n != nil; n = n.NextSibling {
-		if n.Data == data {
-			return true
-		}
-	}
-	return false
-}
-
-func findPrevSibling(node *xmlquery.Node, data string) bool {
-	for n := node.PrevSibling; n != nil; n = n.PrevSibling {
-		if n.Data == data {
-			return true
-		}
-	}
-	return false
 }
