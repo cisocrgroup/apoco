@@ -198,5 +198,5 @@ func PrettyPrint(node *xmlquery.Node, prefix, indent string) string {
 	if node == nil {
 		return ""
 	}
-	return strings.ReplaceAll(node.OutputXML(false), "><", ">\n<")
+	return strings.ReplaceAll(strings.ReplaceAll(node.OutputXML(false), "><", ">\n<"), "&#xA;", "\n")
 }
