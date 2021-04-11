@@ -49,11 +49,11 @@ func (s Stok) Type() StokType {
 		if s.Sug == s.GT {
 			return SuspiciousReplacedCorrect
 		}
-		return SuspiciousReplacedCorrectErr
+		return InfelicitousCorrection
 	}
 	if s.Cor && s.GT != s.OCR {
 		if s.Sug == s.GT {
-			return SuspiciousReplacedNotCorrect
+			return SuccessfulCorrection
 		}
 		return SuspiciousReplacedNotCorrectErr
 	}
@@ -61,11 +61,11 @@ func (s Stok) Type() StokType {
 		if s.Sug == s.GT {
 			return SuspiciousNotReplacedCorrect
 		}
-		return SuspiciousNotReplacedCorrectErr
+		return DodgedBullet
 	}
 	if !s.Cor && s.GT != s.OCR {
 		if s.Sug == s.GT {
-			return SuspiciousNotReplacedNotCorrect
+			return MissedOpportunity
 		}
 		return SuspiciousNotReplacedNotCorrectErr
 	}
@@ -91,7 +91,7 @@ func (s Stok) skippedErrOffset() StokType {
 func (s Stok) Cause(limit int) StokCause {
 	switch {
 	case s.Rank == 0:
-		return NoCandidates
+		return MissingCandidate
 	case limit > 0 && limit < s.Rank:
 		return BadLimit
 	default:
@@ -108,20 +108,20 @@ const (
 	SkippedNoCand                                      // Skipped no canidate token.
 	SkippedNoCandErr                                   // Error in skipped no candidate token.
 	SkippedLex                                         // Skipped lexical token.
-	SkippedLexErr                                      // Error in skipped lexical token (false friend).
+	FalseFriend                                        // Error in skipped lexical token (false friend).
 	SuspiciousReplacedCorrect                          // Redundant correction.
-	SuspiciousReplacedCorrectErr                       // Infelicitous correction.
-	SuspiciousReplacedNotCorrect                       // Successful correction.
+	InfelicitousCorrection                             // Infelicitous correction.
+	SuccessfulCorrection                               // Successful correction.
 	SuspiciousReplacedNotCorrectErr                    // Do not care correction.
 	SuspiciousNotReplacedCorrect                       // Accept OCR.
-	SuspiciousNotReplacedCorrectErr                    // Dogded bullet.
-	SuspiciousNotReplacedNotCorrect                    // Missed opportunity.
+	DodgedBullet                                       // Dogded bullet.
+	MissedOpportunity                                  // Missed opportunity.
 	SuspiciousNotReplacedNotCorrectErr                 // Skipped do not care.
 )
 
 // IsSkipped returns true if the stok type marks a skipped tokens.
 func (s StokType) Skipped() bool {
-	return s <= SkippedLexErr
+	return s <= FalseFriend
 }
 
 // Err returns true if the stok type marks an Error.
@@ -133,9 +133,9 @@ func (s StokType) Err() bool {
 type StokCause int
 
 const (
-	BadRank      StokCause = iota // Bad correction because of a bad rank.
-	BadLimit                      // Bad correction because of a bad limit for the correction candidates.
-	NoCandidates                  // Bad correction because of a missing correct correction candidate.
+	BadRank          StokCause = iota // Bad correction because of a bad rank.
+	BadLimit                          // Bad correction because of a bad limit for the correction candidates.
+	MissingCandidate                  // Bad correction because of a missing correct correction candidate.
 )
 
 func E(str string) string {
