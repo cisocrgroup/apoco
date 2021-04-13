@@ -22,6 +22,7 @@ type Config struct {
 	Nocr           int      `json:"nocr"`
 	Cache          bool     `json:"cache"`
 	Cautious       bool     `json:"cautious"`
+	GT             bool     `json:"gt"`
 }
 
 // ReadConfig reads the config from a json or toml file.  If
@@ -60,7 +61,7 @@ func ReadConfig(name string) (*Config, error) {
 // Overwrite overwrites the appropriate variables in the config file
 // with the given values.  Values only overwrite the variables if they
 // are not go's default zero value.
-func (c *Config) Overwrite(model string, nocr int, cautious, cache bool) {
+func (c *Config) Overwrite(model string, nocr int, cautious, cache, gt bool) {
 	if model != "" {
 		c.Model = model
 	}
@@ -72,5 +73,8 @@ func (c *Config) Overwrite(model string, nocr int, cautious, cache bool) {
 	}
 	if cache {
 		c.Cache = cache
+	}
+	if gt {
+		c.GT = gt
 	}
 }
