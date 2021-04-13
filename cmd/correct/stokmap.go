@@ -19,17 +19,18 @@ func (m stokMap) numberOfTokens() int {
 	return sum
 }
 
-func (m stokMap) get(t apoco.T) *internal.Stok {
+func (m stokMap) get(t apoco.T, withGT bool) *internal.Stok {
 	stokMapLock.Lock()
 	defer stokMapLock.Unlock()
 	if _, ok := m[t.File]; !ok {
 		m[t.File] = make(map[string]*internal.Stok)
 	}
 	if _, ok := m[t.File][t.ID]; !ok {
-		m[t.File][t.ID] = &internal.Stok{
-			OCR: t.Tokens[0],
-			GT:  t.Tokens[len(t.Tokens)-1],
+		stok := &internal.Stok{OCR: t.Tokens[0]}
+		if withGT {
+			stok.GT = t.Tokens[len(t.Tokens)-1]
 		}
+		m[t.File][t.ID] = stok
 	}
 	return m[t.File][t.ID]
 }

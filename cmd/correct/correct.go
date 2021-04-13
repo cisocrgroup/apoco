@@ -15,7 +15,7 @@ var flags = struct {
 	ifgs, extensions                     []string
 	ofg, mets, model, parameter, profile string
 	nocr                                 int
-	cache                                bool
+	cache, nogt                          bool
 }{}
 
 // CMD runs the apoco correct command.
@@ -44,6 +44,7 @@ func init() {
 		"set model path (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c",
 		false, "enable caching of profile")
+	CMD.Flags().BoolVarP(&flags.nogt, "nogt", "g", false, "no ground-truth data")
 }
 
 func run(_ *cobra.Command, args []string) {
@@ -65,17 +66,17 @@ func run(_ *cobra.Command, args []string) {
 	}
 	chk(p.Pipe(
 		context.Background(),
-		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
+		apoco.FilterBad(c.Nocr),
 		apoco.Normalize(),
-		register(stoks),
-		filterShort(stoks),
+		register(stoks, !flags.nogt),
+		filterShort(stoks, !flags.nogt),
 		connectlm(c, m.Ngrams, flags.profile),
-		filterLex(stoks),
+		filterLex(stoks, !flags.nogt),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(rrlr, rrfs, c.Nocr),
-		analyzeRankings(stoks),
+		analyzeRankings(stoks, !flags.nogt),
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
-		correct(stoks),
+		correct(stoks, !flags.nogt),
 	))
 	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
 	// If no output file group is given, we do not need to correct
@@ -100,10 +101,10 @@ func run(_ *cobra.Command, args []string) {
 	chk(cor.correct(flags.mets))
 }
 
-func correct(m stokMap) apoco.StreamFunc {
+func correct(m stokMap, withGT bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			stok := m.get(t)
+			stok := m.get(t, withGT)
 			stok.Skipped = false
 			stok.Cor = t.Payload.(apoco.Correction).Conf > 0.5
 			stok.Conf = t.Payload.(apoco.Correction).Conf
@@ -113,13 +114,13 @@ func correct(m stokMap) apoco.StreamFunc {
 	}
 }
 
-func register(m stokMap) apoco.StreamFunc {
+func register(m stokMap, withGT bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			// Each token gets its ID and is skipped as default.
 			// If a token is not skipped, skipped
 			// must be explicitly set to false.
-			stok := m.get(t)
+			stok := m.get(t, withGT)
 			stok.ID = t.ID
 			stok.Skipped = true
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -130,11 +131,11 @@ func register(m stokMap) apoco.StreamFunc {
 	}
 }
 
-func filterLex(m stokMap) apoco.StreamFunc {
+func filterLex(m stokMap, withGT bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if t.IsLexiconEntry() {
-				m.get(t).Lex = true
+				m.get(t, withGT).Lex = true
 				return nil
 			}
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -145,11 +146,11 @@ func filterLex(m stokMap) apoco.StreamFunc {
 	}
 }
 
-func filterShort(m stokMap) apoco.StreamFunc {
+func filterShort(m stokMap, withGT bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
-				m.get(t).Short = true
+				m.get(t, withGT).Short = true
 				return nil
 			}
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -160,17 +161,19 @@ func filterShort(m stokMap) apoco.StreamFunc {
 	}
 }
 
-func analyzeRankings(m stokMap) apoco.StreamFunc {
+func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			var rank int
-			for i, r := range t.Payload.([]apoco.Ranking) {
-				if r.Candidate.Suggestion == t.Tokens[len(t.Tokens)-1] {
-					rank = i + 1
-					break
+			if withGT {
+				var rank int
+				for i, r := range t.Payload.([]apoco.Ranking) {
+					if r.Candidate.Suggestion == t.Tokens[len(t.Tokens)-1] {
+						rank = i + 1
+						break
+					}
 				}
+				m.get(t, withGT).Rank = rank
 			}
-			m.get(t).Rank = rank
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("analyzeRankings: %v", err)
 			}
