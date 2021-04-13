@@ -10,11 +10,6 @@ cache = true
 # Enable additional ground-truth data for evaluation (disable with -g/--nogt).
 gt = false
 
-# Path to the 3-gram model csv file. Set it to the empty string to
-# disable the usage of trigrams.  This reduces the size of the model
-# files, but you cannot use any of the *Trigram* features.
-ngrams = "data/3gs.csv.gz"
-
 #
 # Profiler settings.
 #
@@ -34,6 +29,11 @@ ntrain = 100_000
 # Cautious or courageous decision maker training (overwrite with
 # -a/--cautious)
 cautious = false
+
+# Path to the 3-gram model csv file. Set it to the empty string to
+# disable the usage of trigrams.  This reduces the size of the model
+# files, but you cannot use any of the *Trigram* features.
+ngrams = "data/3gs.csv.gz"
 
 # Feature list for the reranker training.
 rrFeatures = [
