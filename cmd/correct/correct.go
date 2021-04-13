@@ -48,7 +48,7 @@ func init() {
 }
 
 func run(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameter)
+	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
 	c.Overwrite(flags.model, flags.nocr, false, flags.cache, !flags.nogt)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
@@ -184,7 +184,7 @@ func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 	}
 }
 
-func connectProfile(c *apoco.Config, ngrams apoco.FreqList, profile string) apoco.StreamFunc {
+func connectProfile(c *internal.Config, ngrams apoco.FreqList, profile string) apoco.StreamFunc {
 	if profile == "" {
 		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache)
 	}

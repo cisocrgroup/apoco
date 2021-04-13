@@ -19,7 +19,7 @@ var dmCMD = &cobra.Command{
 }
 
 func dmRun(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameter)
+	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
 	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache, false)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
@@ -45,7 +45,7 @@ func dmRun(_ *cobra.Command, args []string) {
 	))
 }
 
-func dmTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := loadDMModel(c, m, update)
 		if err != nil {
@@ -83,7 +83,7 @@ func dmTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	}
 }
 
-func loadDMModel(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
+func loadDMModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
 	if update {
 		return m.Get("dm", c.Nocr)
 	}

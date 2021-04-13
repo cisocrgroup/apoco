@@ -20,7 +20,7 @@ var dmCMD = &cobra.Command{
 }
 
 func dmRun(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameter)
+	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
 	c.Overwrite(flags.model, flags.nocr, false, flags.cache, false)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
@@ -46,7 +46,7 @@ func dmRun(_ *cobra.Command, args []string) {
 	))
 }
 
-func dmEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
+func dmEval(c *internal.Config, m apoco.Model) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := m.Get("dm", c.Nocr)
 		if err != nil {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/spf13/cobra"
 	"gonum.org/v1/gonum/mat"
@@ -47,7 +48,7 @@ func init() {
 	CMD.AddCommand(rrCMD, dmCMD)
 }
 
-func printCorrelationMat(c *apoco.Config, fs apoco.FeatureSet, x *mat.Dense, dm bool) error {
+func printCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, dm bool) error {
 	var names []string
 	if dm {
 		names = fs.Names(c.DMFeatures, c.Nocr, dm)

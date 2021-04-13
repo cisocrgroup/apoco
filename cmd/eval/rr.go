@@ -21,7 +21,7 @@ var rrCMD = &cobra.Command{
 }
 
 func rrRun(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameter)
+	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
 	c.Overwrite(flags.model, flags.nocr, false, flags.cache, false)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
@@ -44,7 +44,7 @@ func rrRun(_ *cobra.Command, args []string) {
 	))
 }
 
-func rrEval(c *apoco.Config, m apoco.Model) apoco.StreamFunc {
+func rrEval(c *internal.Config, m apoco.Model) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := m.Get("rr", c.Nocr)
 		if err != nil {

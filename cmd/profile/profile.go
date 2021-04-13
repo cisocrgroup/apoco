@@ -33,7 +33,7 @@ func init() {
 }
 
 func runProfile(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameter)
+	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
 	// If called with only one output file, read stat tokens from
 	// stdin.
@@ -61,7 +61,7 @@ func runProfile(_ *cobra.Command, args []string) {
 	))
 }
 
-func writeProfile(c *apoco.Config, name string) apoco.StreamFunc {
+func writeProfile(c *internal.Config, name string) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		var ts []apoco.T
 		err := apoco.EachToken(ctx, in, func(t apoco.T) error {

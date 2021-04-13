@@ -20,7 +20,7 @@ var rrCMD = &cobra.Command{
 }
 
 func rrRun(_ *cobra.Command, args []string) {
-	c, err := apoco.ReadConfig(flags.parameter)
+	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
 	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache, false)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
@@ -43,7 +43,7 @@ func rrRun(_ *cobra.Command, args []string) {
 	))
 }
 
-func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func rrTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := loadRRModel(c, m, update)
 		if err != nil {
@@ -83,7 +83,7 @@ func rrTrain(c *apoco.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	}
 }
 
-func loadRRModel(c *apoco.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
+func loadRRModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
 	if update {
 		return m.Get("rr", c.Nocr)
 	}

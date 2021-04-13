@@ -1,4 +1,4 @@
-package apoco
+package internal
 
 import (
 	"encoding/json"
