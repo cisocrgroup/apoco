@@ -21,7 +21,7 @@ var dmCMD = &cobra.Command{
 func dmRun(_ *cobra.Command, args []string) {
 	c, err := apoco.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache)
+	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache, false)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)
@@ -35,7 +35,9 @@ func dmRun(_ *cobra.Command, args []string) {
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(4),
-		apoco.ConnectLM(c, m.Ngrams),
+		apoco.ConnectLM(m.Ngrams),
+		apoco.ConnectUnigrams(),
+		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache),
 		apoco.FilterLexiconEntries(),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(lr, fs, c.Nocr),

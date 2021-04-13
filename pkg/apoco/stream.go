@@ -158,6 +158,40 @@ func EachTokenGroup(ctx context.Context, in <-chan T, f func(string, ...T) error
 	return nil
 }
 
+// EachTokenLM iterates over the tokens grouping them together based on
+// their language models. The given callback function is called for
+// each group of tokens.  This function must assumes that the tokens are
+// connected with a language model.
+func EachTokenLM(ctx context.Context, in <-chan T, f func(*LanguageModel, ...T) error) error {
+	var lm *LanguageModel
+	var tokens []T
+	err := EachToken(ctx, in, func(t T) error {
+		if lm == nil {
+			lm = t.LM
+		}
+		if lm != t.LM {
+			if err := f(lm, tokens...); err != nil {
+				return fmt.Errorf("each token language model: %v", err)
+			}
+			tokens = tokens[0:0] // Clear token array.
+			lm = t.LM
+			return nil
+		}
+		tokens = append(tokens, t)
+		return nil
+	})
+	// Handle last group of tokens.
+	if len(tokens) != 0 {
+		if err := f(lm, tokens...); err != nil {
+			return fmt.Errorf("each token language model: %v", err)
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("each token language model: %v", err)
+	}
+	return nil
+}
+
 // ReadToken reads one token from the given channel.  This function
 // should alsways be used to read single tokens from input channels.
 func ReadToken(ctx context.Context, in <-chan T) (T, bool, error) {
@@ -213,14 +247,6 @@ func Normalize() StreamFunc {
 		}
 		return nil
 	}
-}
-
-func charsToString(chars Chars) string {
-	var b strings.Builder
-	for _, char := range chars {
-		b.WriteRune(char.Char)
-	}
-	return b.String()
 }
 
 func normalizeChars(chars Chars) Chars {
@@ -325,63 +351,64 @@ func ConnectCandidates() StreamFunc {
 	}
 }
 
-// ConnectLM loads the language model for the tokens and adds them to
-// each token.  Based on the file group of the tokens different
-// language models are loaded.
-func ConnectLM(c *Config, ngrams FreqList) StreamFunc {
+// ConnectProfiler connects the profile with the tokens.  This function
+// must be called after ConnectLM.
+func ConnectProfile(exe, config string, cache bool) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachTokenGroup(ctx, in, func(group string, tokens ...T) error {
-			loader := lmLoader{
-				config: c,
-				lm:     &LanguageModel{Ngrams: ngrams},
-				tokens: tokens,
+		err := EachTokenLM(ctx, in, func(lm *LanguageModel, tokens ...T) error {
+			if err := lm.LoadProfile(ctx, exe, config, cache, tokens...); err != nil {
+				return fmt.Errorf("connect profile %s %s: %v", exe, config, err)
 			}
-			if err := loader.loadAndSend(ctx, out); err != nil {
-				return fmt.Errorf("connectLM: %v", err)
+			if err := SendTokens(ctx, out, tokens...); err != nil {
+				return fmt.Errorf("connect profile %s %s: %v", exe, config, err)
 			}
 			return nil
-
 		})
 		if err != nil {
-			return fmt.Errorf("connectLM: %v", err)
+			return fmt.Errorf("connect profile %s %s: %v", exe, config, err)
 		}
 		return nil
 	}
 }
 
-type lmLoader struct {
-	lm     *LanguageModel
-	tokens []T
-	config *Config
+// ConnectUnigrams adds the unigrams to the tokens's language model.
+func ConnectUnigrams() StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachTokenLM(ctx, in, func(lm *LanguageModel, tokens ...T) error {
+			for _, t := range tokens {
+				lm.AddUnigram(t.Tokens[0])
+			}
+			if err := SendTokens(ctx, out, tokens...); err != nil {
+				return fmt.Errorf("connect unigrams: %v", err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("connect unigrams: %v", err)
+		}
+		return nil
+	}
 }
 
-func (l lmLoader) loadAndSend(ctx context.Context, out chan<- T) error {
-	if err := l.load(ctx); err != nil {
-		return fmt.Errorf("loadAndSend: %v", err)
+// ConnectLM connects the language model to the tokens.
+func ConnectLM(ngrams FreqList) StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachTokenGroup(ctx, in, func(group string, tokens ...T) error {
+			// Add a new Language model to each token of the same group.
+			lm := &LanguageModel{Ngrams: ngrams}
+			for i := range tokens {
+				tokens[i].LM = lm
+			}
+			if err := SendTokens(ctx, out, tokens...); err != nil {
+				return fmt.Errorf("connect language model: %v", err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("connect language model: %v", err)
+		}
+		return nil
 	}
-	if err := SendTokens(ctx, out, l.tokens...); err != nil {
-		return fmt.Errorf("loadAndSend: %v", err)
-	}
-	return nil
-}
-
-func (l lmLoader) load(ctx context.Context) error {
-	var g errgroup.Group
-	g.Go(func() error {
-		err := l.lm.LoadProfile(
-			ctx,
-			l.config.ProfilerBin,
-			l.config.ProfilerConfig,
-			l.config.Cache,
-			l.tokens...,
-		)
-		return err
-	})
-	for i := range l.tokens {
-		l.tokens[i].LM = l.lm
-		l.lm.AddUnigram(l.tokens[i].Tokens[0])
-	}
-	return g.Wait()
 }
 
 // ConnectRankings connects the tokens of the input stream with their

@@ -70,7 +70,9 @@ func run(_ *cobra.Command, args []string) {
 		apoco.Normalize(),
 		register(stoks, !flags.nogt),
 		filterShort(stoks, !flags.nogt),
-		connectlm(c, m.Ngrams, flags.profile),
+		apoco.ConnectLM(m.Ngrams),
+		apoco.ConnectUnigrams(),
+		connectProfile(c, m.Ngrams, flags.profile),
 		filterLex(stoks, !flags.nogt),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(rrlr, rrfs, c.Nocr),
@@ -182,24 +184,17 @@ func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 	}
 }
 
-func connectlm(c *apoco.Config, ngrams apoco.FreqList, profile string) apoco.StreamFunc {
+func connectProfile(c *apoco.Config, ngrams apoco.FreqList, profile string) apoco.StreamFunc {
 	if profile == "" {
-		return apoco.ConnectLM(c, ngrams)
+		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache)
 	}
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
-		lm := apoco.LanguageModel{Ngrams: ngrams}
-		prof, err := apoco.ReadProfile(profile)
+		profile, err := apoco.ReadProfile(profile)
 		if err != nil {
 			return err
 		}
-		lm.Profile = prof
-		return apoco.EachTokenGroup(ctx, in, func(g string, ts ...apoco.T) error {
-			for _, t := range ts {
-				lm.AddUnigram(t.Tokens[0])
-			}
-			for i := range ts {
-				ts[i].LM = &lm
-			}
+		return apoco.EachTokenLM(ctx, in, func(lm *apoco.LanguageModel, ts ...apoco.T) error {
+			lm.Profile = profile
 			return apoco.SendTokens(ctx, out, ts...)
 		})
 	}
