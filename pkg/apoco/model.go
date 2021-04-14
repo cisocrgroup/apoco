@@ -33,8 +33,7 @@ func ReadModel(model, ngrams string) (Model, error) {
 	if os.IsNotExist(err) {
 		m := Model{Models: make(map[string]map[int]ModelData)}
 		if err := m.readGzippedNgrams(ngrams); err != nil {
-			return Model{}, fmt.Errorf("read model %s: %s",
-				model, err)
+			return Model{}, fmt.Errorf("read model %s: %s", model, err)
 		}
 		return m, nil
 	}
