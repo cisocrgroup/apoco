@@ -139,7 +139,7 @@ func means(xs []map[string]float64) map[string]float64 {
 	for key := range means {
 		sum := 0.0
 		for _, x := range xs {
-			val, _ := x[key]
+			val := x[key]
 			sum += val
 		}
 		means[key] = sum / float64(len(xs))
