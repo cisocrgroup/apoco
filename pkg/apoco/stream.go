@@ -160,7 +160,7 @@ func EachTokenGroup(ctx context.Context, in <-chan T, f func(string, ...T) error
 
 // EachTokenLM iterates over the tokens grouping them together based on
 // their language models. The given callback function is called for
-// each group of tokens.  This function must assumes that the tokens are
+// each group of tokens.  This function assumes that the tokens are
 // connected with a language model.
 func EachTokenLM(ctx context.Context, in <-chan T, f func(*LanguageModel, ...T) error) error {
 	var lm *LanguageModel
