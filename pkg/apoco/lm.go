@@ -35,21 +35,6 @@ func (f *FreqList) add(strs ...string) {
 	}
 }
 
-// clean removes all elements from the frequency list that have a
-// frequency <= t.
-func (f *FreqList) clean(t int) {
-	for k, v := range f.FreqList {
-		if v <= t {
-			delete(f.FreqList, k)
-			f.Total -= v
-		}
-	}
-}
-
-func (f *FreqList) total() int {
-	return f.Total
-}
-
 func (f *FreqList) absolute(str string) int {
 	if n, ok := f.FreqList[str]; ok {
 		return n
@@ -317,13 +302,13 @@ type logger struct {
 
 func (logger) Log(str string) {
 	const prefix = "[profiler] "
-	if strings.Index(str, "additional lexicon entries") != -1 {
+	if strings.Contains(str, "additional lexicon entries") {
 		Log("%s %s", prefix, str)
 	}
-	if strings.Index(str, "iteration") != -1 {
+	if strings.Contains(str, "iteration") {
 		Log("%s %s", prefix, str)
 	}
-	if strings.Index(str, "cmd:") != -1 {
+	if strings.Contains(str, "cmd:") {
 		Log("%s %s", prefix, str)
 	}
 }

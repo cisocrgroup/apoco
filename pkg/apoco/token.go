@@ -36,7 +36,7 @@ func (t T) IsLexiconEntry() bool {
 }
 
 func (t T) String() string {
-	return fmt.Sprintf("%s", strings.Join(t.Tokens, "|"))
+	return strings.Join(t.Tokens, "|")
 }
 
 // Chars represents the master OCR chars with the respective confidences.
