@@ -1,9 +1,10 @@
 package train
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"log"
-	"os"
 	"text/tabwriter"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
@@ -20,10 +21,10 @@ var CMD = &cobra.Command{
 }
 
 var flags = struct {
-	extensions                           []string
-	parameter, model                     string
-	nocr                                 int
-	cache, cautious, update, correlation bool
+	extensions              []string
+	parameter, model        string
+	nocr                    int
+	cache, cautious, update bool
 }{}
 
 func init() {
@@ -42,13 +43,14 @@ func init() {
 		"use cautious training (overwrites the setting in the configuration file)")
 	CMD.PersistentFlags().BoolVarP(&flags.update, "update", "u", false,
 		"update the model if it already exists")
-	CMD.PersistentFlags().BoolVarP(&flags.correlation, "correlation", "C", false,
-		"print correlation matrix for features")
 	// Subcommands
 	CMD.AddCommand(rrCMD, dmCMD)
 }
 
 func printCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, dm bool) error {
+	if !apoco.LogEnabled() {
+		return nil
+	}
 	var names []string
 	if dm {
 		names = fs.Names(c.DMFeatures, c.Nocr, dm)
@@ -56,7 +58,8 @@ func printCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, 
 		names = fs.Names(c.RRFeatures, c.Nocr, dm)
 	}
 	cor := correlationMat(x)
-	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', tabwriter.AlignRight)
+	var buf bytes.Buffer
+	w := tabwriter.NewWriter(&buf, 1, 1, 1, ' ', tabwriter.AlignRight)
 	_, cols := cor.Dims()
 	fmt.Fprintf(w, "\t")
 	for i := 0; i < cols; i++ {
@@ -70,7 +73,13 @@ func printCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, 
 		}
 		fmt.Fprintln(w, "\t")
 	}
-	return w.Flush()
+	w.Flush()
+	// Log lines
+	s := bufio.NewScanner(&buf)
+	for s.Scan() {
+		apoco.Log(s.Text())
+	}
+	return s.Err()
 }
 
 func correlationMat(m *mat.Dense) *mat.Dense {

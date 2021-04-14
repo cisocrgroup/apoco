@@ -4,6 +4,11 @@ import "log"
 
 var enableLog = false
 
+// LogEnabled returns true if logging is currently enabled.
+func LogEnabled() bool {
+	return enableLog
+}
+
 // SetLog enables or disables logging.  This function is not safe for
 // concurrent usage and should be used once at application start.
 func SetLog(enable bool) {

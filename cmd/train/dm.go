@@ -65,16 +65,14 @@ func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		}
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
-		if flags.correlation {
-			chk(printCorrelationMat(c, fs, x, true))
-		}
+		chk(printCorrelationMat(c, fs, x, true))
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("traindm: %v", err)
 		}
-		apoco.Log("dmtrain: fitting %d toks, %d feats, nocr=%d, lr=%f, ntrain=%d, cautious=%t",
+		apoco.Log("dmtrain: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d, cautious=%t",
 			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, flags.cautious)
 		ferr := lr.Fit(x, y)
-		apoco.Log("dmtrain: remaining error %f", ferr)
+		apoco.Log("dmtrain: remaining error %g", ferr)
 		m.Put("dm", c.Nocr, lr, c.DMFeatures)
 		if err := m.Write(c.Model); err != nil {
 			return fmt.Errorf("traindm: %v", err)
