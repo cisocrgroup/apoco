@@ -356,7 +356,7 @@ func ConnectCandidates() StreamFunc {
 func ConnectProfile(exe, config string, cache bool) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		err := EachTokenLM(ctx, in, func(lm *LanguageModel, tokens ...T) error {
-			if err := lm.LoadProfile(ctx, exe, config, cache, tokens...); err != nil {
+			if err := lm.ReadProfile(ctx, exe, config, cache, tokens...); err != nil {
 				return fmt.Errorf("connect profile %s %s: %v", exe, config, err)
 			}
 			if err := SendTokens(ctx, out, tokens...); err != nil {

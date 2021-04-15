@@ -167,8 +167,8 @@ func (lm *LanguageModel) calculateLexicality(tokens ...T) {
 	lm.Lexicality = float64(lexical) / float64(total)
 }
 
-// LoadProfile loads the profile for the master OCR tokens.
-func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, cache bool, tokens ...T) error {
+// ReadProfile loads the profile for the master OCR tokens.
+func (lm *LanguageModel) ReadProfile(ctx context.Context, exe, config string, cache bool, tokens ...T) error {
 	if len(tokens) == 0 {
 		return nil
 	}
@@ -180,7 +180,7 @@ func (lm *LanguageModel) LoadProfile(ctx context.Context, exe, config string, ca
 	}
 	profile, err := RunProfiler(ctx, exe, config, tokens...)
 	if err != nil {
-		return fmt.Errorf("load profile: %v", err)
+		return fmt.Errorf("read profile %s %s: %v", exe, config, err)
 	}
 	lm.Profile = profile
 	if !cache {
@@ -240,7 +240,7 @@ func readCachedProfile(fg string) (gofiler.Profile, bool) {
 	if !ok {
 		return nil, false
 	}
-	Log("reading profile from %s", path)
+	Log("reading cached profile from %s", path)
 	profile, err := ReadProfile(path)
 	if err != nil {
 		return nil, false
