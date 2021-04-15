@@ -105,6 +105,7 @@ func alignFiles(mpath, ofg string, ifgs []string) error {
 		return err
 	}
 	for i := range files {
+		apoco.Log("align files: %v", files[i])
 		doc, err := alignFile(files[i])
 		if err != nil {
 			return err
@@ -174,7 +175,7 @@ func alignLines(files []file) ([][]region, error) {
 
 func alignWords(lines []region) error {
 	if len(lines) == 0 {
-		return fmt.Errorf("cannot align words: empty")
+		return fmt.Errorf("align words: empty")
 	}
 	lines[0].prepareForAlignment()
 	for i := 1; i < len(lines); i++ {
@@ -283,14 +284,22 @@ func (r *region) alignWith(o region) error {
 	// Both vars r and o are supposed to be lines.  Words are
 	// aligned below r's word nodes using r as primary alignment
 	// line.
-	pstr, pepos := r.eposMap()
-	sstr, sepos := o.eposMap()
+	pstr, pepos := r.eposMap() // primary line
+	sstr, sepos := o.eposMap() // secondary line
 	pos := align.Do(pstr, sstr)
 	for i := range pos {
-		// Since we align two things, len(pos[i]) = 2.
-		pi := pepos[pos[i][0].E]
+		// Since we align two regions, len(pos[i]) = 2 is implied.
+		pi, ok := pepos[pos[i][0].E]
 		si := sepos[pos[i][1].E]
+		// There are primary OCR token (based on the xml-file's tokenization),
+		// that contain whitespace. In this case there is no mapping from pos...E
+		// to an entry in the map.  We need to skip these alignment points.
+		if !ok {
+			continue
+		}
 		text := string(pos[i][1].Slice())
+		// Calculate the number of secondary
+		// words to align with the primary token.
 		var b int
 		if i > 0 {
 			b = sepos[pos[i-1][1].E]
@@ -298,7 +307,9 @@ func (r *region) alignWith(o region) error {
 		for len(r.subregions) <= pi {
 			r.appendEmptyWord()
 		}
-		r.subregions[pi].appendTextEquiv(text, o.subregions[b:si+1]...)
+		if len(o.subregions) > 0 {
+			r.subregions[pi].appendTextEquiv(text, o.subregions[b:si+1]...)
+		}
 	}
 	// Append the secondary line to r.
 	r.appendTextEquiv(string(sstr), o)
@@ -307,11 +318,13 @@ func (r *region) alignWith(o region) error {
 
 // eposMap concatenates the subregions of a region to a string
 // (separated by ' ') and returns the end positions of the subregion
-// indices as a map epos -> index.
+// indices as a mapping of epos -> index.
 func (r *region) eposMap() ([]rune, map[int]int) {
 	var epos int
 	var str []rune
 	pmap := make(map[int]int, len(r.subregions))
+	// A problem occures if a word token contains a whitespace.
+	// In this case we might encounter an epos not in the map.
 	for i, sr := range r.subregions {
 		if i > 0 {
 			str = append(str, ' ')
@@ -396,7 +409,7 @@ func (r *region) appendTextEquiv(text string, others ...region) {
 	})
 	node.SetAttr(te, xml.Attr{
 		Name:  xml.Name{Local: "conf"},
-		Value: strconv.FormatFloat(sum/float64(len(others)), 'E', 4, 64),
+		Value: fmt.Sprintf("%g", sum/float64(len(others))),
 	})
 	node.AppendChild(r.unicodes[0].Parent.Parent, te)
 }
@@ -489,7 +502,6 @@ func addFileToStructMap(m mets.METS, id, newID string) {
 	// Find fptr for the aligned id and append the new id.
 	fptr = m.FindFptr(id)
 	if fptr == nil {
-		apoco.Log("[warning] cannot find fptr for %s", id)
 		return
 	}
 	newFptr := &xmlquery.Node{
