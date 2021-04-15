@@ -22,6 +22,10 @@ func (p Pos) Slice() []rune {
 	return p.str[p.B:p.E]
 }
 
+func (p Pos) String() string {
+	return string(p.Slice())
+}
+
 // Do aligns the words in master pairwise with the words in other.
 func Do(master []rune, other ...[]rune) [][]Pos {
 	var spaces []int
