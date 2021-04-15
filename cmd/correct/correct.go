@@ -186,7 +186,7 @@ func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 
 func connectProfile(c *internal.Config, ngrams apoco.FreqList, profile string) apoco.StreamFunc {
 	if profile == "" {
-		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache)
+		return apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache)
 	}
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		profile, err := apoco.ReadProfile(profile)
