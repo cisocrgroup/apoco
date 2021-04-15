@@ -70,7 +70,11 @@ func token2string(t apoco.T) string {
 	ret := make([]string, len(t.Tokens)+1)
 	ret[0] = t.ID
 	for i, tok := range t.Tokens {
-		ret[i+1] = strings.ReplaceAll(tok, " ", "_")
+		if tok == "" {
+			ret[i+1] = "ε"
+		} else {
+			ret[i+1] = strings.ReplaceAll(tok, " ", "_")
+		}
 	}
 	return strings.Join(ret, " ")
 }
