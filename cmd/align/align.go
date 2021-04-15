@@ -205,7 +205,7 @@ func getLines(doc *xmlquery.Node) ([]region, error) {
 	})
 	var ret []region
 	for _, node := range lines {
-		line, err := newLine(node)
+		line, err := mkline(node)
 		if err != nil {
 			return nil, err
 		}
@@ -214,10 +214,10 @@ func getLines(doc *xmlquery.Node) ([]region, error) {
 	return ret, nil
 }
 
-func newLine(r *xmlquery.Node) (region, error) {
+func mkline(r *xmlquery.Node) (region, error) {
 	unicodes := pagexml.FindUnicodesInRegionSorted(r)
 	if len(unicodes) == 0 {
-		return region{}, fmt.Errorf("missing unicode for line")
+		return region{}, fmt.Errorf("mkline: missing unicode for line")
 	}
 	words, err := getWords(r)
 	if err != nil {
@@ -257,6 +257,8 @@ func (r *region) id() string {
 	return id
 }
 
+// prepareForAlignment deletes all underlying TextEquivs
+// but the first one recursively.
 func (r *region) prepareForAlignment() {
 	// Delete all of r's text equivs but the first one and set the
 	// index to 1.
@@ -410,6 +412,14 @@ func (r *region) appendTextEquiv(text string, others ...region) {
 	node.SetAttr(te, xml.Attr{
 		Name:  xml.Name{Local: "conf"},
 		Value: fmt.Sprintf("%g", sum/float64(len(others))),
+	})
+	node.SetAttr(te, xml.Attr{
+		Name:  xml.Name{Local: "dataType"},
+		Value: "apoco-align",
+	})
+	node.SetAttr(te, xml.Attr{
+		Name:  xml.Name{Local: "dataTypeDetails"},
+		Value: "secondary-alignment",
 	})
 	node.AppendChild(r.unicodes[0].Parent.Parent, te)
 }
