@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
@@ -81,16 +80,16 @@ func (s *stats) stat(dtd string) error {
 		s.causes.put(typ, t.Cause(statsFlags.limit))
 	}
 	s.total++
-	if t.Skipped && strings.Contains(t.GT, "_") {
+	if t.Skipped && t.Merge() {
 		s.skippedMerges++
 	}
-	if !t.Skipped && strings.Index(t.GT, "_") == 0 {
+	if !t.Skipped && t.Merge() {
 		s.merges++
 	}
-	if t.Skipped && t.GT != t.OCR && t.GT == s.lastGT {
+	if t.Skipped && t.Split(s.lastGT) {
 		s.skippedSplits++
 	}
-	if !t.Skipped && t.GT != t.OCR && t.GT == s.lastGT {
+	if !t.Skipped && t.Split(s.lastGT) {
 		s.splits++
 	}
 	if t.OCR != t.GT {

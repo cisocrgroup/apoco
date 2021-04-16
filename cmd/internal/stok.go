@@ -99,6 +99,16 @@ func (s Stok) Cause(limit int) StokCause {
 	}
 }
 
+// Merge returns true if the token contains merged OCR-tokens.
+func (s Stok) Merge() bool {
+	return strings.Contains(s.GT, "_")
+}
+
+//
+func (s Stok) Split(gtbefore string) bool {
+	return s.GT != s.OCR && s.GT == gtbefore
+}
+
 // StokType gives the type of stoks.
 type StokType int
 

@@ -30,7 +30,7 @@ func runTypes(_ *cobra.Command, _ []string) {
 
 func printTypesJSON() {
 	stoks := make(map[string][]stok)
-	var name string
+	var name, gtbefore string
 	eachLine(func(line string) {
 		switch {
 		case strings.HasPrefix(line, "#name="):
@@ -39,13 +39,15 @@ func printTypesJSON() {
 		default:
 			s, err := internal.MakeStok(line)
 			chk(err)
-			stoks[name] = append(stoks[name], stok{Stok: s, Type: typ(s)})
+			stoks[name] = append(stoks[name], stok{Stok: s, Type: typ(s, gtbefore)})
+			gtbefore = s.GT
 		}
 	})
 	chk(json.NewEncoder(os.Stdout).Encode(stoks))
 }
 
 func printTypes() {
+	var gtbefore string
 	eachLine(func(line string) {
 		switch {
 		case strings.HasPrefix(line, "#name="):
@@ -54,8 +56,9 @@ func printTypes() {
 		default:
 			s, err := internal.MakeStok(line)
 			chk(err)
-			_, err = fmt.Printf("%s type=%s\n", s, typ(s))
+			_, err = fmt.Printf("%s type=%s\n", s, typ(s, gtbefore))
 			chk(err)
+			gtbefore = s.GT
 		}
 	})
 }
@@ -68,15 +71,26 @@ func eachLine(f func(string)) {
 	chk(scanner.Err())
 }
 
-func typ(s internal.Stok) string {
+func typ(s internal.Stok, gtbefore string) string {
 	t := s.Type()
 	switch {
 	case t.Skipped():
-		return t.String()
+		return t.String() + mksuff(s, gtbefore)
 	case t.Err():
-		return t.String() + s.Cause(0).String()
+		return t.String() + s.Cause(0).String() + mksuff(s, gtbefore)
 	default:
-		return t.String()
+		return t.String() + mksuff(s, gtbefore)
+	}
+}
+
+func mksuff(s internal.Stok, gtbefore string) string {
+	switch {
+	case s.Merge():
+		return "Merge"
+	case s.Split(gtbefore):
+		return "Split"
+	default:
+		return ""
 	}
 }
 
