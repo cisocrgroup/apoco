@@ -105,8 +105,8 @@ func (s Stok) Merge() bool {
 }
 
 //
-func (s Stok) Split(gtbefore string) bool {
-	return s.GT != s.OCR && s.GT == gtbefore
+func (s Stok) Split(before Stok) bool {
+	return s.GT != s.OCR && s.GT == before.GT
 }
 
 // StokType gives the type of stoks.

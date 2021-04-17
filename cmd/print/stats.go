@@ -58,7 +58,7 @@ func runStats(_ *cobra.Command, args []string) {
 type stats struct {
 	types                                typeMap
 	causes                               causeMap
-	lastGT                               string
+	before                               internal.Stok
 	skippedMerges, skippedSplits         int
 	merges, splits                       int
 	totalErrBefore, totalErrAfter, total int
@@ -86,10 +86,10 @@ func (s *stats) stat(dtd string) error {
 	if !t.Skipped && t.Merge() {
 		s.merges++
 	}
-	if t.Skipped && t.Split(s.lastGT) {
+	if t.Skipped && t.Split(s.before) {
 		s.skippedSplits++
 	}
-	if !t.Skipped && t.Split(s.lastGT) {
+	if !t.Skipped && t.Split(s.before) {
 		s.splits++
 	}
 	if t.OCR != t.GT {
@@ -100,7 +100,7 @@ func (s *stats) stat(dtd string) error {
 		(!t.Skipped && !t.Cor && t.OCR != t.GT) { // not corrected and false
 		s.totalErrAfter++
 	}
-	s.lastGT = t.GT
+	s.before = t
 	return nil
 }
 
