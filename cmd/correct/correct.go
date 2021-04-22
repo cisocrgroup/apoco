@@ -15,7 +15,7 @@ var flags = struct {
 	ifgs, extensions                     []string
 	ofg, mets, model, parameter, profile string
 	nocr                                 int
-	cache, nogt                          bool
+	cache, gt                            bool
 }{}
 
 // CMD runs the apoco correct command.
@@ -44,13 +44,13 @@ func init() {
 		"set model path (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c",
 		false, "enable caching of profile")
-	CMD.Flags().BoolVarP(&flags.nogt, "nogt", "g", false, "no ground-truth data")
+	CMD.Flags().BoolVarP(&flags.gt, "gt", "g", false, "enable ground-truth data")
 }
 
 func run(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, false, flags.cache, !flags.nogt)
+	c.Overwrite(flags.model, flags.nocr, false, flags.cache, flags.gt)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	rrlr, rrfs, err := m.Get("rr", c.Nocr)
@@ -68,17 +68,17 @@ func run(_ *cobra.Command, args []string) {
 		context.Background(),
 		apoco.FilterBad(c.Nocr),
 		apoco.Normalize(),
-		register(stoks, !flags.nogt),
-		filterShort(stoks, !flags.nogt),
+		register(stoks, !flags.gt),
+		filterShort(stoks, !flags.gt),
 		apoco.ConnectLM(m.Ngrams),
 		apoco.ConnectUnigrams(),
 		connectProfile(c, m.Ngrams, flags.profile),
-		filterLex(stoks, !flags.nogt),
+		filterLex(stoks, !flags.gt),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(rrlr, rrfs, c.Nocr),
-		analyzeRankings(stoks, !flags.nogt),
+		analyzeRankings(stoks, !flags.gt),
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
-		correct(stoks, !flags.nogt),
+		correct(stoks, !flags.gt),
 	))
 	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
 	// If no output file group is given, we do not need to correct
