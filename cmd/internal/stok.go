@@ -23,7 +23,7 @@ func MakeStok(line string) (Stok, error) {
 		&s.ID, &s.Skipped, &s.Short, &s.Lex, &s.Cor,
 		&s.Conf, &s.Rank, &s.OCR, &s.Sug, &s.GT)
 	if err != nil {
-		return Stok{}, fmt.Errorf("bad stats line %s: %v", line, err)
+		return Stok{}, fmt.Errorf("bad stats line: %s", line)
 	}
 	return s, nil
 }
