@@ -13,6 +13,7 @@ import (
 )
 
 var statsFlags = struct {
+	name      string
 	limit     int
 	skipShort bool
 	verbose   bool
@@ -26,6 +27,7 @@ var statsCMD = &cobra.Command{
 }
 
 func init() {
+	statsCMD.Flags().StringVarP(&statsFlags.name, "name", "n", "", "set name")
 	statsCMD.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
 	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "skip-short", "s", false,
 		"exclude short tokens (len<3) from the evaluation")
@@ -36,7 +38,7 @@ func init() {
 func runStats(_ *cobra.Command, args []string) {
 	scanner := bufio.NewScanner(os.Stdin)
 	var s stats
-	var filename string
+	filename := statsFlags.name
 	for scanner.Scan() {
 		dtd := scanner.Text()
 		if dtd != "" && dtd[0] == '#' {
