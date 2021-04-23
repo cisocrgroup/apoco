@@ -68,17 +68,17 @@ func run(_ *cobra.Command, args []string) {
 		context.Background(),
 		apoco.FilterBad(c.Nocr),
 		apoco.Normalize(),
-		register(stoks, !flags.gt),
-		filterShort(stoks, !flags.gt),
+		register(stoks, flags.gt),
+		filterShort(stoks, flags.gt),
 		apoco.ConnectLM(m.Ngrams),
 		apoco.ConnectUnigrams(),
 		connectProfile(c, m.Ngrams, flags.profile),
-		filterLex(stoks, !flags.gt),
+		filterLex(stoks, flags.gt),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(rrlr, rrfs, c.Nocr),
-		analyzeRankings(stoks, !flags.gt),
+		analyzeRankings(stoks, flags.gt),
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
-		correct(stoks, !flags.gt),
+		correct(stoks, flags.gt),
 	))
 	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
 	// If no output file group is given, we do not need to correct
