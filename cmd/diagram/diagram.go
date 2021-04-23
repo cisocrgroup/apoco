@@ -54,9 +54,9 @@ func run(_ *cobra.Command, _ []string) {
 		for _, val := range data[name] {
 			vals = append(vals, val.data)
 		}
-		hist, err := plotter.NewHist(vals, 20)
+		bars, err := plotter.NewBarChart(vals, 15)
 		chk(err)
-		p.Add(hist)
+		p.Add(bars)
 		chk(p.Save(3*vg.Inch, 3*vg.Inch, name+".png"))
 	}
 }
