@@ -119,7 +119,7 @@ func (s *stats) stat(dtd string) error {
 }
 
 func (s *stats) write(name string) {
-	errRateBefore, errRateAfter := s.errorRates()
+	errRateBefore, errRateAfter := s.tokenErrorRates()
 	charErrRateBefore, charErrRateAfter := s.charErrorRates()
 	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
 	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
@@ -193,7 +193,7 @@ func (s *stats) charErrorRates() (before, after float64) {
 	return float64(s.charErrBefore) / float64(s.charTotal), float64(s.charErrAfter) / float64(s.charTotal)
 }
 
-func (s *stats) errorRates() (before, after float64) {
+func (s *stats) tokenErrorRates() (before, after float64) {
 	return float64(s.tokenErrBefore) / float64(s.tokenTotal), float64(s.tokenErrAfter) / float64(s.tokenTotal)
 }
 
@@ -204,7 +204,7 @@ func (s *stats) improvement() float64 {
 
 func (s *stats) json(name string) {
 	data := make(map[string]interface{})
-	errRateBefore, errRateAfter := s.errorRates()
+	errRateBefore, errRateAfter := s.tokenErrorRates()
 	charErrRateBefore, charErrRateAfter := s.charErrorRates()
 	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
 	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
