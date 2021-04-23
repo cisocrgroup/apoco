@@ -60,14 +60,14 @@ func runStats(_ *cobra.Command, args []string) {
 }
 
 type stats struct {
-	types                                             typeMap
-	causes                                            causeMap
-	before                                            internal.Stok
-	mat                                               lev.Mat
-	skippedMerges, skippedSplits                      int
-	merges, splits                                    int
-	totalErrBefore, totalErrAfter, total              int
-	totalCharErrBefore, totalCharErrAfter, totalChars int
+	types                                     typeMap
+	causes                                    causeMap
+	before                                    internal.Stok
+	mat                                       lev.Mat
+	skippedMerges, skippedSplits              int
+	merges, splits                            int
+	tokenErrBefore, tokenErrAfter, tokenTotal int
+	charErrBefore, charErrAfter, charTotal    int
 }
 
 func (s *stats) stat(dtd string) error {
@@ -85,12 +85,6 @@ func (s *stats) stat(dtd string) error {
 	if typ.Err() && !typ.Skipped() {
 		s.causes.put(typ, t.Cause(statsFlags.limit))
 	}
-	s.total++
-	s.totalChars += utf8.RuneCountInString(t.GT)
-	s.totalCharErrBefore += s.mat.Distance(t.OCR, t.GT)
-	if t.Cor {
-		s.totalCharErrAfter += s.mat.Distance(t.Sug, t.GT)
-	}
 	if t.Skipped && t.Merge() {
 		s.skippedMerges++
 	}
@@ -104,13 +98,22 @@ func (s *stats) stat(dtd string) error {
 		s.splits++
 	}
 	if t.OCR != t.GT {
-		s.totalErrBefore++
+		s.tokenErrBefore++
 	}
+	// Gather token errors.
+	s.tokenTotal++
 	if (t.Skipped && t.OCR != t.GT) || // errors in skipped tokens
 		(!t.Skipped && t.Cor && t.Sug != t.GT) || // infelicitous correction
 		(!t.Skipped && !t.Cor && t.OCR != t.GT) { // not corrected and false
-		s.totalErrAfter++
+		s.tokenErrAfter++
 	}
+	// Gather character errors.
+	s.charTotal += utf8.RuneCountInString(t.GT)
+	s.charErrBefore += s.mat.Distance(t.OCR, t.GT)
+	if t.Cor {
+		s.charErrAfter += s.mat.Distance(t.Sug, t.GT)
+	}
+
 	s.before = t
 	return nil
 }
@@ -119,16 +122,16 @@ func (s *stats) write(name string) {
 	errRateBefore, errRateAfter := s.errorRates()
 	charErrRateBefore, charErrRateAfter := s.charErrorRates()
 	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
-	corbefore, corafter := s.total-s.totalErrBefore, s.total-s.totalErrAfter
+	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
 	improvement := s.improvement()
 	fmt.Printf("Name                            = %s\n", name)
 	fmt.Printf("Char error rate (before/after)  = %g/%g\n", charErrRateBefore, charErrRateAfter)
 	fmt.Printf("Improvement (percent)           = %g\n", improvement)
 	fmt.Printf("Error rate (before/after)       = %g/%g\n", errRateBefore, errRateAfter)
 	fmt.Printf("Accuracy (before/after)         = %g/%g\n", accBefore, accAfter)
-	fmt.Printf("Total errors (before/after)     = %d/%d\n", s.totalErrBefore, s.totalErrAfter)
+	fmt.Printf("Total errors (before/after)     = %d/%d\n", s.tokenErrBefore, s.tokenErrAfter)
 	fmt.Printf("Correct (before/after)          = %d/%d\n", corbefore, corafter)
-	fmt.Printf("Total tokens                    = %d\n", s.total)
+	fmt.Printf("Total tokens                    = %d\n", s.tokenTotal)
 	if !statsFlags.verbose {
 		fmt.Printf("Successfull corrections         = %d\n", s.types[internal.SuccessfulCorrection])
 		fmt.Printf("Missed opportunities            = %d\n", s.types[internal.MissedOpportunity])
@@ -150,7 +153,7 @@ func (s *stats) write(name string) {
 	fmt.Printf("│  │  └─ errors                 = %d\n", s.types[internal.SkippedNoCandErr])
 	fmt.Printf("│  └─ lexicon entries           = %d\n", totalSkippedLex)
 	fmt.Printf("│     └─ false friends          = %d\n", s.types[internal.FalseFriend])
-	totalSusp := s.total - totalSkipped
+	totalSusp := s.tokenTotal - totalSkipped
 	totalSuspReplCor := s.types[internal.SuspiciousReplacedCorrect] + s.types[internal.InfelicitousCorrection]
 	totalSuspReplNotCor := s.types[internal.SuccessfulCorrection] + s.types[internal.DoNotCareCorrection]
 	totalSuspRepl := totalSuspReplCor + totalSuspReplNotCor
@@ -187,15 +190,15 @@ func (s *stats) write(name string) {
 }
 
 func (s *stats) charErrorRates() (before, after float64) {
-	return float64(s.totalCharErrBefore) / float64(s.totalChars), float64(s.totalCharErrAfter) / float64(s.totalChars)
+	return float64(s.charErrBefore) / float64(s.charTotal), float64(s.charErrAfter) / float64(s.charTotal)
 }
 
 func (s *stats) errorRates() (before, after float64) {
-	return float64(s.totalErrBefore) / float64(s.total), float64(s.totalErrAfter) / float64(s.total)
+	return float64(s.tokenErrBefore) / float64(s.tokenTotal), float64(s.tokenErrAfter) / float64(s.tokenTotal)
 }
 
 func (s *stats) improvement() float64 {
-	corbefore, corafter := s.total-s.totalErrBefore, s.total-s.totalErrAfter
+	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
 	return (float64(corafter-corbefore) / float64(corbefore)) * 100.0
 }
 
@@ -204,7 +207,7 @@ func (s *stats) json(name string) {
 	errRateBefore, errRateAfter := s.errorRates()
 	charErrRateBefore, charErrRateAfter := s.charErrorRates()
 	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
-	corbefore, corafter := s.total-s.totalErrBefore, s.total-s.totalErrAfter
+	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
 	improvement := s.improvement()
 	data["Name"] = name
 	data["AccuracyBefore"] = accBefore
@@ -215,10 +218,10 @@ func (s *stats) json(name string) {
 	data["CharErrorRateAfter"] = charErrRateAfter
 	data["CorrectBefore"] = corbefore
 	data["CorrectAfter"] = corafter
-	data["ErrorsBefore"] = s.totalErrBefore
-	data["ErrorsAfter"] = s.totalErrAfter
+	data["ErrorsBefore"] = s.tokenErrBefore
+	data["ErrorsAfter"] = s.tokenErrAfter
 	data["Improvement"] = improvement
-	data["Total"] = s.total
+	data["Total"] = s.tokenTotal
 	for typ, count := range s.types {
 		switch {
 		case typ.Skipped():
