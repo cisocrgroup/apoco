@@ -119,7 +119,7 @@ func (s *stats) write(name string) {
 	if !statsFlags.verbose {
 		fmt.Printf("Successfull corrections         = %d\n", s.types[internal.SuccessfulCorrection])
 		fmt.Printf("Missed opportunities            = %d\n", s.types[internal.MissedOpportunity])
-		fmt.Printf("Disimprovements                 = %d\n", s.types[internal.InfelicitousCorrection])
+		fmt.Printf("Infelicitous corrections        = %d\n", s.types[internal.InfelicitousCorrection])
 		fmt.Printf("False friends                   = %d\n", s.types[internal.FalseFriend])
 		fmt.Printf("Short errors                    = %d\n", s.types[internal.SkippedShortErr])
 		fmt.Printf("Merges                          = %d\n", s.skippedMerges+s.merges)
@@ -145,7 +145,7 @@ func (s *stats) write(name string) {
 	fmt.Printf("   ├─ replaced                  = %d\n", totalSuspRepl)
 	fmt.Printf("   │  ├─ ocr correct            = %d\n", totalSuspReplCor)
 	fmt.Printf("   │  │  ├─ redundant corr      = %d\n", s.types[internal.SuspiciousReplacedCorrect])
-	fmt.Printf("   │  │  └─ disimprovement      = %d\n", s.types[internal.InfelicitousCorrection])
+	fmt.Printf("   │  │  └─ infelicitous corr   = %d\n", s.types[internal.InfelicitousCorrection])
 	fmt.Printf("   │  │     ├─ bad rank         = %d\n", s.causes[internal.InfelicitousCorrection][internal.BadRank])
 	fmt.Printf("   │  │     ├─ bad limit        = %d\n", s.causes[internal.InfelicitousCorrection][internal.BadLimit])
 	fmt.Printf("   │  │     └─ missing corr     = %d\n", s.causes[internal.InfelicitousCorrection][internal.MissingCandidate])
