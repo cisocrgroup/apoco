@@ -8,6 +8,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
 )
 
 var CMD = &cobra.Command{
@@ -43,15 +46,20 @@ func run(_ *cobra.Command, _ []string) {
 		}
 	}
 	chk(s.Err())
-	for i := 0; i < max; i++ {
-		for name := range data {
-			if i == 0 {
-				fmt.Print(name)
-			}
-			fmt.Printf(" %g", data[name][i].data)
+
+	p := plot.New()
+	p.Title.Text = "xy"
+	for name := range data {
+		var vals plotter.Values
+		for _, val := range data[name] {
+			vals = append(vals, val.data)
 		}
-		fmt.Println()
+		hist, err := plotter.NewHist(vals, 20)
+		chk(err)
+		p.Add(hist)
+
 	}
+	chk(p.Save(3*vg.Inch, 3*vg.Inch, "hist.png"))
 }
 
 type pair struct {
