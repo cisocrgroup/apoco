@@ -58,7 +58,7 @@ func run(_ *cobra.Command, _ []string) {
 		chk(err)
 		p.Add(bars)
 	}
-	chk(p.Save(3*vg.Inch, 3*vg.Inch, name+".png"))
+	chk(p.Save(3*vg.Inch, 3*vg.Inch, "hist.png"))
 }
 
 type pair struct {
