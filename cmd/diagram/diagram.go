@@ -47,9 +47,9 @@ func run(_ *cobra.Command, _ []string) {
 	}
 	chk(s.Err())
 
-	p := plot.New()
-	p.Title.Text = "xy"
 	for name := range data {
+		p := plot.New()
+		p.Title.Text = name
 		var vals plotter.Values
 		for _, val := range data[name] {
 			vals = append(vals, val.data)
@@ -57,9 +57,8 @@ func run(_ *cobra.Command, _ []string) {
 		hist, err := plotter.NewHist(vals, 20)
 		chk(err)
 		p.Add(hist)
-
+		chk(p.Save(3*vg.Inch, 3*vg.Inch, name+".png"))
 	}
-	chk(p.Save(3*vg.Inch, 3*vg.Inch, "hist.png"))
 }
 
 type pair struct {
