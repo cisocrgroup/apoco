@@ -150,7 +150,7 @@ func (s *stats) write(name string) {
 	fmt.Printf("│     └─ false friends          = %d\n", s.types[internal.FalseFriend])
 	totalSusp := s.total - totalSkipped
 	totalSuspReplCor := s.types[internal.SuspiciousReplacedCorrect] + s.types[internal.InfelicitousCorrection]
-	totalSuspReplNotCor := s.types[internal.SuccessfulCorrection] + s.types[internal.SuspiciousReplacedNotCorrectErr]
+	totalSuspReplNotCor := s.types[internal.SuccessfulCorrection] + s.types[internal.DoNotCareCorrection]
 	totalSuspRepl := totalSuspReplCor + totalSuspReplNotCor
 	fmt.Printf("└─ suspicious                   = %d\n", totalSusp)
 	fmt.Printf("   ├─ replaced                  = %d\n", totalSuspRepl)
@@ -162,10 +162,10 @@ func (s *stats) write(name string) {
 	fmt.Printf("   │  │     └─ missing corr     = %d\n", s.causes[internal.InfelicitousCorrection][internal.MissingCandidate])
 	fmt.Printf("   │  └─ ocr not correct        = %d\n", totalSuspReplNotCor)
 	fmt.Printf("   │     ├─ successful corr     = %d\n", s.types[internal.SuccessfulCorrection])
-	fmt.Printf("   │     └─ do not care         = %d\n", s.types[internal.SuspiciousReplacedNotCorrectErr])
-	fmt.Printf("   │        ├─ bad rank         = %d\n", s.causes[internal.SuspiciousReplacedNotCorrectErr][internal.BadRank])
-	fmt.Printf("   │        ├─ bad limit        = %d\n", s.causes[internal.SuspiciousReplacedNotCorrectErr][internal.BadLimit])
-	fmt.Printf("   │        └─ missing corr     = %d\n", s.causes[internal.SuspiciousReplacedNotCorrectErr][internal.MissingCandidate])
+	fmt.Printf("   │     └─ do not care         = %d\n", s.types[internal.DoNotCareCorrection])
+	fmt.Printf("   │        ├─ bad rank         = %d\n", s.causes[internal.DoNotCareCorrection][internal.BadRank])
+	fmt.Printf("   │        ├─ bad limit        = %d\n", s.causes[internal.DoNotCareCorrection][internal.BadLimit])
+	fmt.Printf("   │        └─ missing corr     = %d\n", s.causes[internal.DoNotCareCorrection][internal.MissingCandidate])
 	totalSuspNotReplCor := s.types[internal.SuspiciousNotReplacedCorrect] + s.types[internal.DodgedBullet]
 	totalSuspNotReplNotCor := s.types[internal.MissedOpportunity] + s.types[internal.SuspiciousNotReplacedNotCorrectErr]
 	totalSuspNotRepl := totalSuspNotReplCor + totalSuspNotReplNotCor

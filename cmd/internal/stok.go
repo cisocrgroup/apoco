@@ -55,7 +55,7 @@ func (s Stok) Type() StokType {
 		if s.Sug == s.GT {
 			return SuccessfulCorrection
 		}
-		return SuspiciousReplacedNotCorrectErr
+		return DoNotCareCorrection
 	}
 	if !s.Cor && s.GT == s.OCR {
 		if s.Sug == s.GT {
@@ -122,7 +122,7 @@ const (
 	SuspiciousReplacedCorrect                          // Redundant correction.
 	InfelicitousCorrection                             // Infelicitous correction.
 	SuccessfulCorrection                               // Successful correction.
-	SuspiciousReplacedNotCorrectErr                    // Do not care correction.
+	DoNotCareCorrection                                // Do not care correction.
 	SuspiciousNotReplacedCorrect                       // Accept OCR.
 	DodgedBullet                                       // Dogded bullet.
 	MissedOpportunity                                  // Missed opportunity.
