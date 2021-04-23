@@ -97,11 +97,11 @@ func (s *stats) stat(dtd string) error {
 	if !t.Skipped && t.Split(s.before) {
 		s.splits++
 	}
+	// Gather token errors.
+	s.tokenTotal++
 	if t.OCR != t.GT {
 		s.tokenErrBefore++
 	}
-	// Gather token errors.
-	s.tokenTotal++
 	if (t.Skipped && t.OCR != t.GT) || // errors in skipped tokens
 		(!t.Skipped && t.Cor && t.Sug != t.GT) || // infelicitous correction
 		(!t.Skipped && !t.Cor && t.OCR != t.GT) { // not corrected and false
