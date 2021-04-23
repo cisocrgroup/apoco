@@ -30,7 +30,7 @@ func run(_ *cobra.Command, _ []string) {
 		if strings.HasPrefix(s.Text(), "Char") {
 			fields := strings.Fields(s.Text())
 			var ocr, other float64
-			_, err := fmt.Scanf("%g/%g", fields[2], &ocr, &other)
+			_, err := fmt.Sscanf(fields[2], "%g/%g", &ocr, &other)
 			chk(err)
 			if len(data[name]) == 0 {
 				data[name] = append(data[name], pair{"OCR", ocr})
