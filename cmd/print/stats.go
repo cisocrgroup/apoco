@@ -110,8 +110,11 @@ func (s *stats) stat(dtd string) error {
 	// Gather character errors.
 	s.charTotal += utf8.RuneCountInString(t.GT)
 	s.charErrBefore += s.mat.Distance(t.OCR, t.GT)
-	if t.Cor {
+	switch {
+	case t.Cor:
 		s.charErrAfter += s.mat.Distance(t.Sug, t.GT)
+	default:
+		s.charErrAfter += s.mat.Distance(t.OCR, t.GT)
 	}
 
 	s.before = t
@@ -126,6 +129,8 @@ func (s *stats) write(name string) {
 	improvement := s.improvement()
 	fmt.Printf("Name                            = %s\n", name)
 	fmt.Printf("Char error rate (before/after)  = %g/%g\n", charErrRateBefore, charErrRateAfter)
+	fmt.Printf("Char error rates (before/after) = %d/%d\n", s.charErrBefore, s.charErrAfter)
+	fmt.Printf("Total chars                     = %d\n", s.charTotal)
 	fmt.Printf("Improvement (percent)           = %g\n", improvement)
 	fmt.Printf("Error rate (before/after)       = %g/%g\n", errRateBefore, errRateAfter)
 	fmt.Printf("Accuracy (before/after)         = %g/%g\n", accBefore, accAfter)
