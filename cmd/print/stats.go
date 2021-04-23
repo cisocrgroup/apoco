@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
+	"git.sr.ht/~flobar/lev"
 	"github.com/spf13/cobra"
 )
 
@@ -56,12 +58,14 @@ func runStats(_ *cobra.Command, args []string) {
 }
 
 type stats struct {
-	types                                typeMap
-	causes                               causeMap
-	before                               internal.Stok
-	skippedMerges, skippedSplits         int
-	merges, splits                       int
-	totalErrBefore, totalErrAfter, total int
+	types                                             typeMap
+	causes                                            causeMap
+	before                                            internal.Stok
+	mat                                               lev.Mat
+	skippedMerges, skippedSplits                      int
+	merges, splits                                    int
+	totalErrBefore, totalErrAfter, total              int
+	totalCharErrBefore, totalCharErrAfter, totalChars int
 }
 
 func (s *stats) stat(dtd string) error {
@@ -80,6 +84,11 @@ func (s *stats) stat(dtd string) error {
 		s.causes.put(typ, t.Cause(statsFlags.limit))
 	}
 	s.total++
+	s.totalChars += utf8.RuneCountInString(t.GT)
+	s.totalCharErrBefore += s.mat.Distance(t.OCR, t.GT)
+	if t.Cor {
+		s.totalCharErrAfter += s.mat.Distance(t.Sug, t.GT)
+	}
 	if t.Skipped && t.Merge() {
 		s.skippedMerges++
 	}
@@ -106,10 +115,12 @@ func (s *stats) stat(dtd string) error {
 
 func (s *stats) write(name string) {
 	errRateBefore, errRateAfter := s.errorRates()
+	charErrRateBefore, charErrRateAfter := s.charErrorRates()
 	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
 	corbefore, corafter := s.total-s.totalErrBefore, s.total-s.totalErrAfter
 	improvement := s.improvement()
 	fmt.Printf("Name                            = %s\n", name)
+	fmt.Printf("Char error rate (before/after)  = %g/%g\n", charErrRateBefore, charErrRateAfter)
 	fmt.Printf("Improvement (percent)           = %g\n", improvement)
 	fmt.Printf("Error rate (before/after)       = %g/%g\n", errRateBefore, errRateAfter)
 	fmt.Printf("Accuracy (before/after)         = %g/%g\n", accBefore, accAfter)
@@ -173,6 +184,10 @@ func (s *stats) write(name string) {
 	fmt.Printf("            └─ missing corr     = %d\n", s.causes[internal.SuspiciousNotReplacedNotCorrectErr][internal.MissingCandidate])
 }
 
+func (s *stats) charErrorRates() (before, after float64) {
+	return float64(s.totalCharErrBefore) / float64(s.totalChars), float64(s.totalCharErrAfter) / float64(s.totalChars)
+}
+
 func (s *stats) errorRates() (before, after float64) {
 	return float64(s.totalErrBefore) / float64(s.total), float64(s.totalErrAfter) / float64(s.total)
 }
@@ -185,6 +200,7 @@ func (s *stats) improvement() float64 {
 func (s *stats) json(name string) {
 	data := make(map[string]interface{})
 	errRateBefore, errRateAfter := s.errorRates()
+	charErrRateBefore, charErrRateAfter := s.charErrorRates()
 	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
 	corbefore, corafter := s.total-s.totalErrBefore, s.total-s.totalErrAfter
 	improvement := s.improvement()
@@ -193,6 +209,8 @@ func (s *stats) json(name string) {
 	data["AccuracyAfter"] = accAfter
 	data["ErrorRateBefore"] = errRateBefore
 	data["ErrorRateAfter"] = errRateAfter
+	data["CharErrorRateBefore"] = charErrRateBefore
+	data["CharErrorRateAfter"] = charErrRateAfter
 	data["CorrectBefore"] = corbefore
 	data["CorrectAfter"] = corafter
 	data["ErrorsBefore"] = s.totalErrBefore
