@@ -15,5 +15,4 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gonum.org/v1/gonum v0.9.1
 	gonum.org/v1/netlib v0.0.0-20210302091547-ede94419cf37 // indirect
-	gonum.org/v1/plot v0.9.0
 )

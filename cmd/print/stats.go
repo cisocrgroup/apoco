@@ -129,7 +129,7 @@ func (s *stats) write(name string) {
 	improvement := s.improvement()
 	fmt.Printf("Name                            = %s\n", name)
 	fmt.Printf("Char error rate (before/after)  = %g/%g\n", charErrRateBefore, charErrRateAfter)
-	fmt.Printf("Char error rates (before/after) = %d/%d\n", s.charErrBefore, s.charErrAfter)
+	fmt.Printf("Char errors (before/after)      = %d/%d\n", s.charErrBefore, s.charErrAfter)
 	fmt.Printf("Total chars                     = %d\n", s.charTotal)
 	fmt.Printf("Improvement (percent)           = %g\n", improvement)
 	fmt.Printf("Error rate (before/after)       = %g/%g\n", errRateBefore, errRateAfter)
