@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -33,8 +34,8 @@ func run(_ *cobra.Command, _ []string) {
 		if strings.HasPrefix(s.Text(), "Char") {
 			fields := strings.Split(s.Text(), "=")
 			var ocr, other float64
-			log.Printf("line=%q, fields=%q", s.Text(), fields[1])
 			_, err := fmt.Sscanf(fields[1], "%g/%g", &ocr, &other)
+			log.Printf("%s-%s: %g/%g", name, suf, ocr, other)
 			chk(err)
 			if len(data[name]) == 0 {
 				data[name] = append(data[name], pair{"OCR", ocr})
@@ -47,23 +48,42 @@ func run(_ *cobra.Command, _ []string) {
 	}
 	chk(s.Err())
 
+	// Sort keys for a consistent order
+	names := make([]string, 0, len(data))
+	for name := range data {
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		return names[i] < names[j]
+	})
+
+	// Plot the data
 	p := plot.New()
-	p.Title.Text = "myplot"
+	p.Title.Text = "xy"
+	var i int
 	for name := range data {
 		var vals plotter.Values
-		for _, val := range data[name] {
-			vals = append(vals, val.data)
+		for _, pair := range data[name] {
+			vals = append(vals, pair.d())
 		}
-		bars, err := plotter.NewBarChart(vals, 15)
+		log.Printf("%s: %v", name, vals)
+		bars, err := plotter.NewBarChart(vals, 2)
 		chk(err)
+		bars.XMin = float64(i * (len(data[name]) + 1))
 		p.Add(bars)
+		i++
 	}
-	chk(p.Save(3*vg.Inch, 3*vg.Inch, "hist.png"))
+	chk(p.Save(5*vg.Inch, 3*vg.Inch, "hist.png"))
 }
 
 type pair struct {
 	name string
 	data float64
+}
+
+func (p pair) d() float64 {
+	// return 1 - p.data
+	return p.data
 }
 
 func chk(err error) {
