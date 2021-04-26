@@ -48,6 +48,7 @@ func (cor *corrector) correct(metsName string) error {
 }
 
 func (cor *corrector) correctFile(file, ifg string) error {
+	apoco.Log("correcting file %q in input file group %q", file, ifg)
 	is, err := os.Open(file)
 	if err != nil {
 		return fmt.Errorf("writeCorrections: %v", err)
