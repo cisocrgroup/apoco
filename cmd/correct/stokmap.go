@@ -9,7 +9,7 @@ import (
 
 var stokMapLock sync.Mutex
 
-type stokMap map[string]map[string]*internal.Stok // file -> id -> stok
+type stokMap map[string]map[string]*stok // file -> id -> stok
 
 func (m stokMap) numberOfTokens() int {
 	sum := 0
@@ -19,18 +19,23 @@ func (m stokMap) numberOfTokens() int {
 	return sum
 }
 
-func (m stokMap) get(t apoco.T, withGT bool) *internal.Stok {
+type stok struct {
+	internal.Stok
+	order int
+}
+
+func (m stokMap) get(t apoco.T, withGT bool) *stok {
 	stokMapLock.Lock()
 	defer stokMapLock.Unlock()
 	if _, ok := m[t.File]; !ok {
-		m[t.File] = make(map[string]*internal.Stok)
+		m[t.File] = make(map[string]*stok)
 	}
 	if _, ok := m[t.File][t.ID]; !ok {
-		stok := &internal.Stok{OCR: t.Tokens[0]}
+		s := &stok{Stok: internal.Stok{OCR: t.Tokens[0]}}
 		if withGT {
-			stok.GT = t.Tokens[len(t.Tokens)-1]
+			s.GT = t.Tokens[len(t.Tokens)-1]
 		}
-		m[t.File][t.ID] = stok
+		m[t.File][t.ID] = s
 	}
 	return m[t.File][t.ID]
 }

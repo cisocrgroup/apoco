@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
@@ -82,15 +83,22 @@ func run(_ *cobra.Command, args []string) {
 	))
 	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
 	// If no output file group is given, we do not need to correct
-	// the according page XML files.  We just output the stoks.  So
-	// if any input file group is given, we output the stoks.  Only if
-	// an output file group is given, we do correct the according page
-	// XML files within the output file group.
+	// the according page XML files.  We just output the stoks according
+	// to their ordering.  So if any input file group is given, we output
+	// the stoks.  Only if an output file group is given, we do correct
+	// the according page XML files within the output file group.
 	if flags.ofg == "" {
+		sorted := make([]*stok, 0, len(stoks))
 		for _, ids := range stoks {
 			for _, info := range ids {
-				fmt.Printf("%s\n", info)
+				sorted = append(sorted, info)
 			}
+		}
+		sort.Slice(sorted, func(i, j int) bool {
+			return sorted[i].order < sorted[j].order
+		})
+		for _, info := range sorted {
+			fmt.Printf("%s\n", info.Stok)
 		}
 		return
 	}
@@ -117,14 +125,16 @@ func correct(m stokMap, withGT bool) apoco.StreamFunc {
 }
 
 func register(m stokMap, withGT bool) apoco.StreamFunc {
+	order := 0
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			// Each token gets its ID and is skipped as default.
-			// If a token is not skipped, skipped
-			// must be explicitly set to false.
+			// Each token gets its ID, its order and is skipped as default.
+			// If a token is not skipped, skipped must be explicitly set to false.
 			stok := m.get(t, withGT)
 			stok.ID = t.ID
 			stok.Skipped = true
+			stok.order = order
+			order++
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("register: %v", err)
 			}
