@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"text/tabwriter"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/finkf/gofiler"
@@ -43,16 +44,20 @@ func runProfile(_ *cobra.Command, args []string) {
 }
 
 func printprofile(name string, profile gofiler.Profile) {
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	defer func() {
+		chk(w.Flush())
+	}()
 	if profileFlags.histPats {
-		printpats(name, "hist", profile.GlobalHistPatterns())
+		printpats(w, name, "hist", profile.GlobalHistPatterns())
 	}
 	if profileFlags.ocrPats {
-		printpats(name, "ocr", profile.GlobalOCRPatterns())
+		printpats(w, name, "ocr", profile.GlobalOCRPatterns())
 	}
 	if !profileFlags.noProfile {
 		for _, i := range profile {
 			for j, c := range i.Candidates {
-				fmt.Printf("%s %d %s %s\n", name, j+1, i.OCR, c)
+				fmt.Fprintf(w, "%s %d %s %s\n", name, j+1, i.OCR, c)
 			}
 		}
 	}

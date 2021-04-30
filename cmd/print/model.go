@@ -3,7 +3,9 @@ package print
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"text/tabwriter"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/spf13/cobra"
@@ -42,20 +44,24 @@ func runModel(_ *cobra.Command, args []string) {
 }
 
 func printmodel(name string, model apoco.Model) {
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	defer func() {
+		chk(w.Flush())
+	}()
 	if modelFlags.histPats {
-		printpats(name, "hist", model.GlobalHistPatterns)
+		printpats(w, name, "hist", model.GlobalHistPatterns)
 	}
 	if modelFlags.ocrPats {
-		printpats(name, "ocr", model.GlobalOCRPatterns)
+		printpats(w, name, "ocr", model.GlobalOCRPatterns)
 	}
 	if !modelFlags.noWeights {
 		for typ, data := range model.Models {
-			printmodeldata(name, typ, data)
+			printmodeldata(w, name, typ, data)
 		}
 	}
 }
 
-func printmodeldata(name, typ string, ds map[int]apoco.ModelData) {
+func printmodeldata(out io.Writer, name, typ string, ds map[int]apoco.ModelData) {
 	for nocr, data := range ds {
 		ws := data.Model.Weights()
 		fs, err := apoco.NewFeatureSet(data.Features...)
@@ -65,17 +71,16 @@ func printmodeldata(name, typ string, ds map[int]apoco.ModelData) {
 			panic("bad feature names")
 		}
 		for i := range names {
-			_, err := fmt.Printf("%s %s/%d %s %g\n",
+			_, err := fmt.Fprintf(out, "%s\t%s/%d\t%s\t%g\n",
 				name, typ, nocr, names[i], ws[i])
 			chk(err)
-
 		}
 	}
 }
 
-func printpats(name, typ string, pats map[string]float64) {
+func printpats(out io.Writer, name, typ string, pats map[string]float64) {
 	for pat, prob := range pats {
-		_, err := fmt.Printf("%s %s %s %g\n", name, typ, pat, prob)
+		_, err := fmt.Fprintf(out, "%s\t%s\t%s\t%g\n", name, typ, pat, prob)
 		chk(err)
 	}
 }
