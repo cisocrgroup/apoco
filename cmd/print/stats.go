@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"text/tabwriter"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/lev"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
@@ -52,9 +54,12 @@ func runStats(_ *cobra.Command, args []string) {
 		}
 		chk(s.stat(dtd))
 	}
-	if flags.json {
+	switch {
+	case flags.json:
 		s.json(filename)
-	} else {
+	case isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()):
+		s.dat(filename)
+	default:
 		s.write(filename)
 	}
 }
@@ -207,7 +212,24 @@ func (s *stats) improvement() float64 {
 	return (float64(corafter-corbefore) / float64(corbefore)) * 100.0
 }
 
+func (s *stats) dat(name string) {
+	data := s.data(name)
+	out := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	defer func() {
+		chk(out.Flush())
+	}()
+	for key, val := range data {
+		_, err := fmt.Fprintf(out, "%s %v", key, val)
+		chk(err)
+	}
+}
+
 func (s *stats) json(name string) {
+	data := s.data(name)
+	chk(json.NewEncoder(os.Stdout).Encode(data))
+}
+
+func (s *stats) data(name string) map[string]interface{} {
 	data := make(map[string]interface{})
 	errRateBefore, errRateAfter := s.tokenErrorRates()
 	charErrRateBefore, charErrRateAfter := s.charErrorRates()
@@ -239,7 +261,7 @@ func (s *stats) json(name string) {
 			data[typ.String()] = count
 		}
 	}
-	chk(json.NewEncoder(os.Stdout).Encode(data))
+	return data
 }
 
 type typeMap map[internal.StokType]int
