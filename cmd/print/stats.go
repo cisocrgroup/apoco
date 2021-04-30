@@ -58,7 +58,7 @@ func runStats(_ *cobra.Command, args []string) {
 	case flags.json:
 		s.json(filename)
 	case isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()):
-		s.write(filename)
+		s.write(filename, statsFlags.verbose)
 	default:
 		s.dat(filename)
 	}
@@ -126,7 +126,7 @@ func (s *stats) stat(dtd string) error {
 	return nil
 }
 
-func (s *stats) write(name string) {
+func (s *stats) write(name string, verbose bool) {
 	errRateBefore, errRateAfter := s.tokenErrorRates()
 	charErrRateBefore, charErrRateAfter := s.charErrorRates()
 	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
@@ -142,7 +142,7 @@ func (s *stats) write(name string) {
 	fmt.Printf("Total errors (before/after)     = %d/%d\n", s.tokenErrBefore, s.tokenErrAfter)
 	fmt.Printf("Correct (before/after)          = %d/%d\n", corbefore, corafter)
 	fmt.Printf("Total tokens                    = %d\n", s.tokenTotal)
-	if !statsFlags.verbose {
+	if !verbose {
 		fmt.Printf("Successfull corrections         = %d\n", s.types[internal.SuccessfulCorrection])
 		fmt.Printf("Missed opportunities            = %d\n", s.types[internal.MissedOpportunity])
 		fmt.Printf("Infelicitous corrections        = %d\n", s.types[internal.InfelicitousCorrection])
