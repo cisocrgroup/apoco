@@ -49,7 +49,7 @@ func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := loadDMModel(c, m, update)
 		if err != nil {
-			return fmt.Errorf("traindm: %v", err)
+			return fmt.Errorf("train dm: %v", err)
 		}
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
@@ -61,21 +61,21 @@ func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("traindm: %v", err)
+			return fmt.Errorf("train dm: %v", err)
 		}
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
 		chk(printCorrelationMat(c, fs, x, true))
 		if err := ml.Normalize(x); err != nil {
-			return fmt.Errorf("traindm: %v", err)
+			return fmt.Errorf("train dm: %v", err)
 		}
-		apoco.Log("dmtrain: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d, cautious=%t",
+		apoco.Log("train dm: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d, cautious=%t",
 			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, flags.cautious)
 		ferr := lr.Fit(x, y)
-		apoco.Log("dmtrain: remaining error: %g", ferr)
+		apoco.Log("train dm: remaining error: %g", ferr)
 		m.Put("dm", c.Nocr, lr, c.DMFeatures)
 		if err := m.Write(c.Model); err != nil {
-			return fmt.Errorf("traindm: %v", err)
+			return fmt.Errorf("train dm: %v", err)
 		}
 		return nil
 	}

@@ -47,7 +47,7 @@ func rrTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := loadRRModel(c, m, update)
 		if err != nil {
-			return fmt.Errorf("rrtrain: %v", err)
+			return fmt.Errorf("rr train: %v", err)
 		}
 		var xs, ys []float64
 		lms := make(lms)
@@ -58,24 +58,24 @@ func rrTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("rrtrain: %v", err)
+			return fmt.Errorf("train rr: %v", err)
 		}
 		n := len(ys) // number or training tokens
 		x := mat.NewDense(n, len(xs)/n, xs)
 		y := mat.NewVecDense(n, ys)
 		chk(printCorrelationMat(c, fs, x, false))
 		if err := ml.Normalize(x); err != nil {
-			return fmt.Errorf("rrtrain: %v", err)
+			return fmt.Errorf("train rr: %v", err)
 		}
-		apoco.Log("rrtrain: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d",
+		apoco.Log("train rr: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d",
 			n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 		ferr := lr.Fit(x, y)
-		apoco.Log("rrtrain: remaining error: %g", ferr)
+		apoco.Log("train rr: remaining error: %g", ferr)
 		m.Put("rr", c.Nocr, lr, c.RRFeatures)
 		m.GlobalHistPatterns = lms.globalHistPatternMeans()
 		m.GlobalOCRPatterns = lms.globalOCRPatternMeans()
 		if err := m.Write(c.Model); err != nil {
-			return fmt.Errorf("rrtrain: %v", err)
+			return fmt.Errorf("train rr: %v", err)
 		}
 		return nil
 	}
