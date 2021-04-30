@@ -55,8 +55,8 @@ func printmodel(name string, model apoco.Model) {
 		printpats(w, name, "ocr", model.GlobalOCRPatterns)
 	}
 	if !modelFlags.noWeights {
-		for typ, data := range model.Models {
-			printmodeldata(w, name, typ, data)
+		for _, typ := range []string{"rr", "dm"} {
+			printmodeldata(w, name, typ, model.Models[typ])
 		}
 	}
 }
