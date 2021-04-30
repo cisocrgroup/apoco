@@ -219,7 +219,7 @@ func (s *stats) dat(name string) {
 		chk(out.Flush())
 	}()
 	for key, val := range data {
-		_, err := fmt.Fprintf(out, "%s %v\n", key, val)
+		_, err := fmt.Fprintf(out, "%s\t%v\n", key, val)
 		chk(err)
 	}
 }
