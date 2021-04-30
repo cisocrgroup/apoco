@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
@@ -60,7 +59,7 @@ func runStats(_ *cobra.Command, args []string) {
 	case isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()):
 		s.write(filename, statsFlags.verbose)
 	default:
-		s.dat(filename)
+		s.raw(filename)
 	}
 }
 
@@ -212,14 +211,10 @@ func (s *stats) improvement() float64 {
 	return (float64(corafter-corbefore) / float64(corbefore)) * 100.0
 }
 
-func (s *stats) dat(name string) {
+func (s *stats) raw(name string) {
 	data := s.data(name)
-	out := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	defer func() {
-		chk(out.Flush())
-	}()
 	for key, val := range data {
-		_, err := fmt.Fprintf(out, "%s\t%v\n", key, val)
+		_, err := fmt.Printf("%s %v\n", key, val)
 		chk(err)
 	}
 }
