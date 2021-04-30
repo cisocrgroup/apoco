@@ -104,7 +104,7 @@ func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.T) e
 			return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 		}
 		if err := apoco.SendTokens(ctx, out, token); err != nil {
-			return fmt.Errorf("tokenizePageXML: %v", err)
+			return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 		}
 	}
 	return nil
@@ -115,6 +115,7 @@ func newTokenFromNode(fg, file string, wordNode *xmlquery.Node) (apoco.T, error)
 	if !ok {
 		return apoco.T{}, fmt.Errorf("newTokenFromNode: missing id for word node")
 	}
+	id = file + "_" + id
 	ret := apoco.T{Group: fg, File: file, ID: id}
 	lines := FindUnicodesInRegionSorted(node.Parent(wordNode))
 	words := FindUnicodesInRegionSorted(wordNode)
