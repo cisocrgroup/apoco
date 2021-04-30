@@ -58,9 +58,9 @@ func runStats(_ *cobra.Command, args []string) {
 	case flags.json:
 		s.json(filename)
 	case isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()):
-		s.dat(filename)
-	default:
 		s.write(filename)
+	default:
+		s.dat(filename)
 	}
 }
 
