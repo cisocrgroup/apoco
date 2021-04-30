@@ -351,7 +351,7 @@ func ConnectCandidates() StreamFunc {
 	}
 }
 
-// ConnectProfiler connects the profile with the tokens.  This function
+// ConnectProfile connects the profile with the tokens.  This function
 // must be called after ConnectLM.
 func ConnectProfile(exe, config string, cache bool) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
