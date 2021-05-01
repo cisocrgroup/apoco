@@ -91,8 +91,8 @@ func (fs FeatureSet) Names(names []string, nocr int, dm bool) []string {
 	}
 	var ret []string
 	t := T{
-		Tokens: make([]string, nocr+1),
-		LM:     new(LanguageModel),
+		Tokens:   make([]string, nocr+1),
+		Document: new(Document),
 	}
 	if dm {
 		t.Payload = []Ranking{{Candidate: new(gofiler.Candidate)}}
@@ -133,12 +133,12 @@ func AgreeingOCRs(t T, i, n int) (float64, bool) {
 // OCRUnigramFreq returns the relative frequency of the OCR token in
 // the unigram language model.
 func OCRUnigramFreq(t T, i, n int) (float64, bool) {
-	return t.LM.Unigram(t.Tokens[i]), true
+	return t.Document.Unigram(t.Tokens[i]), true
 }
 
 // OCRTrigramFreq returns the product of the OCR token's trigrams.
 func OCRTrigramFreq(t T, i, n int) (float64, bool) {
-	return t.LM.Trigram(t.Tokens[i]), true
+	return t.Document.Trigram(t.Tokens[i]), true
 }
 
 // OCRMaxCharConf returns the maximal character confidence of the
@@ -175,7 +175,7 @@ func OCRMinCharConf(t T, i, n int) (float64, bool) {
 // confidence of the tokens.
 func OCRMaxTrigramFreq(t T, i, n int) (float64, bool) {
 	max := 0.0
-	t.LM.EachTrigram(t.Tokens[i], func(conf float64) {
+	t.Document.EachTrigram(t.Tokens[i], func(conf float64) {
 		if max < conf {
 			max = conf
 		}
@@ -187,7 +187,7 @@ func OCRMaxTrigramFreq(t T, i, n int) (float64, bool) {
 // confidence of the tokens.
 func OCRMinTrigramFreq(t T, i, n int) (float64, bool) {
 	min := 1.0
-	t.LM.EachTrigram(t.Tokens[i], func(conf float64) {
+	t.Document.EachTrigram(t.Tokens[i], func(conf float64) {
 		if min > conf {
 			min = conf
 		}
@@ -212,7 +212,7 @@ func CandidateUnigramFreq(t T, i, n int) (float64, bool) {
 		return 0, false
 	}
 	candidate := mustGetCandidate(t)
-	return t.LM.Unigram(candidate.Suggestion), true
+	return t.Document.Unigram(candidate.Suggestion), true
 }
 
 // CandidateTrigramFreq returns the product of the candidate's
@@ -222,7 +222,7 @@ func CandidateTrigramFreq(t T, i, n int) (float64, bool) {
 		return 0, false
 	}
 	candidate := mustGetCandidate(t)
-	return t.LM.Trigram(candidate.Suggestion), true
+	return t.Document.Trigram(candidate.Suggestion), true
 }
 
 // CandidateTrigramFreqLog returns the product of the candidate's
@@ -232,7 +232,7 @@ func CandidateTrigramFreqLog(t T, i, n int) (float64, bool) {
 		return 0, false
 	}
 	candidate := mustGetCandidate(t)
-	return t.LM.TrigramLog(candidate.Suggestion), true
+	return t.Document.TrigramLog(candidate.Suggestion), true
 }
 
 // CandidateAgreeingOCR returns the number of OCR tokens that agree
@@ -399,7 +399,7 @@ func CandidateMaxTrigramFreq(t T, i, n int) (float64, bool) {
 	}
 	candidate := mustGetCandidate(t)
 	max := 0.0
-	t.LM.EachTrigram(candidate.Suggestion, func(conf float64) {
+	t.Document.EachTrigram(candidate.Suggestion, func(conf float64) {
 		if max < conf {
 			max = conf
 		}
@@ -415,7 +415,7 @@ func CandidateMinTrigramFreq(t T, i, n int) (float64, bool) {
 	}
 	candidate := mustGetCandidate(t)
 	min := 1.0
-	t.LM.EachTrigram(candidate.Suggestion, func(conf float64) {
+	t.Document.EachTrigram(candidate.Suggestion, func(conf float64) {
 		if min > conf {
 			min = conf
 		}
@@ -481,5 +481,5 @@ func DocumentLexicality(t T, i, n int) (float64, bool) {
 	if i != 0 {
 		return 0, false
 	}
-	return t.LM.Lexicality, true
+	return t.Document.Lexicality, true
 }

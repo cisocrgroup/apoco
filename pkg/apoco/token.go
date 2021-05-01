@@ -10,23 +10,23 @@ import (
 
 // T represents aligned OCR-tokens.
 type T struct {
-	LM      *LanguageModel // language model for this token
-	Payload interface{}    // token payload; *gofiler.Candidate, []Ranking or Correction
-	Cor     string         // Correction for the token
-	File    string         // the file of the token
-	Group   string         // file group of the token
-	ID      string         // id of the token in this file
-	Chars   Chars          // master OCR chars with their confidences
-	Tokens  []string       // master and support OCRs and gt
+	Document *Document   // Document of this token
+	Payload  interface{} // Token payload; *gofiler.Candidate, []Ranking or Correction
+	Cor      string      // Correction for the token
+	File     string      // The file of the token
+	Group    string      // File group of the token
+	ID       string      // ID of the token in its file
+	Chars    Chars       // Master OCR chars including their confidences
+	Tokens   []string    // Master and support OCRs and gt
 }
 
 // IsLexiconEntry returns true if this token is a normal lexicon entry
 // for its connected language model.
 func (t T) IsLexiconEntry() bool {
-	if t.LM == nil {
+	if t.Document == nil {
 		return false
 	}
-	interp, ok := t.LM.Profile[t.Tokens[0]]
+	interp, ok := t.Document.Profile[t.Tokens[0]]
 	if !ok {
 		return false
 	}

@@ -158,23 +158,23 @@ func EachTokenGroup(ctx context.Context, in <-chan T, f func(string, ...T) error
 	return nil
 }
 
-// EachTokenLM iterates over the tokens grouping them together based on
+// EachTokenDocument iterates over the tokens grouping them together based on
 // their language models. The given callback function is called for
 // each group of tokens.  This function assumes that the tokens are
 // connected with a language model.
-func EachTokenLM(ctx context.Context, in <-chan T, f func(*LanguageModel, ...T) error) error {
-	var lm *LanguageModel
+func EachTokenDocument(ctx context.Context, in <-chan T, f func(*Document, ...T) error) error {
+	var doc *Document
 	var tokens []T
 	err := EachToken(ctx, in, func(t T) error {
-		if lm == nil {
-			lm = t.LM
+		if doc == nil {
+			doc = t.Document
 		}
-		if lm != t.LM {
-			if err := f(lm, tokens...); err != nil {
+		if doc != t.Document {
+			if err := f(doc, tokens...); err != nil {
 				return fmt.Errorf("each token language model: %v", err)
 			}
 			tokens = tokens[0:0] // Clear token array.
-			lm = t.LM
+			doc = t.Document
 			return nil
 		}
 		tokens = append(tokens, t)
@@ -182,7 +182,7 @@ func EachTokenLM(ctx context.Context, in <-chan T, f func(*LanguageModel, ...T) 
 	})
 	// Handle last group of tokens.
 	if len(tokens) != 0 {
-		if err := f(lm, tokens...); err != nil {
+		if err := f(doc, tokens...); err != nil {
 			return fmt.Errorf("each token language model: %v", err)
 		}
 	}
@@ -332,7 +332,7 @@ func FilterLexiconEntries() StreamFunc {
 func ConnectCandidates() StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		err := EachToken(ctx, in, func(t T) error {
-			interp, ok := t.LM.Profile[t.Tokens[0]]
+			interp, ok := t.Document.Profile[t.Tokens[0]]
 			if !ok { // no suggestions (too short or unknown)
 				return nil
 			}
@@ -355,7 +355,7 @@ func ConnectCandidates() StreamFunc {
 // must be called after ConnectLM.
 func ConnectProfile(exe, config string, cache bool) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachTokenLM(ctx, in, func(lm *LanguageModel, tokens ...T) error {
+		err := EachTokenDocument(ctx, in, func(lm *Document, tokens ...T) error {
 			if err := lm.ReadProfile(ctx, exe, config, cache, tokens...); err != nil {
 				return fmt.Errorf("connect profile %s %s: %v", exe, config, err)
 			}
@@ -374,7 +374,7 @@ func ConnectProfile(exe, config string, cache bool) StreamFunc {
 // ConnectUnigrams adds the unigrams to the tokens's language model.
 func ConnectUnigrams() StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachTokenLM(ctx, in, func(lm *LanguageModel, tokens ...T) error {
+		err := EachTokenDocument(ctx, in, func(lm *Document, tokens ...T) error {
 			for _, t := range tokens {
 				lm.AddUnigram(t.Tokens[0])
 			}
@@ -390,14 +390,14 @@ func ConnectUnigrams() StreamFunc {
 	}
 }
 
-// ConnectLM connects the language model to the tokens.
-func ConnectLM(ngrams FreqList) StreamFunc {
+// ConnectDocument connects the document to its tokens.
+func ConnectDocument(lm *FreqList) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		err := EachTokenGroup(ctx, in, func(group string, tokens ...T) error {
 			// Add a new Language model to each token of the same group.
-			lm := &LanguageModel{Ngrams: ngrams}
+			doc := &Document{LM: lm}
 			for i := range tokens {
-				tokens[i].LM = lm
+				tokens[i].Document = doc
 			}
 			if err := SendTokens(ctx, out, tokens...); err != nil {
 				return fmt.Errorf("connect language model: %v", err)

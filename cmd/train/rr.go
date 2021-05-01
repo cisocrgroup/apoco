@@ -34,7 +34,7 @@ func rrRun(_ *cobra.Command, args []string) {
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(4),
-		apoco.ConnectLM(m.Ngrams),
+		apoco.ConnectDocument(m.Ngrams),
 		apoco.ConnectUnigrams(),
 		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache),
 		apoco.FilterLexiconEntries(),
@@ -101,10 +101,10 @@ func rrGT(t apoco.T) float64 {
 	return ml.Bool(candidate.Suggestion == t.Tokens[len(t.Tokens)-1])
 }
 
-type lms map[*apoco.LanguageModel]struct{}
+type lms map[*apoco.Document]struct{}
 
 func (lms lms) add(t apoco.T) {
-	lms[t.LM] = struct{}{}
+	lms[t.Document] = struct{}{}
 }
 
 func (lms lms) globalHistPatternMeans() map[string]float64 {
