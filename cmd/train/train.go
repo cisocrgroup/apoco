@@ -47,7 +47,7 @@ func init() {
 	CMD.AddCommand(rrCMD, dmCMD)
 }
 
-func printCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, dm bool) error {
+func logCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, dm bool) error {
 	if !apoco.LogEnabled() {
 		return nil
 	}
