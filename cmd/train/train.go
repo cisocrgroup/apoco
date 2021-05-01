@@ -85,25 +85,25 @@ func printCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, 
 func correlationMat(m *mat.Dense) *mat.Dense {
 	_, c := m.Dims()
 	ret := mat.NewDense(c, c, nil)
-	var xbuf, ybuf []float64
+	var xs, ys []float64
 	for i := 0; i < c; i++ {
 		for j := 0; j < c; j++ {
-			ret.Set(i, j, pearson(m, &xbuf, &ybuf, i, j))
+			ret.Set(i, j, pearson(m, i, j, &xs, &ys))
 		}
 	}
 	return ret
 }
 
-func pearson(m *mat.Dense, xs, ys *[]float64, x, y int) float64 {
-	col(m, xs, x)
-	col(m, ys, y)
+func pearson(m *mat.Dense, x, y int, xs, ys *[]float64) float64 {
+	col(m, x, xs)
+	col(m, y, ys)
 	cov := stat.Covariance(*xs, *ys, nil)
 	σx := stat.StdDev(*xs, nil)
 	σy := stat.StdDev(*ys, nil)
 	return cov / (σx * σy)
 }
 
-func col(m *mat.Dense, out *[]float64, c int) {
+func col(m *mat.Dense, c int, out *[]float64) {
 	r, _ := m.Dims()
 	if len(*out) != r {
 		*out = make([]float64, r)
