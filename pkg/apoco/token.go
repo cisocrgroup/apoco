@@ -11,7 +11,7 @@ import (
 // T represents aligned OCR-tokens.
 type T struct {
 	Document *Document   // Document of this token
-	Payload  interface{} // Token payload; *gofiler.Candidate, []Ranking or Correction
+	Payload  interface{} // Token payload; either *gofiler.Candidate or []Ranking or Correction
 	Cor      string      // Correction for the token
 	File     string      // The file of the token
 	Group    string      // File group of the token
