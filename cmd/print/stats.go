@@ -9,7 +9,6 @@ import (
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/lev"
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
@@ -56,10 +55,8 @@ func runStats(_ *cobra.Command, args []string) {
 	switch {
 	case flags.json:
 		s.json(filename)
-	case isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()):
-		s.write(filename, statsFlags.verbose)
 	default:
-		s.raw(filename)
+		s.write(filename, statsFlags.verbose)
 	}
 }
 
@@ -211,6 +208,7 @@ func (s *stats) improvement() float64 {
 	return (float64(corafter-corbefore) / float64(corbefore)) * 100.0
 }
 
+/*
 func (s *stats) raw(name string) {
 	data := s.data(name)
 	for key, val := range data {
@@ -218,6 +216,7 @@ func (s *stats) raw(name string) {
 		chk(err)
 	}
 }
+*/
 
 func (s *stats) json(name string) {
 	data := s.data(name)
