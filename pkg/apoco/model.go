@@ -14,7 +14,7 @@ type Model struct {
 	Models             map[string]map[int]ModelData
 	GlobalHistPatterns map[string]float64
 	GlobalOCRPatterns  map[string]float64
-	Ngrams             FreqList
+	Ngrams             *FreqList
 }
 
 // ModelData holds a linear regression model.

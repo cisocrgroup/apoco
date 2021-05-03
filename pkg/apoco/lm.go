@@ -68,28 +68,28 @@ func (f *FreqList) loadCSV(in io.Reader) error {
 	return nil
 }
 
-// LanguageModel consists of holds the language model for tokens.
-type LanguageModel struct {
-	Ngrams     FreqList
-	Unigrams   FreqList
-	Profile    gofiler.Profile
-	Lexicality float64
+// Document represents the token's document.
+type Document struct {
+	LM         *FreqList       // Global ngram model
+	Unigrams   FreqList        // Document-wise unigram model
+	Profile    gofiler.Profile // Document-wise profile
+	Lexicality float64         // Lexicality score
 }
 
 // AddUnigram adds the token to the language model's unigram map.
-func (lm *LanguageModel) AddUnigram(token string) {
-	lm.Unigrams.add(token)
+func (d *Document) AddUnigram(token string) {
+	d.Unigrams.add(token)
 }
 
 // Unigram looks up the given token in the unigram list (or 0 if the
 // unigram is not present).
-func (lm *LanguageModel) Unigram(str string) float64 {
-	return lm.Unigrams.relative(str)
+func (d *Document) Unigram(str string) float64 {
+	return d.Unigrams.relative(str)
 }
 
 // Trigram looks up the trigrams of the given token and returns the
 // product of the token's trigrams.
-func (lm *LanguageModel) Trigram(str string) float64 {
+func (d *Document) Trigram(str string) float64 {
 	tmp := []rune("$" + str + "$")
 	begin, end := 0, 3
 	if end > len(tmp) {
@@ -97,16 +97,16 @@ func (lm *LanguageModel) Trigram(str string) float64 {
 	}
 	ret := 1.0
 	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
-		ret *= lm.Ngrams.relative(string(tmp[i:j]))
+		ret *= d.LM.relative(string(tmp[i:j]))
 	}
 	return ret
 }
 
 // TrigramLog looks up the trigrams of the given token and returns the
 // sum of the logarithmic relative frequency of the token's trigrams.
-func (lm *LanguageModel) TrigramLog(str string) float64 {
+func (d *Document) TrigramLog(str string) float64 {
 	var sum float64
-	lm.EachTrigram(str, func(freq float64) {
+	d.EachTrigram(str, func(freq float64) {
 		sum += math.Log(freq)
 	})
 	return sum
@@ -127,15 +127,15 @@ func EachTrigram(str string, f func(string)) {
 
 // EachTrigram looks up the trigrams of the given token and returns the
 // product of the token's trigrams.
-func (lm *LanguageModel) EachTrigram(str string, f func(float64)) {
+func (d *Document) EachTrigram(str string, f func(float64)) {
 	EachTrigram(str, func(trigram string) {
-		f(lm.Ngrams.relative(trigram))
+		f(d.LM.relative(trigram))
 	})
 }
 
 // LoadGzippedNGram loads the (gzipped) ngram model file.  The expected format
 // for each line is `%d,%s`.
-func (lm *LanguageModel) LoadGzippedNGram(path string) error {
+func (d *Document) LoadGzippedNGram(path string) error {
 	is, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("load ngrams %s: %v", path, err)
@@ -146,17 +146,17 @@ func (lm *LanguageModel) LoadGzippedNGram(path string) error {
 		return fmt.Errorf("load ngrams %s: %v", path, err)
 	}
 	defer gz.Close()
-	if err := lm.Ngrams.loadCSV(gz); err != nil {
+	if err := d.LM.loadCSV(gz); err != nil {
 		return fmt.Errorf("load ngrams: %s: %v", path, err)
 	}
 	return nil
 }
 
-func (lm *LanguageModel) calculateLexicality(tokens ...T) {
+func (d *Document) calculateLexicality(tokens ...T) {
 	var total, lexical int
 	for _, token := range tokens {
 		total++
-		interpretation, ok := lm.Profile[token.Tokens[0]]
+		interpretation, ok := d.Profile[token.Tokens[0]]
 		if !ok || len(interpretation.Candidates) == 0 {
 			continue
 		}
@@ -164,17 +164,17 @@ func (lm *LanguageModel) calculateLexicality(tokens ...T) {
 			lexical++
 		}
 	}
-	lm.Lexicality = float64(lexical) / float64(total)
+	d.Lexicality = float64(lexical) / float64(total)
 }
 
 // ReadProfile loads the profile for the master OCR tokens.
-func (lm *LanguageModel) ReadProfile(ctx context.Context, exe, config string, cache bool, tokens ...T) error {
+func (d *Document) ReadProfile(ctx context.Context, exe, config string, cache bool, tokens ...T) error {
 	if len(tokens) == 0 {
 		return nil
 	}
 	if cache {
 		if profile, ok := readCachedProfile(tokens[0].Group); ok {
-			lm.Profile = profile
+			d.Profile = profile
 			return nil
 		}
 	}
@@ -182,12 +182,12 @@ func (lm *LanguageModel) ReadProfile(ctx context.Context, exe, config string, ca
 	if err != nil {
 		return fmt.Errorf("read profile %s %s: %v", exe, config, err)
 	}
-	lm.Profile = profile
+	d.Profile = profile
 	if !cache {
 		return nil
 	}
 	cacheProfile(tokens[0].Group, profile)
-	lm.calculateLexicality(tokens...)
+	d.calculateLexicality(tokens...)
 	return nil
 }
 
