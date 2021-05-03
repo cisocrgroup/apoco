@@ -107,7 +107,7 @@ func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 	for i := 0; i < lr.Ntrain; i++ {
 		lr.predictVec(x, &pred)
 		err := lr.gradient(x, y, &pred, &gradient)
-		if errb < err {
+		if math.IsNaN(err) || errb < err {
 			break
 		}
 		gradient.ScaleVec(lr.LearningRate, &gradient)
