@@ -245,6 +245,7 @@ func readTXT(is io.Reader) (apoco.Chars, error) {
 		for _, r := range s.Text() {
 			chars = appendChar(chars, apoco.Char{Char: r})
 		}
+		//lint:ignore SA4004 We allways want to read exactly one line of the file.
 		break
 	}
 	if s.Err() != nil {
@@ -341,14 +342,6 @@ func trim(chars apoco.Chars) apoco.Chars {
 		}
 	}
 	return chars[i:j]
-}
-
-func runes(chars apoco.Chars) []rune {
-	runes := make([]rune, len(chars))
-	for i := range chars {
-		runes[i] = chars[i].Char
-	}
-	return runes
 }
 
 type calamariChar struct {
