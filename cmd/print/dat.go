@@ -1,9 +1,8 @@
-package mkdat
+package print
 
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strings"
@@ -12,9 +11,9 @@ import (
 )
 
 // CMD defines the apoco train command.
-var CMD = &cobra.Command{
-	Use:   "mkdat",
-	Short: "Make data for diagrams",
+var datCMD = &cobra.Command{
+	Use:   "dat",
+	Short: "Print data for diagrams",
 	Run:   run,
 }
 
@@ -65,52 +64,13 @@ func run(_ *cobra.Command, _ []string) {
 		}
 		fmt.Print(data["1487"][i].name)
 		for _, name := range names {
-			fmt.Printf(" %g", data[name][i].d())
+			fmt.Printf(" %g", data[name][i].data)
 		}
 		fmt.Println()
 	}
-
-	/*
-		// Plot the data
-		p := plot.New()
-		p.Title.Text = "OCR, optimal, pre19th, 19th character-accuracies"
-		var i int
-		for name := range data {
-			var vals plotter.Values
-			for _, pair := range data[name] {
-				vals = append(vals, pair.d())
-			}
-			log.Printf("%s: %v", name, vals)
-			bars, err := plotter.NewBarChart(vals, 2)
-			chk(err)
-			bars.Color = newColor(colors[name])
-			bars.XMin = float64(i * (len(data[name]) + 1))
-			p.Add(bars)
-			i++
-		}
-		chk(p.Save(5*vg.Inch, 3*vg.Inch, "hist.png"))
-	*/
 }
 
-/*
-func newColor(s string) color.RGBA {
-	c := color.RGBA{A: 0xff}
-	_, err := fmt.Sscanf(s, "#%02x%02x%02x", &c.R, &c.G, &c.B)
-	chk(err)
-	return c
-}
-*/
 type pair struct {
 	name string
 	data float64
-}
-
-func (p pair) d() float64 {
-	return p.data
-}
-
-func chk(err error) {
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
 }
