@@ -106,7 +106,7 @@ type pair struct {
 }
 
 func (p pair) d() float64 {
-	return 1 - p.data
+	return p.data
 }
 
 func chk(err error) {
