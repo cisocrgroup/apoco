@@ -188,6 +188,7 @@ func (e Extensions) TokenizeLines() apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(line apoco.T) error {
 			alignments := alignLines(line.Tokens...)
+			var ts []apoco.T
 			for i := range alignments {
 				t := apoco.T{
 					File:     line.File,
@@ -200,9 +201,13 @@ func (e Extensions) TokenizeLines() apoco.StreamFunc {
 					}
 					t.Tokens = append(t.Tokens, string(p.Slice()))
 				}
-				if err := apoco.SendTokens(ctx, out, t); err != nil {
-					return fmt.Errorf("tokenize lines: %v", err)
-				}
+				ts = append(ts, t)
+			}
+			if len(ts) > 0 { // Mark last token in the line.
+				ts[len(ts)-1].EOL = true
+			}
+			if err := apoco.SendTokens(ctx, out, ts...); err != nil {
+				return fmt.Errorf("tokenize lines: %v", err)
 			}
 			return nil
 		})

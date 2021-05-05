@@ -42,18 +42,23 @@ func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.update, "update", "u", false,
 		"update the model if it already exists")
 	// Subcommands
-	CMD.AddCommand(rrCMD, dmCMD)
+	CMD.AddCommand(rrCMD, dmCMD, mrgCMD)
 }
 
-func logCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, dm bool) error {
+func logCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, typ string) error {
 	if !apoco.LogEnabled() {
 		return nil
 	}
 	var names []string
-	if dm {
-		names = fs.Names(c.DM.Features, c.Nocr, dm)
-	} else {
-		names = fs.Names(c.RR.Features, c.Nocr, dm)
+	switch typ {
+	case "dm":
+		names = fs.Names(c.DMFeatures, typ, c.Nocr)
+	case "rr":
+		names = fs.Names(c.RRFeatures, typ, c.Nocr)
+	case "mrg":
+		names = fs.Names(c.MRGFeatures, typ, c.Nocr)
+	default:
+		panic("bad type: " + typ)
 	}
 	cor := correlationMat(x)
 	var buf bytes.Buffer

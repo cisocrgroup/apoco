@@ -35,7 +35,7 @@ func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.cache, "cache", "c", false,
 		"enable caching of profiles (overwrites the setting in the configuration file)")
 	// Subcommands
-	CMD.AddCommand(rrCMD, dmCMD)
+	CMD.AddCommand(rrCMD, dmCMD, mrgCMD)
 }
 
 type stats struct {
@@ -59,15 +59,25 @@ func (s *stats) add(y, p float64) {
 }
 
 func (s *stats) recall() float64 {
+	if s.tp == 0 && s.fn == 0 {
+		return 0
+	}
 	return float64(s.tp) / float64(s.tp+s.fn)
 }
 
 func (s *stats) precision() float64 {
+	if s.tp == 0 && s.fp == 0 {
+		return 0
+	}
 	return float64(s.tp) / float64(s.tp+s.fp)
 }
 
 func (s *stats) f1() float64 {
-	return 2 * s.precision() * s.recall() / (s.precision() + s.recall())
+	p, r := s.precision(), s.recall()
+	if p == 0 && r == 0 {
+		return 0
+	}
+	return (2 * p * r) / (p + r)
 }
 
 func (s *stats) print(out io.Writer, typ string, nocr int) error {

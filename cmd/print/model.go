@@ -55,7 +55,7 @@ func printmodel(name string, model apoco.Model) {
 		printpats(w, name, "ocr", model.GlobalOCRPatterns)
 	}
 	if !modelFlags.noWeights {
-		for _, typ := range []string{"rr", "dm"} {
+		for _, typ := range []string{"mrg", "rr", "dm"} {
 			printmodeldata(w, name, typ, model.Models[typ])
 		}
 	}
@@ -66,7 +66,7 @@ func printmodeldata(out io.Writer, name, typ string, ds map[int]apoco.ModelData)
 		ws := data.Model.Weights()
 		fs, err := apoco.NewFeatureSet(data.Features...)
 		chk(err)
-		names := fs.Names(data.Features, nocr, typ == "dm")
+		names := fs.Names(data.Features, typ, nocr)
 		if len(names) != len(ws) {
 			panic("bad feature names")
 		}
@@ -108,7 +108,7 @@ func jsonfeatures(typ string, ds map[int]apoco.ModelData) []feature {
 		ws := data.Model.Weights()
 		fs, err := apoco.NewFeatureSet(data.Features...)
 		chk(err)
-		names := fs.Names(data.Features, nocr, typ == "dm")
+		names := fs.Names(data.Features, typ, nocr)
 		if len(names) != len(ws) {
 			panic("bad feature names")
 		}

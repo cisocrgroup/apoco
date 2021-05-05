@@ -159,6 +159,28 @@ func EachTokenInDocument(ctx context.Context, in <-chan T, f func(*Document, ...
 	return nil
 }
 
+// EachLine calls the given callback function for each line.
+func EachLine(ctx context.Context, in <-chan T, f func([]T) error) error {
+	var ts []T
+	err := EachToken(ctx, in, func(t T) error {
+		ts = append(ts, t)
+		if t.EOL {
+			if err := f(ts); err != nil {
+				return fmt.Errorf("each line: %v", err)
+			}
+			ts = ts[0:0]
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("each line: %v", err)
+	}
+	if len(ts) != 0 {
+		return fmt.Errorf("each line: missing end-of-line marker")
+	}
+	return nil
+}
+
 // ReadToken reads one token from the given channel.  This function
 // should alsways be used to read single tokens from input channels.
 func ReadToken(ctx context.Context, in <-chan T) (T, bool, error) {
@@ -460,4 +482,64 @@ func connectCorrections(lr *ml.LR, fs FeatureSet, nocr int, tokens []T) {
 			Conf:      p.AtVec(i),
 		}
 	}
+}
+
+func ConnectMergesWithGT(max int) StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		var ts []T
+		err := EachLine(ctx, in, func(line []T) error {
+			for i := 0; i < len(line); i++ {
+				for m := max; m > 1; m-- {
+					if i+m > len(line) {
+						continue
+					}
+					slice := line[i : i+m] // slice is not empty!
+					t := makeMRGToken(slice)
+					ts = append(ts, t)
+					// We use the ground truth to enforce the "tokenization" of merges.
+					if slice[0].Tokens[len(slice[0].Tokens)-1] == t.Tokens[len(t.Tokens)-1] {
+						i += len(slice) - 1 // Regard the i++ in the for loop.
+						break
+					}
+				}
+			}
+			if err := SendTokens(ctx, out, ts...); err != nil {
+				return fmt.Errorf("connect merges with gt: %v", err)
+			}
+			ts = ts[0:0]
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("connect merges with gt: %v", err)
+		}
+		return nil
+	}
+}
+
+// ts is not empty!
+func makeMRGToken(ts []T) T {
+	// Make a new copy of the first token;
+	// We need to copy all the internal arrays and slices.
+	t := ts[0]
+	t.Tokens = make([]string, len(ts[0].Tokens))
+	copy(t.Tokens, ts[0].Tokens)
+	t.Chars = make(Chars, len(ts[0].Chars))
+	copy(t.Chars, ts[0].Chars)
+	t.Payload = Split{Tokens: make([]T, len(ts))}
+	copy(t.Payload.(Split).Tokens, ts)
+
+	for i := 1; i < len(ts); i++ {
+		t.ID += "+" + ts[i].ID
+		t.Chars = append(t.Chars, ts[i].Chars...)
+		t.EOL = t.EOL || ts[i].EOL
+		for j := range ts[i].Tokens {
+			if j == 0 || !strings.HasSuffix(t.Tokens[j], ts[i].Tokens[j]) {
+				t.Tokens[j] += ts[i].Tokens[j]
+			}
+			if j == len(ts[i].Tokens)-1 && ts[i].Tokens[j] == "" {
+				t.Tokens[j] += "@"
+			}
+		}
+	}
+	return t
 }

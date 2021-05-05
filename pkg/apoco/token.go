@@ -17,6 +17,7 @@ type T struct {
 	ID       string      // ID of the token in its file
 	Chars    Chars       // Master OCR chars including their confidences
 	Tokens   []string    // Master and support OCRs and gt
+	EOL      bool        // Token is last token in the line
 }
 
 // IsLexiconEntry returns true if this token is a normal lexicon entry
@@ -85,6 +86,11 @@ func (char Char) String() string {
 type Ranking struct {
 	Candidate *gofiler.Candidate
 	Prob      float64
+}
+
+type Split struct {
+	Candidate *gofiler.Candidate
+	Tokens    []T
 }
 
 // Correction represents a correction decision for tokens.

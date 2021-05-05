@@ -86,7 +86,8 @@ func (lr *LR) PredictProb(x *mat.Dense) *mat.VecDense {
 
 // Predict calculates the predictions for the given values.
 func (lr *LR) Predict(x *mat.Dense, t float64) *mat.VecDense {
-	tmp := lr.PredictProb(x)
+	var tmp mat.VecDense
+	lr.predictVec(x, &tmp)
 	for i := 0; i < tmp.Len(); i++ {
 		if tmp.AtVec(i) > t {
 			tmp.SetVec(i, True)
@@ -94,7 +95,7 @@ func (lr *LR) Predict(x *mat.Dense, t float64) *mat.VecDense {
 			tmp.SetVec(i, False)
 		}
 	}
-	return tmp
+	return &tmp
 }
 
 // Fit fits the linear regression model and returns its final error.

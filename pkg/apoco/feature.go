@@ -39,6 +39,9 @@ var register = map[string]FeatureFunc{
 	"RankingConfDiffToNext":          RankingConfDiffToNext,
 	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
 	"DocumentLexicality":             DocumentLexicality,
+	"SplitOtherOCR":                  splitOtherOCR,
+	"SplitNumShortTokens":            splitNumShortTokens,
+	"SplitUnigramTokenConf":          splitUnigramTokenConf,
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -85,7 +88,7 @@ func (fs FeatureSet) Calculate(xs []float64, t T, n int) []float64 {
 // Names returns the names of the features including the features for
 // different values of OCR's.  This function panics if the length of the
 // feature set differs from the length of the given feature names.
-func (fs FeatureSet) Names(names []string, nocr int, dm bool) []string {
+func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 	if len(names) != len(fs) {
 		panic("bad names")
 	}
@@ -94,10 +97,15 @@ func (fs FeatureSet) Names(names []string, nocr int, dm bool) []string {
 		Tokens:   make([]string, nocr+1),
 		Document: new(Document),
 	}
-	if dm {
+	switch typ {
+	case "dm":
 		t.Payload = []Ranking{{Candidate: new(gofiler.Candidate)}}
-	} else {
+	case "rr":
 		t.Payload = new(gofiler.Candidate)
+	case "mrg":
+		t.Payload = Split{Tokens: []T{{Tokens: make([]string, nocr)}}}
+	default:
+		panic("bad type: " + typ)
 	}
 	for fi, f := range fs {
 		for i := 0; i < nocr; i++ {
@@ -482,4 +490,40 @@ func DocumentLexicality(t T, i, n int) (float64, bool) {
 		return 0, false
 	}
 	return t.Document.Lexicality, true
+}
+
+func splitOtherOCR(t T, i, n int) (float64, bool) {
+	if i == 0 {
+		return 0, false
+	}
+	ts := t.Payload.(Split).Tokens
+	for j := 1; j < len(ts); j++ {
+		if ts[j-1].Tokens[i] != ts[j].Tokens[i] {
+			return ml.False, true
+		}
+	}
+	return ml.True, true
+}
+
+func splitNumShortTokens(t T, i, n int) (float64, bool) {
+	ts := t.Payload.(Split).Tokens
+	var sum int
+	for j := range ts {
+		if utf8.RuneCountInString(ts[j].Tokens[i]) < 4 {
+			sum++
+		}
+	}
+	return float64(sum), true
+}
+
+func splitUnigramTokenConf(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	ts := t.Payload.(Split).Tokens
+	var sum float64
+	for j := range ts {
+		sum += math.Log(t.Document.Unigram(ts[j].Tokens[i]))
+	}
+	return sum, true
 }
