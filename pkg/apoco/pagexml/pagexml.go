@@ -109,6 +109,7 @@ func tokenizePageXML(ctx context.Context, file string, doc *apoco.Document, out 
 		// Set appropriate end-of-line and start-of-line flags.
 		token.SOL = sol
 		sol = false
+		// Set appropriate end-of-line flag.
 		if i+1 < len(words) {
 			// Token is end of line, if the next token is on
 			// a different line and has a different parent node.

@@ -220,6 +220,9 @@ func (e Extensions) TokenizeLines() apoco.StreamFunc {
 				}
 				ts = ts[1:]
 			}
+			if len(ts) > 0 { // Mark last token in the line.
+				ts[len(ts)-1].EOL = true
+			}
 			if err := apoco.SendTokens(ctx, out, ts...); err != nil {
 				return fmt.Errorf("tokenize lines: %v", err)
 			}
