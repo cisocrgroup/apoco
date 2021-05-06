@@ -31,9 +31,10 @@ func (e Extensions) Tokenize(ctx context.Context, dirs ...string) apoco.StreamFu
 	return apoco.Combine(ctx, e.ReadLines(dirs...), e.TokenizeLines())
 }
 
-// ReadLines returns a stream function that reads snippet files
-// (identyfied by the given file extensions) and returns a stream of
-// line tokens.
+// ReadLines returns a stream function that reads snippet files in
+// the directories (identyfied by the given file extensions) and
+// returns a stream of line tokens.  The directories are read in
+// parallel by GOMAXPROCS goroutines.
 //
 // If a extension ends with `.txt`, one line is read from the text
 // file (no confidences); if the file ends with `.json`, calamari's
