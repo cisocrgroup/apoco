@@ -92,6 +92,17 @@ func TestTokenizeDirError(t *testing.T) {
 	}
 }
 
+func TestTokenizeBadDir(t *testing.T) {
+	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
+	ctx := context.Background()
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDirA, "bad-dir", testDirB), iterate(t, func(tok apoco.T) error {
+		return fmt.Errorf("error")
+	}))
+	if err == nil {
+		t.Errorf("expected an error")
+	}
+}
+
 // voll. Diſe wurtzel reiniget die mů
 func TestCalamari(t *testing.T) {
 	ext := Extensions{".json"}
