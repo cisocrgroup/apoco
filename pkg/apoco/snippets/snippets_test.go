@@ -2,6 +2,7 @@ package snippets
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -77,6 +78,17 @@ func TestTokenizeDirParallel(t *testing.T) {
 	}
 	if n != want {
 		t.Errorf("invalid number of tokens: expected %d; got %d", want, n)
+	}
+}
+
+func TestTokenizeDirError(t *testing.T) {
+	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
+	ctx := context.Background()
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDirA, testDirB), iterate(t, func(tok apoco.T) error {
+		return fmt.Errorf("error")
+	}))
+	if err == nil {
+		t.Errorf("expected an error")
 	}
 }
 
