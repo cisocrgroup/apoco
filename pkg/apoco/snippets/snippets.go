@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,38 +46,62 @@ func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 			return nil
 		}
 		g, gctx := errgroup.WithContext(ctx)
-		in := make(chan []apoco.T)
+		linechan := make(chan []apoco.T)
+		dirchan := make(chan string)
 		var wg sync.WaitGroup
-		for _, dir := range dirs {
-			doc := &apoco.Document{Group: dir}
-			func(dir string) {
-				wg.Add(1)
-				g.Go(func() error {
-					defer wg.Done()
-					lines, err := e.readLinesFromDir(dir)
-					if err != nil {
-						return err
-					}
-					select {
-					case in <- lines:
-						return nil
-					case <-gctx.Done():
-						return gctx.Err()
-					case <-ctx.Done():
-						return ctx.Err()
-					}
-				})
-			}(dir)
-		}
+		// Feed dirs into the dir channel and close it.
 		g.Go(func() error {
-			wg.Wait()
-			close(in)
+			defer close(dirchan)
+			for _, dir := range dirs {
+				select {
+				case dirchan <- dir:
+				case <-gctx.Done():
+					return gctx.Err()
+				}
+			}
 			return nil
 		})
+		// Start GOMAXPROGS goroutines that read
+		// the dir contents.
+		n := runtime.GOMAXPROCS(0)
+		wg.Add(n)
+		for i := 0; i < n; i++ {
+			g.Go(func() error {
+				defer wg.Done()
+				for {
+					select {
+					case dir, ok := <-dirchan:
+						if !ok {
+							return nil
+						}
+						lines, err := e.readLinesFromDir(dir)
+						if err != nil {
+							return err
+						}
+						select {
+						case linechan <- lines:
+						case <-gctx.Done():
+							return gctx.Err()
+						}
+					case <-gctx.Done():
+						return gctx.Err()
+					}
+				}
+			})
+		}
+		// Wait until all producers are done
+		// and close the line channel.
+		g.Go(func() error {
+			wg.Wait()
+			close(linechan)
+			return nil
+		})
+		// Read lines an write their tokens
+		// into the output channel.
 		g.Go(func() error {
 			for {
 				select {
-				case lines, ok := <-in:
+				case lines, ok := <-linechan:
 					if !ok {
 						return nil
 					}
@@ -85,8 +110,6 @@ func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 					}
 				case <-gctx.Done():
 					return gctx.Err()
-				case <-ctx.Done():
-					return ctx.Err()
 				}
 			}
 		})
