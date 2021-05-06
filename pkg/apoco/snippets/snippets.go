@@ -6,14 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/align"
+	"golang.org/x/sync/errgroup"
 )
 
 // Extensions is used to tokenize snippets in directories using the
@@ -38,72 +41,119 @@ func (e Extensions) Tokenize(ctx context.Context, dirs ...string) apoco.StreamFu
 // confidence on each line.
 func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
+		if len(dirs) == 0 {
+			return nil
+		}
+		g, gctx := errgroup.WithContext(ctx)
+		in := make(chan []apoco.T)
+		var wg sync.WaitGroup
 		for _, dir := range dirs {
 			doc := &apoco.Document{Group: dir}
-			if err := e.readLinesFromDir(ctx, doc, out); err != nil {
-				return fmt.Errorf("read lines %s: %v", dir, err)
-			}
+			func(dir string) {
+				wg.Add(1)
+				g.Go(func() error {
+					defer wg.Done()
+					lines, err := e.readLinesFromDir(dir)
+					if err != nil {
+						return err
+					}
+					select {
+					case in <- lines:
+						return nil
+					case <-gctx.Done():
+						return gctx.Err()
+					case <-ctx.Done():
+						return ctx.Err()
+					}
+				})
+			}(dir)
 		}
-		return nil
+		g.Go(func() error {
+			wg.Wait()
+			close(in)
+			return nil
+		})
+		g.Go(func() error {
+			for {
+				select {
+				case lines, ok := <-in:
+					if !ok {
+						return nil
+					}
+					if err := apoco.SendTokens(gctx, out, lines...); err != nil {
+						return err
+					}
+				case <-gctx.Done():
+					return gctx.Err()
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+		})
+		return g.Wait()
 	}
 }
 
-func (e Extensions) readLinesFromDir(ctx context.Context, doc *apoco.Document, out chan<- apoco.T) error {
+func (e Extensions) readLinesFromDir(doc *apoco.Document) ([]apoco.T, error) {
+	log.Printf("read line from dirs: %s", base)
 	// Use a dir path stack to iterate over all dirs in the tree.
 	stack := []string{doc.Group}
+	var lines []apoco.T
 	for len(stack) != 0 {
 		dir := stack[len(stack)-1]
 		stack = stack[0 : len(stack)-1]
+		log.Printf("current: %s", dir)
+		log.Printf("stack = %v", stack)
 		// Read all file info entries from the dir.
-		dirs, err := os.ReadDir(dir)
+		fis, err := os.ReadDir(dir)
 		if err != nil {
-			return fmt.Errorf("read lines from dir %s: %v", dir, err)
+			return nil, fmt.Errorf("read lines from dir %s: %v", dir, err)
 		}
 		// Either append new dirs to the stack or handle files with
 		// the master file extension at index 0. Skip all other files.
-		for i := range dirs {
-			if dirs[i].IsDir() {
-				stack = append(stack, filepath.Join(dir, dirs[i].Name()))
+		for i := range fis {
+			if fis[i].IsDir() {
+				stack = append(stack, filepath.Join(dir, fis[i].Name()))
 				continue
 			}
-			if !strings.HasSuffix(dirs[i].Name(), e[0]) {
+			if !strings.HasSuffix(fis[i].Name(), e[0]) {
 				continue
 			}
-			file := filepath.Join(dir, dirs[i].Name())
-			if err := e.readLinesFromSnippets(ctx, file, doc, out); err != nil {
-				return fmt.Errorf("read lines from dir %s: %v", dir, err)
+			file := filepath.Join(dir, fis[i].Name())
+			t, err := e.readLinesFromSnippets(doc, file)
+			if err != nil {
+				return nil, fmt.Errorf("read lines from dir %s: %v", dir, err)
 			}
+			lines = append(lines, t)
 		}
 	}
-	return nil
+	log.Printf("read all lines from dir: %s", base)
+	return lines, nil
 }
 
-func (e Extensions) readLinesFromSnippets(ctx context.Context, file string, doc *apoco.Document, out chan<- apoco.T) error {
+func (e Extensions) readLinesFromSnippets(doc *apoco.Document, file string) (apoco.T, error) {
+	log.Printf("read lines from snippet: %s, %s", base, file)
 	var lines []apoco.Chars
 	pairs, err := readSnippetFile(file)
 	if err != nil {
-		return fmt.Errorf("read lines from snippets %s: %v", file, err)
+		return apoco.T{}, fmt.Errorf("read lines from snippets %s: %v", file, err)
 	}
 	lines = append(lines, pairs)
 	for i := 1; i < len(e); i++ {
 		path := file[0:len(file)-len(e[0])] + e[i]
 		pairs, err := readSnippetFile(path)
 		if err != nil {
-			return fmt.Errorf("read lines from snippets %s: %v", file, err)
+			return apoco.T{}, fmt.Errorf("read lines from snippets %s: %v", file, err)
 		}
 		lines = append(lines, pairs)
 	}
-	err = apoco.SendTokens(ctx, out, apoco.T{
-		Document: doc,
+	return apoco.T{
 		Chars:    lines[0],
+		Document: doc,
 		File:     file,
 		ID:       filepath.Base(file),
 		Tokens:   makeTokensFromPairs(lines),
-	})
-	if err != nil {
-		return fmt.Errorf("read lines from snippets %s: %v", file, err)
-	}
-	return nil
+	}, nil
 }
 
 func makeTokensFromPairs(lines []apoco.Chars) []string {
@@ -114,17 +164,18 @@ func makeTokensFromPairs(lines []apoco.Chars) []string {
 	return ret
 }
 
-// TokenizeLines returns a stream function that tokenizes and aligns
-// line tokens.
+// TokenizeLines returns a stream function that tokenizes
+// and aligns line tokens.
 func (e Extensions) TokenizeLines() apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(line apoco.T) error {
+			log.Printf("tokenize lines token: %s", line)
 			alignments := alignLines(line.Tokens...)
 			for i := range alignments {
 				t := apoco.T{
-					Document: line.Document,
-					File:     line.File,
-					ID:       line.ID + ":" + strconv.Itoa(i+1),
+					File:  line.File,
+					Group: line.Group,
+					ID:    line.ID + ":" + strconv.Itoa(i+1),
 				}
 				for j, p := range alignments[i] {
 					if j == 0 {
@@ -132,9 +183,11 @@ func (e Extensions) TokenizeLines() apoco.StreamFunc {
 					}
 					t.Tokens = append(t.Tokens, string(p.Slice()))
 				}
+				log.Printf("sending t = %s", t)
 				if err := apoco.SendTokens(ctx, out, t); err != nil {
 					return fmt.Errorf("tokenize lines: %v", err)
 				}
+				log.Printf("sent t")
 			}
 			return nil
 		})
