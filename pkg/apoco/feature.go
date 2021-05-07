@@ -93,6 +93,7 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 		panic("bad names")
 	}
 	var ret []string
+	// Create dummy tokens to test if the features activate.
 	t := T{
 		Tokens:   make([]string, nocr+1),
 		Document: new(Document),
@@ -110,12 +111,17 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 	default:
 		panic("bad type: " + typ)
 	}
+	// Iterate over the features, check if a feature is active
+	// for a given configuration using the dummy token and append
+	// the feature name to the results.
 	for fi, f := range fs {
 		for i := 0; i < nocr; i++ {
-			if _, ok := f(t, i, nocr); ok {
-				ret = append(ret, fmt.Sprintf("%s(%d)", names[fi], i+1))
+			if _, ok := f(t, i, nocr); !ok {
+				continue
 			}
+			ret = append(ret, fmt.Sprintf("%s(%d)", names[fi], i+1))
 		}
+	}
 	}
 	return ret
 }
