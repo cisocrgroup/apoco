@@ -42,18 +42,31 @@ type stats struct {
 	tn, tp, fn, fp int
 }
 
-func (s *stats) add(y, p float64) {
+type typ int
+
+const (
+	tp typ = iota
+	tn
+	fp
+	fn
+)
+
+func (s *stats) add(y, p float64) typ {
 	if y == ml.True {
 		if y == p {
 			s.tp++
+			return tp
 		} else {
 			s.fn++
+			return fn
 		}
 	} else {
 		if y == p {
 			s.tn++
+			return tn
 		} else {
 			s.fp++
+			return fp
 		}
 	}
 }
