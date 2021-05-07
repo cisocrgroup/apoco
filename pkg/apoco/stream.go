@@ -340,6 +340,67 @@ func ConnectCandidates() StreamFunc {
 	}
 }
 
+// AddShortTokensToProfile returns a stream function that adds fake
+// profiler interpretation for short tokens into the token's profile.
+// Short tokens are tokens with less than or equal to max unicode runes.
+func AddShortTokensToProfile(max int) StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachTokenInDocument(ctx, in, func(d *Document, ts ...T) error {
+			for i, t := range ts {
+				if utf8.RuneCountInString(t.Tokens[0]) > max {
+					continue
+				}
+				if _, ok := t.Document.Profile[t.Tokens[0]]; ok {
+					continue
+				}
+				ts[i].Document.Profile[t.Tokens[0]] = gofiler.Interpretation{
+					N:   1,
+					OCR: t.Tokens[0],
+					Candidates: []gofiler.Candidate{
+						{
+							Suggestion: t.Tokens[0],
+							Modern:     t.Tokens[0],
+							Dict:       "short-split-tokens",
+						},
+					},
+				}
+			}
+			return SendTokens(ctx, out, ts...)
+		})
+		if err != nil {
+			return fmt.Errorf("add short tokens to profile: %v", err)
+		}
+		return nil
+	}
+}
+
+// ConnectCandidates returns a stream function that connects tokens
+// with their respective candidates to the stream.  Tokens with no
+// candidates or tokens with only a modern interpretation are filtered
+// from the stream.
+func ConnectSplitCandidates() StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachToken(ctx, in, func(t T) error {
+			interp, ok := t.Document.Profile[t.Tokens[0]]
+			// Remove token with no candiates
+			if !ok {
+				return nil
+			}
+			if len(interp.Candidates) == 0 {
+				return nil
+			}
+			split := t.Payload.(Split)
+			split.Candidates = interp.Candidates
+			t.Payload = split
+			return SendTokens(ctx, out, t)
+		})
+		if err != nil {
+			return fmt.Errorf("connect split candidates: %v", err)
+		}
+		return nil
+	}
+}
+
 // ConnectProfile returns a stream function that connects the tokens with the profile.
 func ConnectProfile(profile gofiler.Profile) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {

@@ -89,8 +89,8 @@ type Ranking struct {
 }
 
 type Split struct {
-	Candidate *gofiler.Candidate
-	Tokens    []T
+	Candidates []gofiler.Candidate
+	Tokens     []T
 }
 
 // Correction represents a correction decision for tokens.
