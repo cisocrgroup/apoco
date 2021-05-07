@@ -120,7 +120,7 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 			if _, ok := f(t, i, nocr); !ok {
 				continue
 			}
-			ret = append(ret, fmt.Sprintf("%s(%d)", names[fi], i+1))
+			ret = append(ret, fmt.Sprintf("%s/%d", names[fi], i+1))
 		}
 	}
 	return ret
