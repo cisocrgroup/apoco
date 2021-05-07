@@ -44,7 +44,7 @@ var register = map[string]FeatureFunc{
 // FeatureFunc defines the function a feature needs to implement.  A
 // feature func gets a token and a configuration (the current
 // OCR-index i and the total number of parallel OCRs n).  The function
-// then should return the feature value for the given token and wether
+// then should return the feature value for the given token and whether
 // this feature applies for the given configuration (i and n).
 type FeatureFunc func(t T, i, n int) (float64, bool)
 
