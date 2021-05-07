@@ -103,7 +103,10 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 	case "rr":
 		t.Payload = new(gofiler.Candidate)
 	case "mrg":
-		t.Payload = Split{Tokens: []T{{Tokens: make([]string, nocr)}}}
+		t.Payload = Split{
+			Tokens:     []T{{Tokens: make([]string, nocr+1)}},
+			Candidates: []gofiler.Candidate{{}},
+		}
 	default:
 		panic("bad type: " + typ)
 	}
