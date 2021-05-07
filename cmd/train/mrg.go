@@ -46,7 +46,9 @@ func mrgRun(_ *cobra.Command, args []string) {
 		apoco.ConnectDocument(m.Ngrams),
 		apoco.ConnectUnigrams(),
 		apoco.ConnectMergesWithGT(mrgFlags.max),
-		// apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache),
+		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, false),
+		apoco.AddShortTokensToProfile(3),
+		apoco.ConnectSplitCandidates(),
 		// apoco.FilterLexiconEntries(),
 		// apoco.ConnectCandidates(),
 		mrgTrain(c, m, flags.update),
@@ -79,6 +81,12 @@ func mrgTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			gt := mrgGT(t)
+			apoco.Log("%s has %d candidates", t, len(t.Payload.(apoco.Split).Candidates))
+			if len(t.Payload.(apoco.Split).Candidates) > 0 {
+				apoco.Log("first candidate: %s", t.Payload.(apoco.Split).Candidates[0])
+			} else {
+				return fmt.Errorf("token with no candidates")
+			}
 			if gt == ml.True {
 				splits++
 				if t.Tokens[0] == t.Tokens[len(t.Tokens)-1] {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -45,7 +46,9 @@ func mrgRun(_ *cobra.Command, args []string) {
 		apoco.ConnectDocument(m.Ngrams),
 		apoco.ConnectUnigrams(),
 		apoco.ConnectMergesWithGT(mrgFlags.max),
-		// apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache),
+		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, false),
+		apoco.AddShortTokensToProfile(3),
+		apoco.ConnectSplitCandidates(),
 		// apoco.FilterLexiconEntries(),
 		// apoco.ConnectCandidates(),
 		mrgEval(c, m, flags.update),
@@ -71,7 +74,14 @@ func mrgEval(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			}
 			pred := lr.Predict(x, 0.5)
 			xs = xs[0:0]
-			s.add(gt, pred.AtVec(0))
+			switch s.add(gt, pred.AtVec(0)) {
+			case tp:
+				apoco.Log("true positive: %s", tstr(t))
+			case fp:
+				apoco.Log("false positive: %s", tstr(t))
+			case fn:
+				apoco.Log("false negative: %s", tstr(t))
+			}
 			return nil
 		})
 		if err != nil {
@@ -79,6 +89,19 @@ func mrgEval(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		}
 		return s.print(os.Stdout, "mrg", c.Nocr)
 	}
+}
+
+func tstr(t apoco.T) string {
+	var b strings.Builder
+	b.WriteString(t.String())
+	pre := " ("
+	for _, tx := range t.Payload.(apoco.Split).Tokens {
+		b.WriteString(pre)
+		b.WriteString(tx.String())
+		pre = " "
+	}
+	b.WriteString(")")
+	return b.String()
 }
 
 func mrgGT(ts []apoco.T) float64 {

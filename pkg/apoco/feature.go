@@ -42,6 +42,7 @@ var register = map[string]FeatureFunc{
 	"SplitOtherOCR":                  splitOtherOCR,
 	"SplitNumShortTokens":            splitNumShortTokens,
 	"SplitUnigramTokenConf":          splitUnigramTokenConf,
+	"SplitIsLexiconEntry":            isLexiconEntry,
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -121,7 +122,6 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 			}
 			ret = append(ret, fmt.Sprintf("%s(%d)", names[fi], i+1))
 		}
-	}
 	}
 	return ret
 }
@@ -446,6 +446,8 @@ func mustGetCandidate(t T) *gofiler.Candidate {
 		return tx
 	case []Ranking:
 		return tx[0].Candidate
+	case Split:
+		return &tx.Candidates[0]
 	default:
 		panic(fmt.Sprintf("mustGetCandidate: bad type: %T", tx))
 	}
@@ -535,4 +537,15 @@ func splitUnigramTokenConf(t T, i, n int) (float64, bool) {
 		sum += math.Log(t.Document.Unigram(ts[j].Tokens[i]))
 	}
 	return sum, true
+}
+
+func isLexiconEntry(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	cands := t.Payload.(Split).Candidates
+	if len(cands) == 1 && len(cands[0].OCRPatterns) == 0 && len(cands[0].HistPatterns) == 0 {
+		return ml.True, true
+	}
+	return ml.False, true
 }
