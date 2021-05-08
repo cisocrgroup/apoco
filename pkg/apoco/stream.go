@@ -226,6 +226,14 @@ func Normalize() StreamFunc {
 				t.Tokens[i] = strings.ReplaceAll(
 					strings.ToLower(t.Tokens[i]), " ", "_")
 			}
+			// We need to handle end of line markers in a special way.  In
+			// order to make sure that they are not removed even if they are
+			// empty after normalization, we make them long
+			// enough to not be removed (end of line markers are relevant for
+			// mrg training, so a length of 1 is sufficient).
+			if t.EOL && t.Tokens[0] == "" {
+				t.Tokens[0] = "$"
+			}
 			if err := SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("normalize: %v", err)
 			}
