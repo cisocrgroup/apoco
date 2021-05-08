@@ -601,6 +601,7 @@ func makeMRGToken(ts []T) T {
 		t.ID += "+" + ts[i].ID
 		t.Chars = append(t.Chars, ts[i].Chars...)
 		t.EOL = t.EOL || ts[i].EOL
+		t.SOL = t.SOL || ts[i].SOL
 		for j := range ts[i].Tokens {
 			if j == 0 || !strings.HasSuffix(t.Tokens[j], ts[i].Tokens[j]) {
 				t.Tokens[j] += ts[i].Tokens[j]
