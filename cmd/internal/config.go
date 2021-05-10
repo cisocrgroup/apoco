@@ -17,7 +17,7 @@ type Config struct {
 	ProfilerConfig string           `json:"profilerConfig"`
 	RR             TrainingSettings `json:"rr"`
 	DM             DMSettings       `json:"dm"`
-	MRG            MRGSettings      `json:"mrg"`
+	MS             MSSettings       `json:"ms"`
 	Nocr           int              `json:"nocr"`
 	Cache          bool             `json:"cache"`
 	GT             bool             `json:"gt"`
@@ -36,8 +36,8 @@ type DMSettings struct {
 	Filter string `json:"filter"` // cautious, courageous or redundant
 }
 
-// MRGSettings are the settings for the mrg training.
-type MRGSettings struct {
+// MSSettings are the settings for the mrg training.
+type MSSettings struct {
 	TrainingSettings
 	Window int `json:"window"`
 }

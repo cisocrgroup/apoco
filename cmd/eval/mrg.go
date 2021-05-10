@@ -13,25 +13,29 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// mrgCMD defines the apoco train rr command.
-var mrgCMD = &cobra.Command{
-	Use:   "mrg [DIRS...]",
-	Short: "Train an apoco merge model",
-	Run:   mrgRun,
+// msCMD defines the apoco train rr command.
+var msCMD = &cobra.Command{
+	Use:   "ms [DIRS...]",
+	Short: "Eval an apoco merge split model",
+	Run:   msRun,
 }
 
-var mrgFlags struct {
-	max int
+var msFlags struct {
+	window int
 }
 
 func init() {
-	mrgCMD.Flags().IntVarP(&mrgFlags.max, "max", "m", 2, "set the maximum tokens for merges")
+	msCMD.Flags().IntVarP(&msFlags.window, "window", "w", 2, "set the maximum tokens for merges")
 }
 
-func mrgRun(_ *cobra.Command, args []string) {
+func msRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache, false)
+	internal.UpdateString(&c.Model, flags.model)
+	internal.UpdateInt(&c.Nocr, flags.nocr)
+	internal.UpdateInt(&c.MS.Window, msFlags.window)
+	internal.UpdateBool(&c.Cautious, flags.cautious)
+	internal.UpdateBool(&c.Cache, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	p := internal.Piper{
@@ -45,28 +49,28 @@ func mrgRun(_ *cobra.Command, args []string) {
 		apoco.FilterShort(1), // skip empty token
 		apoco.ConnectDocument(m.Ngrams),
 		apoco.ConnectUnigrams(),
-		apoco.ConnectMergesWithGT(mrgFlags.max),
+		apoco.ConnectMergesWithGT(c.MS.Window),
 		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, false),
 		apoco.AddShortTokensToProfile(3),
 		apoco.ConnectSplitCandidates(),
 		// apoco.FilterLexiconEntries(),
 		// apoco.ConnectCandidates(),
-		mrgEval(c, m, flags.update),
+		msEval(c, m, flags.update),
 	))
 }
 
-func mrgEval(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func msEval(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
-		lr, fs, err := m.Get("mrg", c.Nocr)
+		lr, fs, err := m.Get("ms", c.Nocr)
 		if err != nil {
-			return fmt.Errorf("eval mrg: %v", err)
+			return fmt.Errorf("eval ms: %v", err)
 		}
 		var xs []float64
 		var x *mat.Dense
 		var s stats
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			slice := t.Payload.(apoco.Split).Tokens
-			gt := mrgGT(slice)
+			gt := msGT(slice)
 
 			xs = fs.Calculate(xs, t, c.Nocr)
 			if x == nil {
@@ -87,7 +91,7 @@ func mrgEval(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		if err != nil {
 			return err
 		}
-		return s.print(os.Stdout, "mrg", c.Nocr)
+		return s.print(os.Stdout, "ms", c.Nocr)
 	}
 }
 
@@ -104,7 +108,7 @@ func tstr(t apoco.T) string {
 	return b.String()
 }
 
-func mrgGT(ts []apoco.T) float64 {
+func msGT(ts []apoco.T) float64 {
 	for i := 1; i < len(ts); i++ {
 		if ts[i-1].Tokens[len(ts[i-1].Tokens)-1] != ts[i].Tokens[len(ts[i].Tokens)-1] {
 			return ml.False

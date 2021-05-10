@@ -42,7 +42,7 @@ func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.update, "update", "u", false,
 		"update the model if it already exists")
 	// Subcommands
-	CMD.AddCommand(rrCMD, dmCMD, mrgCMD)
+	CMD.AddCommand(rrCMD, dmCMD, msCMD)
 }
 
 func logCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, typ string) error {
@@ -55,8 +55,8 @@ func logCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, ty
 		names = fs.Names(c.DMFeatures, typ, c.Nocr)
 	case "rr":
 		names = fs.Names(c.RRFeatures, typ, c.Nocr)
-	case "mrg":
-		names = fs.Names(c.MRGFeatures, typ, c.Nocr)
+	case "ms":
+		names = fs.Names(c.MS.Features, typ, c.Nocr)
 	default:
 		panic("bad type: " + typ)
 	}
