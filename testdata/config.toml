@@ -20,23 +20,16 @@ profilerBin = "/usr/share/bin/profiler"
 # Path to the profiler language configuration file.
 profilerConfig = "/etc/profiler/german.ini"
 
-#
-# Training parameters
-#
-learningRate = 0.9
-ntrain = 100_000
-
-# Cautious or courageous decision maker training (overwrite with
-# -a/--cautious)
-cautious = false
-
 # Path to the 3-gram model csv file. Set it to the empty string to
 # disable the usage of trigrams.  This reduces the size of the model
 # files, but you cannot use any of the *Trigram* features.
 ngrams = "data/3gs.csv.gz"
 
-# Feature list for the reranker training.
-rrFeatures = [
+# Training settings for the re-ranker
+[rr]
+learningRate = 0.9
+ntrain = 100_000
+features = [
 "CandidateOCRPatternConfLog",
 # "CandidateHistPatternConfLog",
 "CandidateAgreeingOCR",
@@ -45,8 +38,14 @@ rrFeatures = [
 "OCRLevenshteinDist",
 ]
 
-# Feature list for the decision maker training.
-dmFeatures = [
+# Training settings for the decision maker.
+[dm]
+# Cautious or courageous decision maker training (overwrite with
+# -a/--cautious)
+cautious = false 
+learningRate = 0.9
+ntrain = 100_000
+features = [
 "RankingConf",
 "CandidateOCRPatternConfLog",
 # "CandidateHistPatternConfLog",
