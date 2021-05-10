@@ -43,6 +43,8 @@ var register = map[string]FeatureFunc{
 	"SplitNumShortTokens":            splitNumShortTokens,
 	"SplitUnigramTokenConf":          splitUnigramTokenConf,
 	"SplitIsLexiconEntry":            isLexiconEntry,
+	"IsStartOfLine":                  isSOL,
+	"IsEndOfLine":                    isEOL,
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -548,4 +550,18 @@ func isLexiconEntry(t T, i, n int) (float64, bool) {
 		return ml.True, true
 	}
 	return ml.False, true
+}
+
+func isSOL(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	return ml.Bool(t.SOL), true
+}
+
+func isEOL(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	return ml.Bool(t.EOL), true
 }
