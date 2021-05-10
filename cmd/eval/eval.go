@@ -35,7 +35,7 @@ func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.cache, "cache", "c", false,
 		"enable caching of profiles (overwrites the setting in the configuration file)")
 	// Subcommands
-	CMD.AddCommand(rrCMD, dmCMD, mrgCMD)
+	CMD.AddCommand(rrCMD, dmCMD, msCMD)
 }
 
 type stats struct {
