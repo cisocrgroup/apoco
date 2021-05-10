@@ -71,7 +71,7 @@ func rrTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 		ferr := lr.Fit(x, y)
 		apoco.Log("train rr: remaining error: %g", ferr)
-		m.Put("rr", c.Nocr, lr, c.RRFeatures)
+		m.Put("rr", c.Nocr, lr, c.RR.Features)
 		m.GlobalHistPatterns = lms.globalHistPatternMeans()
 		m.GlobalOCRPatterns = lms.globalOCRPatternMeans()
 		if err := m.Write(c.Model); err != nil {
@@ -85,13 +85,13 @@ func loadRRModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.
 	if update {
 		return m.Get("rr", c.Nocr)
 	}
-	fs, err := apoco.NewFeatureSet(c.RRFeatures...)
+	fs, err := apoco.NewFeatureSet(c.RR.Features...)
 	if err != nil {
 		return nil, nil, err
 	}
 	lr := &ml.LR{
-		LearningRate: c.LearningRate,
-		Ntrain:       c.Ntrain,
+		LearningRate: c.RR.LearningRate,
+		Ntrain:       c.RR.Ntrain,
 	}
 	return lr, fs, nil
 }

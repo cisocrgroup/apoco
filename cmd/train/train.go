@@ -53,9 +53,9 @@ func logCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, dm
 	}
 	var names []string
 	if dm {
-		names = fs.Names(c.DMFeatures, c.Nocr, dm)
+		names = fs.Names(c.DM.Features, c.Nocr, dm)
 	} else {
-		names = fs.Names(c.RRFeatures, c.Nocr, dm)
+		names = fs.Names(c.RR.Features, c.Nocr, dm)
 	}
 	cor := correlationMat(x)
 	var buf bytes.Buffer
