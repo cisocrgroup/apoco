@@ -54,3 +54,22 @@ features = [
 "CandidateMatchesOCR",
 "OCRLevenshteinDist",
 ]
+
+# Settings for the merge splits training.
+[ms]
+learningRate = 0.9
+ntrain = 100_000
+features = [
+"IsStartOfLine",
+"IsEndOfLine",
+"SplitOtherOCR",
+"SplitNumShortTokens",
+"SplitUnigramTokenConf",
+"SplitIsLexiconEntry",
+"OCRUnigramFreq",
+"CandidateOCRPatternConfLog",
+"CandidateAgreeingOCR",
+"CandidateLevenshteinDist",
+"CandidateMatchesOCR",
+"OCRLevenshteinDist",
+]
