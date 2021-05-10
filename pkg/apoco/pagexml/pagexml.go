@@ -100,16 +100,20 @@ func tokenizePageXML(ctx context.Context, file string, doc *apoco.Document, out 
 	if err != nil {
 		return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 	}
+	var sol bool
 	for i, word := range words {
 		token, err := newTokenFromNode(file, doc, word)
 		if err != nil {
 			return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 		}
-		// Set appropriate end-of-line flag.
+		// Set appropriate end-of-line and start-of-line flags.
+		token.SOL = sol
+		sol = false
 		if i+1 < len(words) {
 			// Token is end of line, if the next token is on
 			// a different line and has a different parent node.
 			token.EOL = words[i].Parent != words[i+1].Parent
+			sol = true
 		} else {
 			// Last token on the current page; this implies end of line.
 			token.EOL = true

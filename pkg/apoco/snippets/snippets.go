@@ -205,12 +205,20 @@ func (e Extensions) TokenizeLines() apoco.StreamFunc {
 			}
 			// Remove all empty token from the end of the line.
 			// Then mark the last token on the line.
+			// We do the same for the first tokens on the line.
 			for len(ts) > 0 {
 				if ts[len(ts)-1].Tokens[0] != "" {
 					ts[len(ts)-1].EOL = true
 					break
 				}
 				ts = ts[:len(ts)-1]
+			}
+			for len(ts) > 0 {
+				if ts[0].Tokens[0] != "" {
+					ts[0].SOL = true
+					break
+				}
+				ts = ts[1:]
 			}
 			if err := apoco.SendTokens(ctx, out, ts...); err != nil {
 				return fmt.Errorf("tokenize lines: %v", err)
