@@ -17,6 +17,7 @@ type Config struct {
 	ProfilerConfig string           `json:"profilerConfig"`
 	RR             TrainingSettings `json:"rr"`
 	DM             DMSettings       `json:"dm"`
+	MRG            MRGSettings      `json:"mrg"`
 	Nocr           int              `json:"nocr"`
 	Cache          bool             `json:"cache"`
 	GT             bool             `json:"gt"`
@@ -33,6 +34,30 @@ type TrainingSettings struct {
 type DMSettings struct {
 	TrainingSettings
 	Filter string `json:"filter"` // cautious, courageous or redundant
+}
+
+// MRGSettings are the settings for the mrg training.
+type MRGSettings struct {
+	TrainingSettings
+	Window int `json:"window"`
+}
+
+func UpdateBool(key *bool, val bool) {
+	if val {
+		*key = val
+	}
+}
+
+func UpdateInt(key *int, val int) {
+	if val != 0 {
+		*key = val
+	}
+}
+
+func UpdateString(key *string, val string) {
+	if val != "" {
+		*key = val
+	}
 }
 
 // ReadConfig reads the config from a json or toml file.  If
