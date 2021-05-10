@@ -90,8 +90,8 @@ func UpdateString(key *string, val string) {
 	}
 }
 
-// MRGSettings are the settings for the mrg training.
-type MRGSettings struct {
+// MSSettings are the settings for the mrg training.
+type MSSettings struct {
 	TrainingSettings
 	Window int `json:"window"`
 }

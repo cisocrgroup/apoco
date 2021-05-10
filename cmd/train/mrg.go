@@ -12,25 +12,30 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// mrgCMD defines the apoco train rr command.
-var mrgCMD = &cobra.Command{
-	Use:   "mrg [DIRS...]",
-	Short: "Train an apoco merge model",
-	Run:   mrgRun,
+// msCMD defines the apoco train ms command.
+var msCMD = &cobra.Command{
+	Use:   "ms [DIRS...]",
+	Short: "Train an apoco merge splits model",
+	Run:   msRun,
 }
 
 var mrgFlags struct {
-	max int
+	window int
 }
 
 func init() {
-	mrgCMD.Flags().IntVarP(&mrgFlags.max, "max", "m", 2, "set the maximum tokens for merges")
+	msCMD.Flags().IntVarP(&mrgFlags.window, "window", "w", 2, "set the maximum tokens for merges")
 }
 
-func mrgRun(_ *cobra.Command, args []string) {
+func msRun(_ *cobra.Command, args []string) {
+	// Handle configuration file.
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache, false)
+	internal.UpdateString(&c.Model, flags.model)
+	internal.UpdateInt(&c.Nocr, flags.nocr)
+	internal.UpdateBool(&c.Cautious, flags.cautious)
+	internal.UpdateBool(&c.Cache, flags.cache)
+	internal.UpdateInt(&c.MS.Window, mrgFlags.window)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	p := internal.Piper{
@@ -45,11 +50,18 @@ func mrgRun(_ *cobra.Command, args []string) {
 		countMerges(),
 		apoco.ConnectDocument(m.Ngrams),
 		apoco.ConnectUnigrams(),
+<<<<<<< HEAD
 		apoco.ConnectMergesWithGT(mrgFlags.max),
 		// apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache),
+=======
+		apoco.ConnectMergesWithGT(c.MS.Window),
+		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, false),
+		apoco.AddShortTokensToProfile(3),
+		apoco.ConnectSplitCandidates(),
+>>>>>>> Rename mrg to ms
 		// apoco.FilterLexiconEntries(),
 		// apoco.ConnectCandidates(),
-		mrgTrain(c, m, flags.update),
+		msTrain(c, m, flags.update),
 	))
 }
 
@@ -70,15 +82,25 @@ func countMerges() apoco.StreamFunc {
 	}
 }
 
-func mrgTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func msTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
-		lr, fs, err := loadMRGModel(c, m, flags.update)
+		lr, fs, err := loadMSModel(c, m, flags.update)
 		if err != nil {
-			return fmt.Errorf("train mrg: %v", err)
+			return fmt.Errorf("train ms: %v", err)
 		}
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
+<<<<<<< HEAD
 			gt := mrgGT(t)
+=======
+			gt := msGT(t)
+			apoco.Log("%s has %d candidates", t, len(t.Payload.(apoco.Split).Candidates))
+			if len(t.Payload.(apoco.Split).Candidates) > 0 {
+				apoco.Log("first candidate: %s", t.Payload.(apoco.Split).Candidates[0])
+			} else {
+				return fmt.Errorf("token with no candidates")
+			}
+>>>>>>> Rename mrg to ms
 			if gt == ml.True {
 				splits++
 				if t.Tokens[0] == t.Tokens[len(t.Tokens)-1] {
@@ -98,19 +120,19 @@ func mrgTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		}
 		n := len(ys) // number or training tokens
 		if n == 0 {
-			return fmt.Errorf("train mrg: no input")
+			return fmt.Errorf("train ms: no input")
 		}
 		x := mat.NewDense(n, len(xs)/n, xs)
 		y := mat.NewVecDense(n, ys)
 		if err := ml.Normalize(x); err != nil {
-			return fmt.Errorf("train mrg: %v", err)
+			return fmt.Errorf("train ms: %v", err)
 		}
-		chk(logCorrelationMat(c, fs, x, "mrg"))
-		apoco.Log("train mrg: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d",
+		chk(logCorrelationMat(c, fs, x, "ms"))
+		apoco.Log("train ms: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d",
 			n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 		ferr := lr.Fit(x, y)
-		apoco.Log("train mrg: remaining error: %g", ferr)
-		m.Put("mrg", c.Nocr, lr, c.MRGFeatures)
+		apoco.Log("train ms: remaining error: %g", ferr)
+		m.Put("ms", c.Nocr, lr, c.MS.Features)
 		if err := m.Write(c.Model); err != nil {
 			return fmt.Errorf("train mrg: %v", err)
 		}
@@ -121,22 +143,22 @@ func mrgTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	}
 }
 
-func loadMRGModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
+func loadMSModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
 	if update {
-		return m.Get("mrg", c.Nocr)
+		return m.Get("ms", c.Nocr)
 	}
-	fs, err := apoco.NewFeatureSet(c.MRGFeatures...)
+	fs, err := apoco.NewFeatureSet(c.MS.Features...)
 	if err != nil {
 		return nil, nil, err
 	}
 	lr := &ml.LR{
-		LearningRate: c.LearningRate,
-		Ntrain:       c.Ntrain,
+		LearningRate: c.MS.LearningRate,
+		Ntrain:       c.MS.Ntrain,
 	}
 	return lr, fs, nil
 }
 
-func mrgGT(t apoco.T) float64 {
+func msGT(t apoco.T) float64 {
 	ts := t.Payload.(apoco.Split).Tokens
 	if ts[0].Tokens[len(ts[0].Tokens)-1] == t.Tokens[len(t.Tokens)-1] {
 		return ml.True
