@@ -86,10 +86,7 @@ func msTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			gt := msGT(t)
-			apoco.Log("%s has %d candidates", t, len(t.Payload.(apoco.Split).Candidates))
-			if len(t.Payload.(apoco.Split).Candidates) > 0 {
-				apoco.Log("first candidate: %s", t.Payload.(apoco.Split).Candidates[0])
-			} else {
+			if len(t.Payload.(apoco.Split).Candidates) == 0 {
 				return fmt.Errorf("token with no candidates")
 			}
 			if gt == ml.True {
@@ -130,7 +127,7 @@ func msTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		apoco.Log("total: %d", total)
 		apoco.Log("splits: %d/%d/%d", splits, cleanSplits, splits-cleanSplits)
 		apoco.Log("merges: %d/%d/%d", merges, cleanMerges, merges-cleanMerges)
-		fmt.Printf("splits: %d %d", total, splits)
+		fmt.Printf("splits: %d %d\n", total, splits)
 		return nil
 	}
 }
