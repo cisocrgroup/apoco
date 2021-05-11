@@ -34,7 +34,7 @@ func msRun(_ *cobra.Command, args []string) {
 	internal.UpdateString(&c.Model, flags.model)
 	internal.UpdateInt(&c.Nocr, flags.nocr)
 	internal.UpdateInt(&c.MS.Window, msFlags.window)
-	internal.UpdateBool(&c.Cautious, flags.cautious)
+	internal.UpdateBool(&c.DM.Cautious, flags.cautious)
 	internal.UpdateBool(&c.Cache, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
@@ -47,10 +47,10 @@ func msRun(_ *cobra.Command, args []string) {
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(1), // skip empty token
-		apoco.ConnectDocument(m.Ngrams),
+		apoco.ConnectLanguageModel(m.Ngrams),
 		apoco.ConnectUnigrams(),
 		apoco.ConnectMergesWithGT(c.MS.Window),
-		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, false),
+		internal.ConnectProfile(c, "-ms-profile.json.gz"),
 		apoco.AddShortTokensToProfile(3),
 		apoco.ConnectSplitCandidates(),
 		// apoco.FilterLexiconEntries(),

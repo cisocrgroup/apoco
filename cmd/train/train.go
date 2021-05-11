@@ -52,9 +52,9 @@ func logCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, ty
 	var names []string
 	switch typ {
 	case "dm":
-		names = fs.Names(c.DMFeatures, typ, c.Nocr)
+		names = fs.Names(c.DM.Features, typ, c.Nocr)
 	case "rr":
-		names = fs.Names(c.RRFeatures, typ, c.Nocr)
+		names = fs.Names(c.RR.Features, typ, c.Nocr)
 	case "ms":
 		names = fs.Names(c.MS.Features, typ, c.Nocr)
 	default:

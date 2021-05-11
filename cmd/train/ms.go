@@ -48,10 +48,10 @@ func msRun(_ *cobra.Command, args []string) {
 		apoco.Normalize(),
 		apoco.FilterShort(1), // skip empty token
 		countMerges(),
-		apoco.ConnectDocument(m.Ngrams),
+		apoco.ConnectLanguageModel(m.Ngrams),
 		apoco.ConnectUnigrams(),
 		apoco.ConnectMergesWithGT(c.MS.Window),
-		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, false),
+		internal.ConnectProfile(c, "-ms-profile.json.gz"),
 		apoco.AddShortTokensToProfile(3),
 		apoco.ConnectSplitCandidates(),
 		// apoco.FilterLexiconEntries(),
