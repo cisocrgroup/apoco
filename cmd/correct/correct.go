@@ -15,7 +15,7 @@ import (
 var flags = struct {
 	ifgs, extensions                     []string
 	ofg, mets, model, parameter, profile string
-	nocr                                 int
+	nocr, cands                          int
 	cache, gt                            bool
 }{}
 
@@ -41,6 +41,8 @@ func init() {
 		"", "set external profile file")
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n",
 		0, "set nocr (overwrites setting in the configuration file)")
+	CMD.Flags().IntVarP(&flags.cands, "cands", "d",
+		-1, "output ARG cands for ntokens; 0 means all candidates")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "",
 		"set model path (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c",
@@ -98,7 +100,11 @@ func run(_ *cobra.Command, args []string) {
 			return sorted[i].order < sorted[j].order
 		})
 		for _, info := range sorted {
-			fmt.Printf("%s\n", info.Stok)
+			if flags.cands == -1 {
+				fmt.Printf("%s\n", info.Stok)
+			} else {
+				fmt.Printf("%s cands=%s\n", info.Stok, rankings2string(info.rankings, flags.cands))
+			}
 		}
 		return
 	}
@@ -176,9 +182,11 @@ func filterShort(m stokMap, withGT bool) apoco.StreamFunc {
 func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
+			info := m.get(t, withGT)
+			info.rankings = t.Payload.([]apoco.Ranking)
 			if withGT {
 				var rank int
-				for i, r := range t.Payload.([]apoco.Ranking) {
+				for i, r := range info.rankings {
 					if r.Candidate.Suggestion == t.Tokens[len(t.Tokens)-1] {
 						rank = i + 1
 						break

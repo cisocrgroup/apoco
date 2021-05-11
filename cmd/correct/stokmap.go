@@ -1,6 +1,7 @@
 package correct
 
 import (
+	"strings"
 	"sync"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
@@ -21,7 +22,22 @@ func (m stokMap) numberOfTokens() int {
 
 type stok struct {
 	internal.Stok
-	order int
+	rankings []apoco.Ranking
+	order    int
+}
+
+func rankings2string(rs []apoco.Ranking, max int) string {
+	if len(rs) == 0 {
+		return "ε"
+	}
+	if max == 0 || len(rs) < max {
+		max = len(rs)
+	}
+	strs := make([]string, max)
+	for i := range rs[0:max] {
+		strs[i] = rs[i].Candidate.String()
+	}
+	return strings.Join(strs, "/")
 }
 
 func (m stokMap) get(t apoco.T, withGT bool) *stok {
