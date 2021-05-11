@@ -106,7 +106,7 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 		t.Payload = []Ranking{{Candidate: new(gofiler.Candidate)}}
 	case "rr":
 		t.Payload = new(gofiler.Candidate)
-	case "mrg":
+	case "ms":
 		t.Payload = Split{
 			Tokens:     []T{{Tokens: make([]string, nocr+1)}},
 			Candidates: []gofiler.Candidate{{}},
