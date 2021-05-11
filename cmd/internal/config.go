@@ -11,18 +11,28 @@ import (
 
 // Config defines the command's configuration.
 type Config struct {
-	Model          string   `json:"model,omitempty"`
-	Ngrams         string   `json:"ngrams"`
-	ProfilerBin    string   `json:"profilerBin"`
-	ProfilerConfig string   `json:"profilerConfig"`
-	RRFeatures     []string `json:"rrFeatures"`
-	DMFeatures     []string `json:"dmFeatures"`
-	LearningRate   float64  `json:"learningRate"`
-	Ntrain         int      `json:"ntrain"`
-	Nocr           int      `json:"nocr"`
-	Cache          bool     `json:"cache"`
-	Cautious       bool     `json:"cautious"`
-	GT             bool     `json:"gt"`
+	Model          string           `json:"model,omitempty"`
+	Ngrams         string           `json:"ngrams"`
+	ProfilerBin    string           `json:"profilerBin"`
+	ProfilerConfig string           `json:"profilerConfig"`
+	RR             TrainingSettings `json:"rr"`
+	DM             DMSettings       `json:"dm"`
+	Nocr           int              `json:"nocr"`
+	Cache          bool             `json:"cache"`
+	GT             bool             `json:"gt"`
+}
+
+// TrainingSettings encloses different training settings.
+type TrainingSettings struct {
+	Features     []string `json:"features"`
+	LearningRate float64  `json:"learningRate"`
+	Ntrain       int      `json:"ntrain"`
+}
+
+// DMSettings encloses settings for dm training.
+type DMSettings struct {
+	TrainingSettings
+	Cautious bool
 }
 
 // ReadConfig reads the config from a json or toml file.  If
@@ -69,7 +79,7 @@ func (c *Config) Overwrite(model string, nocr int, cautious, cache, gt bool) {
 		c.Nocr = nocr
 	}
 	if cautious {
-		c.Cautious = cautious
+		c.DM.Cautious = cautious
 	}
 	if cache {
 		c.Cache = cache

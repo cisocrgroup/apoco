@@ -53,7 +53,7 @@ func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		}
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
-			if !useTokenForDMTraining(t, c.Cautious) {
+			if !useTokenForDMTraining(t, c.DM.Cautious) {
 				return nil
 			}
 			xs = fs.Calculate(xs, t, c.Nocr)
@@ -73,7 +73,7 @@ func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, flags.cautious)
 		ferr := lr.Fit(x, y)
 		apoco.Log("train dm: remaining error: %g", ferr)
-		m.Put("dm", c.Nocr, lr, c.DMFeatures)
+		m.Put("dm", c.Nocr, lr, c.DM.Features)
 		if err := m.Write(c.Model); err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
@@ -85,13 +85,13 @@ func loadDMModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.
 	if update {
 		return m.Get("dm", c.Nocr)
 	}
-	fs, err := apoco.NewFeatureSet(c.DMFeatures...)
+	fs, err := apoco.NewFeatureSet(c.DM.Features...)
 	if err != nil {
 		return nil, nil, err
 	}
 	lr := &ml.LR{
-		LearningRate: c.LearningRate,
-		Ntrain:       c.Ntrain,
+		LearningRate: c.DM.LearningRate,
+		Ntrain:       c.DM.Ntrain,
 	}
 	return lr, fs, nil
 }
