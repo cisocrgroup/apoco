@@ -19,12 +19,12 @@ var msCMD = &cobra.Command{
 	Run:   msRun,
 }
 
-var mrgFlags struct {
+var msFlags struct {
 	window int
 }
 
 func init() {
-	msCMD.Flags().IntVarP(&mrgFlags.window, "window", "w", 2, "set the maximum tokens for merges")
+	msCMD.Flags().IntVarP(&msFlags.window, "window", "w", 2, "set the maximal window size")
 }
 
 func msRun(_ *cobra.Command, args []string) {
@@ -33,9 +33,9 @@ func msRun(_ *cobra.Command, args []string) {
 	chk(err)
 	internal.UpdateString(&c.Model, flags.model)
 	internal.UpdateInt(&c.Nocr, flags.nocr)
-	internal.UpdateBool(&c.Cautious, flags.cautious)
+	internal.UpdateInt(&c.MS.Window, msFlags.window)
+	internal.UpdateBool(&c.DM.Cautious, flags.cautious)
 	internal.UpdateBool(&c.Cache, flags.cache)
-	internal.UpdateInt(&c.MS.Window, mrgFlags.window)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	p := internal.Piper{
@@ -125,11 +125,12 @@ func msTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		apoco.Log("train ms: remaining error: %g", ferr)
 		m.Put("ms", c.Nocr, lr, c.MS.Features)
 		if err := m.Write(c.Model); err != nil {
-			return fmt.Errorf("train mrg: %v", err)
+			return fmt.Errorf("train ms: %v", err)
 		}
 		apoco.Log("total: %d", total)
 		apoco.Log("splits: %d/%d/%d", splits, cleanSplits, splits-cleanSplits)
 		apoco.Log("merges: %d/%d/%d", merges, cleanMerges, merges-cleanMerges)
+		fmt.Printf("splits: %d %d", total, splits)
 		return nil
 	}
 }

@@ -565,6 +565,7 @@ func ConnectMergesWithGT(max int) StreamFunc {
 					slice := line[i : i+m] // slice is not empty!
 					t := makeMRGToken(slice)
 					ts = append(ts, t)
+					// TODO: it is unclear how to tokenize the split tokens
 					// We use the ground truth to enforce the "tokenization" of merges.
 					if slice[0].Tokens[len(slice[0].Tokens)-1] == t.Tokens[len(t.Tokens)-1] {
 						i += len(slice) - 1 // Regard the i++ in the for loop.
