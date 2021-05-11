@@ -9,7 +9,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/finkf/gofiler"
@@ -168,30 +167,6 @@ func (d *Document) calculateLexicality(tokens ...T) {
 	d.Lexicality = float64(lexical) / float64(total)
 }
 
-// ReadProfile loads the profile for the master OCR tokens.
-func (d *Document) ReadProfile(ctx context.Context, exe, config string, cache bool, tokens ...T) error {
-	if len(tokens) == 0 {
-		return nil
-	}
-	if cache {
-		if profile, ok := readCachedProfile(tokens[0].Document.Group); ok {
-			d.Profile = profile
-			return nil
-		}
-	}
-	profile, err := RunProfiler(ctx, exe, config, tokens...)
-	if err != nil {
-		return fmt.Errorf("read profile %s %s: %v", exe, config, err)
-	}
-	d.Profile = profile
-	if !cache {
-		return nil
-	}
-	cacheProfile(tokens[0].Document.Group, profile)
-	d.calculateLexicality(tokens...)
-	return nil
-}
-
 // lengthOfWord gives the maximal length of words that the profiler
 // accepts (see lengthOfWord in Global.h in the profiler's source).
 const lengthOfWord = 64
@@ -221,47 +196,6 @@ func RunProfiler(ctx context.Context, exe, config string, tokens ...T) (gofiler.
 		return nil, fmt.Errorf("run profiler %s %s: %v", exe, config, err)
 	}
 	return profile, nil
-}
-
-func cachePath(dir string) (string, bool) {
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		return "", false
-	}
-	abs, err := filepath.Abs(dir)
-	if err != nil {
-		return "", false
-	}
-	name := strings.ReplaceAll(abs, "/", "-")[1:]
-	return filepath.Join(cacheDir, "apoco", name+".json.gz"), true
-}
-
-func readCachedProfile(fg string) (gofiler.Profile, bool) {
-	path, ok := cachePath(fg)
-	if !ok {
-		return nil, false
-	}
-	Log("reading cached profile from %s", path)
-	profile, err := ReadProfile(path)
-	if err != nil {
-		return nil, false
-	}
-	Log("read %d profile tokens from %s", len(profile), path)
-	return profile, true
-}
-
-func cacheProfile(fg string, profile gofiler.Profile) {
-	path, ok := cachePath(fg)
-	if !ok {
-		return
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return
-	}
-	if err := WriteProfile(path, profile); err != nil {
-		return
-	}
-	Log("cached %d profile tokens to %s", len(profile), path)
 }
 
 // ReadProfile reads the profile from a gzipped json formatted file.

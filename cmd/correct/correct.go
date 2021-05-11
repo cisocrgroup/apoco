@@ -73,7 +73,7 @@ func run(_ *cobra.Command, args []string) {
 		apoco.Normalize(),
 		register(stoks, flags.gt),
 		filterShort(stoks, flags.gt),
-		apoco.ConnectDocument(m.Ngrams),
+		apoco.ConnectLanguageModel(m.Ngrams),
 		apoco.ConnectUnigrams(),
 		connectProfile(c, m.Ngrams, flags.profile),
 		filterLex(stoks, flags.gt),
@@ -204,17 +204,14 @@ func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 
 func connectProfile(c *internal.Config, ngrams *apoco.FreqList, profile string) apoco.StreamFunc {
 	if profile == "" {
-		return apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache)
+		return internal.ConnectProfile(c, "-profiler.json.gz")
 	}
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		profile, err := apoco.ReadProfile(profile)
 		if err != nil {
 			return err
 		}
-		return apoco.EachTokenDocument(ctx, in, func(lm *apoco.Document, ts ...apoco.T) error {
-			lm.Profile = profile
-			return apoco.SendTokens(ctx, out, ts...)
-		})
+		return apoco.ConnectProfile(profile)(ctx, in, out)
 	}
 }
 

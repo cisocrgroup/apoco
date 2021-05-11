@@ -35,9 +35,9 @@ func rrRun(_ *cobra.Command, args []string) {
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(4),
-		apoco.ConnectDocument(m.Ngrams),
+		apoco.ConnectLanguageModel(m.Ngrams),
 		apoco.ConnectUnigrams(),
-		apoco.ConnectProfile(c.ProfilerBin, c.ProfilerConfig, c.Cache),
+		internal.ConnectProfile(c, "-profile.json.gz"),
 		apoco.FilterLexiconEntries(),
 		apoco.ConnectCandidates(),
 		rrEval(c, m),

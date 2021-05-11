@@ -318,23 +318,13 @@ func ConnectCandidates() StreamFunc {
 	}
 }
 
-// ConnectProfile connects the profile with the tokens.  This function
-// must be called after ConnectLM.
-func ConnectProfile(exe, config string, cache bool) StreamFunc {
+// ConnectProfile returns a stream function that connects the tokens with the profile.
+func ConnectProfile(profile gofiler.Profile) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachTokenInDocument(ctx, in, func(lm *Document, tokens ...T) error {
-			if err := lm.ReadProfile(ctx, exe, config, cache, tokens...); err != nil {
-				return fmt.Errorf("connect profile %s %s: %v", exe, config, err)
-			}
-			if err := SendTokens(ctx, out, tokens...); err != nil {
-				return fmt.Errorf("connect profile %s %s: %v", exe, config, err)
-			}
-			return nil
+		return EachTokenInDocument(ctx, in, func(lm *Document, tokens ...T) error {
+			lm.Profile = profile
+			return SendTokens(ctx, out, tokens...)
 		})
-		if err != nil {
-			return fmt.Errorf("connect profile %s %s: %v", exe, config, err)
-		}
-		return nil
 	}
 }
 
