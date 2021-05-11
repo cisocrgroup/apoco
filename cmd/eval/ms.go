@@ -16,7 +16,7 @@ import (
 // msCMD defines the apoco train rr command.
 var msCMD = &cobra.Command{
 	Use:   "ms [DIRS...]",
-	Short: "Eval an apoco merge split model",
+	Short: "Evaluate an apoco merge split model",
 	Run:   msRun,
 }
 
@@ -25,7 +25,7 @@ var msFlags struct {
 }
 
 func init() {
-	msCMD.Flags().IntVarP(&msFlags.window, "window", "w", 2, "set the maximum tokens for merges")
+	msCMD.Flags().IntVarP(&msFlags.window, "window", "w", 2, "set the maximum window size")
 }
 
 func msRun(_ *cobra.Command, args []string) {
