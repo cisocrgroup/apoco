@@ -14,7 +14,6 @@ type T struct {
 	Payload  interface{} // Token payload; either *gofiler.Candidate or []Ranking or Correction
 	Cor      string      // Correction for the token
 	File     string      // The file of the token
-	Group    string      // File group of the token
 	ID       string      // ID of the token in its file
 	Chars    Chars       // Master OCR chars including their confidences
 	Tokens   []string    // Master and support OCRs and gt

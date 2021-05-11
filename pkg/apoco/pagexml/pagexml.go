@@ -35,8 +35,9 @@ func Tokenize(metsName string, fgs ...string) apoco.StreamFunc {
 			if err != nil {
 				return fmt.Errorf("tokenize: %v", err)
 			}
+			doc := &apoco.Document{Group: fg}
 			for _, file := range files {
-				err := tokenizePageXML(ctx, filepath.Dir(file), file, out)
+				err := tokenizePageXML(ctx, file, doc, out)
 				if err != nil {
 					return err
 				}
@@ -57,8 +58,9 @@ func TokenizeDirs(ext string, dirs ...string) apoco.StreamFunc {
 			if err != nil {
 				return fmt.Errorf("tokenize dir %s: %v", dir, err)
 			}
+			doc := &apoco.Document{Group: dir}
 			for _, file := range files {
-				if err := tokenizePageXML(ctx, dir, file, out); err != nil {
+				if err := tokenizePageXML(ctx, file, doc, out); err != nil {
 					return err
 				}
 			}
@@ -84,22 +86,22 @@ func gatherFilesInDir(dir, ext string) ([]string, error) {
 	return files, err
 }
 
-func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.T) error {
+func tokenizePageXML(ctx context.Context, file string, doc *apoco.Document, out chan<- apoco.T) error {
 	is, err := os.Open(file)
 	if err != nil {
 		return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 	}
 	defer is.Close()
-	doc, err := xmlquery.Parse(is)
+	xml, err := xmlquery.Parse(is)
 	if err != nil {
 		return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 	}
-	words, err := xmlquery.QueryAll(doc, "//*[local-name()='Word']")
+	words, err := xmlquery.QueryAll(xml, "//*[local-name()='Word']")
 	if err != nil {
 		return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 	}
 	for _, word := range words {
-		token, err := newTokenFromNode(fg, file, word)
+		token, err := newTokenFromNode(file, doc, word)
 		if err != nil {
 			return fmt.Errorf("tokenizePageXML %s: %v", file, err)
 		}
@@ -110,7 +112,7 @@ func tokenizePageXML(ctx context.Context, fg, file string, out chan<- apoco.T) e
 	return nil
 }
 
-func newTokenFromNode(fg, file string, wordNode *xmlquery.Node) (apoco.T, error) {
+func newTokenFromNode(file string, doc *apoco.Document, wordNode *xmlquery.Node) (apoco.T, error) {
 	id, ok := node.LookupAttr(wordNode, xml.Name{Local: "id"})
 	if !ok {
 		return apoco.T{}, fmt.Errorf("newTokenFromNode: missing id for word node")
@@ -118,7 +120,7 @@ func newTokenFromNode(fg, file string, wordNode *xmlquery.Node) (apoco.T, error)
 	base := filepath.Base(file)
 	base = base[0 : len(base)-len(filepath.Ext(base))]
 	id = base + "_" + id
-	ret := apoco.T{Group: fg, File: file, ID: id}
+	ret := apoco.T{Document: doc, File: file, ID: id}
 	lines := FindUnicodesInRegionSorted(node.Parent(wordNode))
 	words := FindUnicodesInRegionSorted(wordNode)
 	for i := 0; i < len(lines) && i < len(words); i++ {

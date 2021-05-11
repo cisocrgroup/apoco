@@ -73,6 +73,7 @@ type Document struct {
 	LM         *FreqList       // Global ngram model
 	Unigrams   FreqList        // Document-wise unigram model
 	Profile    gofiler.Profile // Document-wise profile
+	Group      string          // File group or directory of the document
 	Lexicality float64         // Lexicality score
 }
 
@@ -173,7 +174,7 @@ func (d *Document) ReadProfile(ctx context.Context, exe, config string, cache bo
 		return nil
 	}
 	if cache {
-		if profile, ok := readCachedProfile(tokens[0].Group); ok {
+		if profile, ok := readCachedProfile(tokens[0].Document.Group); ok {
 			d.Profile = profile
 			return nil
 		}
@@ -186,7 +187,7 @@ func (d *Document) ReadProfile(ctx context.Context, exe, config string, cache bo
 	if !cache {
 		return nil
 	}
-	cacheProfile(tokens[0].Group, profile)
+	cacheProfile(tokens[0].Document.Group, profile)
 	d.calculateLexicality(tokens...)
 	return nil
 }

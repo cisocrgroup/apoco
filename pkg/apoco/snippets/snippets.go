@@ -24,7 +24,7 @@ type Extensions []string
 // TokenizeLines into one function.  It is the same as calling
 // `apoco.Pipe(ReadLines, TokenizeLines,...)`.
 func (e Extensions) Tokenize(ctx context.Context, dirs ...string) apoco.StreamFunc {
-	return apoco.Combine(ctx, e.ReadLines(dirs...), e.TokenizeLines)
+	return apoco.Combine(ctx, e.ReadLines(dirs...), e.TokenizeLines())
 }
 
 // ReadLines returns a stream function that reads snippet files
@@ -39,7 +39,8 @@ func (e Extensions) Tokenize(ctx context.Context, dirs ...string) apoco.StreamFu
 func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
 		for _, dir := range dirs {
-			if err := e.readLinesFromDir(ctx, out, dir); err != nil {
+			doc := &apoco.Document{Group: dir}
+			if err := e.readLinesFromDir(ctx, doc, out); err != nil {
 				return fmt.Errorf("read lines %s: %v", dir, err)
 			}
 		}
@@ -47,9 +48,9 @@ func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 	}
 }
 
-func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.T, base string) error {
+func (e Extensions) readLinesFromDir(ctx context.Context, doc *apoco.Document, out chan<- apoco.T) error {
 	// Use a dir path stack to iterate over all dirs in the tree.
-	stack := []string{base}
+	stack := []string{doc.Group}
 	for len(stack) != 0 {
 		dir := stack[len(stack)-1]
 		stack = stack[0 : len(stack)-1]
@@ -69,7 +70,7 @@ func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.T, ba
 				continue
 			}
 			file := filepath.Join(dir, dirs[i].Name())
-			if err := e.readLinesFromSnippets(ctx, out, base, file); err != nil {
+			if err := e.readLinesFromSnippets(ctx, file, doc, out); err != nil {
 				return fmt.Errorf("read lines from dir %s: %v", dir, err)
 			}
 		}
@@ -77,7 +78,7 @@ func (e Extensions) readLinesFromDir(ctx context.Context, out chan<- apoco.T, ba
 	return nil
 }
 
-func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.T, base, file string) error {
+func (e Extensions) readLinesFromSnippets(ctx context.Context, file string, doc *apoco.Document, out chan<- apoco.T) error {
 	var lines []apoco.Chars
 	pairs, err := readSnippetFile(file)
 	if err != nil {
@@ -93,11 +94,11 @@ func (e Extensions) readLinesFromSnippets(ctx context.Context, out chan<- apoco.
 		lines = append(lines, pairs)
 	}
 	err = apoco.SendTokens(ctx, out, apoco.T{
-		Chars:  lines[0],
-		Group:  filepath.Base(base),
-		File:   file,
-		ID:     filepath.Base(file),
-		Tokens: makeTokensFromPairs(lines),
+		Document: doc,
+		Chars:    lines[0],
+		File:     file,
+		ID:       filepath.Base(file),
+		Tokens:   makeTokensFromPairs(lines),
 	})
 	if err != nil {
 		return fmt.Errorf("read lines from snippets %s: %v", file, err)
@@ -113,29 +114,31 @@ func makeTokensFromPairs(lines []apoco.Chars) []string {
 	return ret
 }
 
-// TokenizeLines is a stream function that tokenizes and aligns line
-// tokens.
-func (e Extensions) TokenizeLines(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
-	return apoco.EachToken(ctx, in, func(line apoco.T) error {
-		alignments := alignLines(line.Tokens...)
-		for i := range alignments {
-			t := apoco.T{
-				File:  line.File,
-				Group: line.Group,
-				ID:    line.ID + ":" + strconv.Itoa(i+1),
-			}
-			for j, p := range alignments[i] {
-				if j == 0 {
-					t.Chars = line.Chars[p.B:p.E]
+// TokenizeLines returns a stream function that tokenizes and aligns
+// line tokens.
+func (e Extensions) TokenizeLines() apoco.StreamFunc {
+	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
+		return apoco.EachToken(ctx, in, func(line apoco.T) error {
+			alignments := alignLines(line.Tokens...)
+			for i := range alignments {
+				t := apoco.T{
+					Document: line.Document,
+					File:     line.File,
+					ID:       line.ID + ":" + strconv.Itoa(i+1),
 				}
-				t.Tokens = append(t.Tokens, string(p.Slice()))
+				for j, p := range alignments[i] {
+					if j == 0 {
+						t.Chars = line.Chars[p.B:p.E]
+					}
+					t.Tokens = append(t.Tokens, string(p.Slice()))
+				}
+				if err := apoco.SendTokens(ctx, out, t); err != nil {
+					return fmt.Errorf("tokenize lines: %v", err)
+				}
 			}
-			if err := apoco.SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("tokenize lines: %v", err)
-			}
-		}
-		return nil
-	})
+			return nil
+		})
+	}
 }
 
 func alignLines(lines ...string) [][]align.Pos {

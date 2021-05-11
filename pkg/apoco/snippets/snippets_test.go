@@ -28,22 +28,22 @@ func TestTokenizeDir(t *testing.T) {
 	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(func(tok apoco.T) error {
 		n++
 		if len(tok.Tokens) != 3 {
-			t.Fatalf("bad token: %s", tok)
+			t.Errorf("bad token: %s", tok)
 		}
-		if tok.Group != "dir" {
-			t.Fatalf("bad group: %s", tok.Group)
+		if tok.Document.Group != testDir {
+			t.Errorf("bad group: %s", tok.Document.Group)
 		}
 		if tok.File != filepath.Join("testdata", "dir", "a", "00001.prob.1") &&
 			tok.File != filepath.Join("testdata", "dir", "b", "00002.prob.1") {
-			t.Fatalf("bad file: %s", tok.File)
+			t.Errorf("bad file: %s", tok.File)
 		}
 		return nil
 	}))
 	if err != nil {
-		t.Fatalf("got error: %v", err)
+		t.Errorf("got error: %v", err)
 	}
 	if n != want {
-		t.Fatalf("invalid number of tokens: expected %d; got %d", want, n)
+		t.Errorf("invalid number of tokens: expected %d; got %d", want, n)
 	}
 }
 
@@ -55,25 +55,25 @@ func TestCalamari(t *testing.T) {
 	ctx := context.Background()
 	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(func(tok apoco.T) error {
 		if len(tok.Tokens) != 1 {
-			t.Fatalf("bad token: %s", tok)
+			t.Errorf("bad token: %s", tok)
 		}
-		if tok.Group != "dir" {
-			t.Fatalf("bad group: %s", tok.Group)
+		if tok.Document.Group != testDir {
+			t.Errorf("bad group: %s", tok.Document.Group)
 		}
 		if tok.File != filepath.Join("testdata", "dir", "a", "00010.json") {
-			t.Fatalf("bad file: %s", tok.File)
+			t.Errorf("bad file: %s", tok.File)
 		}
 		if got := tok.Tokens[0]; got != want[i] {
-			t.Fatalf("expected %q; got %q", want[i], got)
+			t.Errorf("expected %q; got %q", want[i], got)
 		}
 		i++
 		return nil
 	}))
 	if err != nil {
-		t.Fatalf("got error: %v", err)
+		t.Errorf("got error: %v", err)
 	}
 	if i != len(want) {
-		t.Fatalf("invalid number of tokens: expected %d; got %d", len(want), i)
+		t.Errorf("invalid number of tokens: expected %d; got %d", len(want), i)
 	}
 }
 
@@ -84,20 +84,20 @@ func TestTokenizeDir2(t *testing.T) {
 	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir2), iterate(func(tok apoco.T) error {
 		n++
 		if len(tok.Tokens) != 3 {
-			t.Fatalf("bad token: %s", tok)
+			t.Errorf("bad token: %s", tok)
 		}
-		if tok.Group != "dir2" {
-			t.Fatalf("bad group: %s", tok.Group)
+		if tok.Document.Group != testDir2 {
+			t.Errorf("bad group: %s", tok.Document.Group)
 		}
 		if tok.File != filepath.Join("testdata", "dir2", "00001.prob.1") {
-			t.Fatalf("bad file: %s", tok.File)
+			t.Errorf("bad file: %s", tok.File)
 		}
 		return nil
 	}))
 	if err != nil {
-		t.Fatalf("got error: %v", err)
+		t.Errorf("got error: %v", err)
 	}
 	if n != want {
-		t.Fatalf("invalid number of tokens: expected %d; got %d", want, n)
+		t.Errorf("invalid number of tokens: expected %d; got %d", want, n)
 	}
 }
