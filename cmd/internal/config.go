@@ -42,6 +42,33 @@ type MSSettings struct {
 	Window int `json:"window"`
 }
 
+func UpdateInConfig(dest, val interface{}) {
+	switch dest.(type) {
+	case *string:
+		v := val.(string)
+		if val != "" {
+			(*dest.(*string)) = v
+		}
+	case *int:
+		v := val.(int)
+		if v != 0 {
+			(*dest.(*int)) = v
+		}
+	case *float64:
+		v := val.(float64)
+		if v != 0 {
+			(*dest.(*float64)) = v
+		}
+	case *bool:
+		v := val.(bool)
+		if v {
+			(*dest.(*bool)) = v
+		}
+	default:
+		panic("bad type")
+	}
+}
+
 func UpdateBool(key *bool, val bool) {
 	if val {
 		*key = val

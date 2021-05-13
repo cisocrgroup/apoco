@@ -31,11 +31,11 @@ func init() {
 func msRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	internal.UpdateString(&c.Model, flags.model)
-	internal.UpdateInt(&c.Nocr, flags.nocr)
-	internal.UpdateInt(&c.MS.Window, msFlags.window)
-	internal.UpdateBool(&c.DM.Cautious, flags.cautious)
-	internal.UpdateBool(&c.Cache, flags.cache)
+	internal.UpdateInConfig(&c.Model, flags.model)
+	internal.UpdateInConfig(&c.Nocr, flags.nocr)
+	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
+	internal.UpdateInConfig(&c.DM.Cautious, flags.cautious)
+	internal.UpdateInConfig(&c.Cache, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	p := internal.Piper{
