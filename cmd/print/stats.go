@@ -139,7 +139,7 @@ func (s *stats) write(name string, verbose bool) {
 	fmt.Printf("Correct (before/after)          = %d/%d\n", corbefore, corafter)
 	fmt.Printf("Total tokens                    = %d\n", s.tokenTotal)
 	if !verbose {
-		fmt.Printf("Successfull corrections         = %d\n", s.types[internal.SuccessfulCorrection])
+		fmt.Printf("Successful corrections          = %d\n", s.types[internal.SuccessfulCorrection])
 		fmt.Printf("Missed opportunities            = %d\n", s.types[internal.MissedOpportunity])
 		fmt.Printf("Infelicitous corrections        = %d\n", s.types[internal.InfelicitousCorrection])
 		fmt.Printf("False friends                   = %d\n", s.types[internal.FalseFriend])
