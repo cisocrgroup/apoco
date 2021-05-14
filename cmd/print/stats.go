@@ -128,11 +128,13 @@ func (s *stats) write(name string, verbose bool) {
 	accBefore, accAfter := 1.0-tokenErrRateBefore, 1.0-tokenErrRateAfter
 	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
 	improvement := s.improvement()
+	charImprovement := ((charErrRateAfter - charErrRateBefore) / charErrRateBefore) * 100
 	fmt.Printf("Name                            = %s\n", name)
+	fmt.Printf("Improvement (chars, percent)    = %g", -charImprovement)
 	fmt.Printf("Char error rate (before/after)  = %g/%g\n", charErrRateBefore, charErrRateAfter)
 	fmt.Printf("Char errors (before/after)      = %d/%d\n", s.charErrBefore, s.charErrAfter)
 	fmt.Printf("Total chars                     = %d\n", s.charTotal)
-	fmt.Printf("Improvement (percent)           = %g\n", improvement)
+	fmt.Printf("Improvement (tokens, percent)   = %g\n", improvement)
 	fmt.Printf("Error rate (before/after)       = %g/%g\n", tokenErrRateBefore, tokenErrRateAfter)
 	fmt.Printf("Accuracy (before/after)         = %g/%g\n", accBefore, accAfter)
 	fmt.Printf("Total errors (before/after)     = %d/%d\n", s.tokenErrBefore, s.tokenErrAfter)
