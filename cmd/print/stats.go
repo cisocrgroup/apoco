@@ -123,9 +123,9 @@ func (s *stats) stat(dtd string) error {
 }
 
 func (s *stats) write(name string, verbose bool) {
-	errRateBefore, errRateAfter := s.tokenErrorRates()
+	tokenErrRateBefore, tokenErrRateAfter := s.tokenErrorRates()
 	charErrRateBefore, charErrRateAfter := s.charErrorRates()
-	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
+	accBefore, accAfter := 1.0-tokenErrRateBefore, 1.0-tokenErrRateAfter
 	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
 	improvement := s.improvement()
 	fmt.Printf("Name                            = %s\n", name)
@@ -133,7 +133,7 @@ func (s *stats) write(name string, verbose bool) {
 	fmt.Printf("Char errors (before/after)      = %d/%d\n", s.charErrBefore, s.charErrAfter)
 	fmt.Printf("Total chars                     = %d\n", s.charTotal)
 	fmt.Printf("Improvement (percent)           = %g\n", improvement)
-	fmt.Printf("Error rate (before/after)       = %g/%g\n", errRateBefore, errRateAfter)
+	fmt.Printf("Error rate (before/after)       = %g/%g\n", tokenErrRateBefore, tokenErrRateAfter)
 	fmt.Printf("Accuracy (before/after)         = %g/%g\n", accBefore, accAfter)
 	fmt.Printf("Total errors (before/after)     = %d/%d\n", s.tokenErrBefore, s.tokenErrAfter)
 	fmt.Printf("Correct (before/after)          = %d/%d\n", corbefore, corafter)
