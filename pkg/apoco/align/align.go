@@ -1,7 +1,6 @@
 package align
 
 import (
-	"log"
 	"unicode"
 
 	"git.sr.ht/~flobar/lev"
@@ -17,6 +16,9 @@ type Pos struct {
 // whitespace removed.
 func mkpos(b, e int, str []rune) Pos {
 	b, e = strip(b, e, str)
+	if e < b {
+		e = b
+	}
 	return Pos{B: b, E: e, str: str}
 }
 
@@ -65,13 +67,13 @@ func alignAt(spaces []int, str []rune) []Pos {
 	ret := make([]Pos, 0, len(spaces)+1)
 	b := -1
 	for _, s := range spaces {
-		log.Printf("space = %d", s)
+		// log.Printf("space = %d", s)
 		e := alignmentPos(str, s)
-		log.Printf("e = %d", e)
+		// log.Printf("e = %d", e)
 		// Var b points to the last found space.
 		// Skip to the next non space token after b.
 		b = skipSpace(str, b+1)
-		log.Printf("e <= b, %d <= %d", e, b)
+		// log.Printf("e <= b, %d <= %d", e, b)
 		if e <= b { // (e <= b) -> (b>=0) -> len(ret) > 0
 			b = ret[len(ret)-1].B
 		}
@@ -87,7 +89,7 @@ func alignAt(spaces []int, str []rune) []Pos {
 }
 
 func alignmentPos(str []rune, pos int) int {
-	log.Printf("alignmentPos(%s, %d)", string(str), pos)
+	// log.Printf("alignmentPos(%s, %d)", string(str), pos)
 	if pos >= len(str) {
 		return len(str)
 	}
@@ -153,24 +155,27 @@ func Lev(m *lev.Mat, primary []rune, rest ...[]rune) [][]Pos {
 }
 
 func alignPair(m *lev.Mat, p, s []rune) []Pos {
-	log.Printf("alignPair(%s, %s)", string(p), string(s))
+	// log.Printf("alignPair(%s, %s)", string(p), string(s))
 	m.DistanceR(p, s)
 	trace := m.TraceR(p, s)
 
 	var pos []Pos
-	var pi, si, pb, sb int
-	log.Printf("trace = %s", trace)
+	var pi, si /*, pb*/, sb int
+	// x, zz := lev.AlignTrace(string(p), string(s), trace)
+	// log.Printf("align: %s", string(x))
+	// log.Printf("align: %s", string(trace))
+	// log.Printf("align: %s", string(zz))
 	for i := range trace {
 		if pi >= len(p) || si >= len(s) {
 			break
 		}
 		if unicode.IsSpace(p[pi]) {
 			end := y(s, si)
-			log.Printf("%d:%d %d:%d", pb, pi, sb, end)
+			// log.Printf("%d:%d %d:%d", pb, pi, sb, end)
 			// log.Printf("%s %s", string(p[pb:pi]), string(s[sb:end]))
 			pos = append(pos, mkpos(sb, end, s))
-			//pb = z(p, pi)
-			pb = pi + 1
+			// pb = z(p, pi)
+			// pb = pi + 1
 			if end <= pi {
 				sb = z(s, end)
 			}
@@ -187,7 +192,7 @@ func alignPair(m *lev.Mat, p, s []rune) []Pos {
 	}
 	// end := y(s, si)
 	pos = append(pos, mkpos(sb, len(s), s))
-	log.Printf("%s %s", string(p[pb:pi]), string(s[sb:]))
+	// log.Printf("%s %s", string(p[pb:pi]), string(s[sb:]))
 	return pos
 }
 

@@ -16,6 +16,7 @@ import (
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/align"
+	"git.sr.ht/~flobar/lev"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -186,8 +187,9 @@ func makeTokensFromPairs(lines []apoco.Chars) []string {
 // and aligns line tokens.
 func (e Extensions) TokenizeLines() apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
+		var mat lev.Mat
 		return apoco.EachToken(ctx, in, func(line apoco.T) error {
-			alignments := alignLines(line.Tokens...)
+			alignments := alignLines(&mat, line.Tokens...)
 			var ts []apoco.T
 			for i := range alignments {
 				t := apoco.T{
@@ -231,12 +233,13 @@ func (e Extensions) TokenizeLines() apoco.StreamFunc {
 	}
 }
 
-func alignLines(lines ...string) [][]align.Pos {
+func alignLines(mat *lev.Mat, lines ...string) [][]align.Pos {
 	rs := make([][]rune, len(lines))
 	for i := range lines {
 		rs[i] = []rune(lines[i])
 	}
-	return align.Do(rs[0], rs[1:]...)
+	return align.Lev(mat, rs[0], rs[1:]...)
+	// return align.Do(rs[0], rs[1:]...)
 }
 
 func readSnippetFile(path string) (apoco.Chars, error) {
