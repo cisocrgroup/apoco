@@ -99,7 +99,12 @@ func run(_ *cobra.Command, args []string) {
 		sort.Slice(sorted, func(i, j int) bool {
 			return sorted[i].order < sorted[j].order
 		})
+		var doc *apoco.Document
 		for _, info := range sorted {
+			if info.document != doc {
+				fmt.Printf("#name=%s", info.document.Group)
+				doc = info.document
+			}
 			if flags.cands == -1 {
 				fmt.Printf("%s\n", info.Stok)
 			} else {
@@ -138,6 +143,7 @@ func register(m stokMap, withGT bool) apoco.StreamFunc {
 			// If a token is not skipped, skipped must be explicitly set to false.
 			stok := m.get(t, withGT)
 			stok.ID = t.ID
+			stok.document = t.Document
 			stok.Skipped = true
 			stok.order = order
 			order++

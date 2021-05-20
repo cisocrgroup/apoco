@@ -23,6 +23,7 @@ func (m stokMap) numberOfTokens() int {
 type stok struct {
 	internal.Stok
 	rankings []apoco.Ranking
+	document *apoco.Document
 	order    int
 }
 
