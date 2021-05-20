@@ -78,7 +78,7 @@ func run(_ *cobra.Command, _ []string) {
 		}
 		pre := ""
 		for _, name := range names {
-			fmt.Printf("%s%g", pre, data[name][i].data)
+			fmt.Printf("%s%g", pre, 1-data[name][i].data)
 			pre = " "
 		}
 		fmt.Println()
