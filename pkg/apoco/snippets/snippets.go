@@ -47,14 +47,14 @@ func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 		}
 		g, gctx := errgroup.WithContext(ctx)
 		linechan := make(chan []apoco.T)
-		dirchan := make(chan string)
+		docchan := make(chan *apoco.Document)
 		var wg sync.WaitGroup
 		// Feed dirs into the dir channel and close it.
 		g.Go(func() error {
-			defer close(dirchan)
+			defer close(docchan)
 			for _, dir := range dirs {
 				select {
-				case dirchan <- dir:
+				case docchan <- &apoco.Document{Group: dir}:
 				case <-gctx.Done():
 					return gctx.Err()
 				}
@@ -70,11 +70,11 @@ func (e Extensions) ReadLines(dirs ...string) apoco.StreamFunc {
 				defer wg.Done()
 				for {
 					select {
-					case dir, ok := <-dirchan:
+					case doc, ok := <-docchan:
 						if !ok {
 							return nil
 						}
-						lines, err := e.readLinesFromDir(dir)
+						lines, err := e.readLinesFromDir(doc)
 						if err != nil {
 							return err
 						}

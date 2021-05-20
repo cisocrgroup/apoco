@@ -37,7 +37,7 @@ func TestTokenizeDir(t *testing.T) {
 			t.Errorf("bad token: %s", tok)
 		}
 		if tok.Document.Group != testDir {
-			t.Errorf("bad group: %s", tok.Group)
+			t.Errorf("bad group: %s", tok.Document.Group)
 		}
 		if tok.File != filepath.Join("testdata", "dir", "a", "00001.prob.1") &&
 			tok.File != filepath.Join("testdata", "dir", "b", "00002.prob.1") {
@@ -64,8 +64,8 @@ func TestTokenizeDirParallel(t *testing.T) {
 		if len(tok.Tokens) != 3 {
 			t.Errorf("bad token: %s", tok)
 		}
-		if tok.Document.Group != "a" && tok.Group != "b" {
-			t.Errorf("bad group: %s", tok.Group)
+		if tok.Document.Group != testDirA && tok.Document.Group != testDirB {
+			t.Errorf("bad group: %s", tok.Document.Group)
 		}
 		if tok.File != filepath.Join("testdata", "dir", "a", "00001.prob.1") &&
 			tok.File != filepath.Join("testdata", "dir", "b", "00002.prob.1") {
@@ -114,7 +114,7 @@ func TestCalamari(t *testing.T) {
 			t.Errorf("bad token: %s", tok)
 		}
 		if tok.Document.Group != testDir {
-			t.Errorf("bad group: %s", tok.Group)
+			t.Errorf("bad group: %s", tok.Document.Group)
 		}
 		if tok.File != filepath.Join("testdata", "dir", "a", "00010.json") {
 			t.Errorf("bad file: %s", tok.File)
@@ -143,7 +143,7 @@ func TestTokenizeDir2(t *testing.T) {
 			t.Errorf("bad token: %s", tok)
 		}
 		if tok.Document.Group != testDir2 {
-			t.Errorf("bad group: %s", tok.Group)
+			t.Errorf("bad group: %s", tok.Document.Group)
 		}
 		if tok.File != filepath.Join("testdata", "dir2", "00001.prob.1") {
 			t.Errorf("bad file: %s", tok.File)
