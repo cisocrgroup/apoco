@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -21,29 +22,40 @@ func run(_ *cobra.Command, _ []string) {
 	s := bufio.NewScanner(os.Stdin)
 	data := make(map[string][]pair)
 	var name, suf string
-	var max int
+	var before, after, total, max int
 	for s.Scan() {
-		if strings.HasPrefix(s.Text(), "Name") {
-			fields := strings.Fields(s.Text())
-			split := strings.Split(fields[2], "-")
+		line := s.Text()
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "#name=") {
+			fmt.Println("has prefix")
+			split := strings.Split(line[6:], "-")
 			name, suf = split[0], split[1]
-		}
-		if strings.HasPrefix(s.Text(), "Accuracy") {
-			fields := strings.Split(s.Text(), "=")
-			var ocr, other float64
-			_, err := fmt.Sscanf(fields[1], "%g/%g", &ocr, &other)
-			// log.Printf("%s-%s: %g/%g", name, suf, ocr, other)
-			chk(err)
-			if len(data[name]) == 0 {
-				data[name] = append(data[name], pair{"OCR", ocr})
+			fmt.Printf("name = %s, suff = %s", name, suf)
+			if len(data) != 0 {
+				addpairs(data, name, suf, before, after, total)
 			}
-			data[name] = append(data[name], pair{suf, other})
+			if len(data[name]) > max {
+				max = len(data[name])
+			}
+			continue
 		}
-		if len(data[name]) > max {
-			max = len(data[name])
+		stok, err := internal.MakeStok(line)
+		chk(err)
+		total++
+		if stok.ErrBefore() {
+			before++
+		}
+		if stok.ErrAfter() {
+			after++
 		}
 	}
 	chk(s.Err())
+	addpairs(data, name, suf, before, after, total)
+	if len(data[name]) > max {
+		max = len(data[name])
+	}
 
 	// Sort keys for a consistent order
 	names := make([]string, 0, len(data))
@@ -54,6 +66,8 @@ func run(_ *cobra.Command, _ []string) {
 		return names[i] < names[j]
 	})
 
+	fmt.Printf("max = %d\n", max)
+	fmt.Printf("names = %v\n", names)
 	for i := 0; i < max; i++ {
 		if i == 0 {
 			fmt.Print("#")
@@ -62,12 +76,20 @@ func run(_ *cobra.Command, _ []string) {
 			}
 			fmt.Println()
 		}
-		fmt.Print(data["1487"][i].name)
+		pre := ""
 		for _, name := range names {
-			fmt.Printf(" %g", data[name][i].data)
+			fmt.Printf("%s%g", pre, data[name][i].data)
+			pre = " "
 		}
 		fmt.Println()
 	}
+}
+
+func addpairs(data map[string][]pair, name, suf string, before, after, total int) {
+	if len(data[name]) == 0 {
+		data[name] = append(data[name], pair{"OCR", float64(before) / float64(total)})
+	}
+	data[name] = append(data[name], pair{suf, float64(after) / float64(total)})
 }
 
 type pair struct {

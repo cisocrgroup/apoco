@@ -109,6 +109,19 @@ func (s Stok) Split(before Stok) bool {
 	return s.GT != s.OCR && s.GT == before.GT
 }
 
+func (s Stok) ErrBefore() bool {
+	return s.OCR != s.GT
+}
+
+func (s Stok) ErrAfter() bool {
+	if (s.Skipped && s.OCR != s.GT) || // errors in skipped tokens
+		(!s.Skipped && s.Cor && s.Sug != s.GT) || // infelicitous correction
+		(!s.Skipped && !s.Cor && s.OCR != s.GT) { // not corrected and false
+		return true
+	}
+	return false
+}
+
 // StokType gives the type of stoks.
 type StokType int
 
