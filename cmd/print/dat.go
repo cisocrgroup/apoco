@@ -29,10 +29,8 @@ func run(_ *cobra.Command, _ []string) {
 			continue
 		}
 		if strings.HasPrefix(line, "#name=") {
-			fmt.Println("has prefix")
 			split := strings.Split(line[6:], "-")
 			name, suf = split[0], split[1]
-			fmt.Printf("name = %s, suff = %s", name, suf)
 			if len(data) != 0 {
 				addpairs(data, name, suf, before, after, total)
 			}
@@ -66,8 +64,6 @@ func run(_ *cobra.Command, _ []string) {
 		return names[i] < names[j]
 	})
 
-	fmt.Printf("max = %d\n", max)
-	fmt.Printf("names = %v\n", names)
 	for i := 0; i < max; i++ {
 		if i == 0 {
 			fmt.Print("#")
