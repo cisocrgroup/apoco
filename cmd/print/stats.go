@@ -220,16 +220,6 @@ func (s *stats) improvement() float64 {
 	return (float64(corafter-corbefore) / float64(corbefore)) * 100.0
 }
 
-/*
-func (s *stats) raw(name string) {
-	data := s.data(name)
-	for key, val := range data {
-		_, err := fmt.Printf("%s %v\n", key, val)
-		chk(err)
-	}
-}
-*/
-
 func (s *stats) json(name string) {
 	data := s.data(name)
 	chk(json.NewEncoder(os.Stdout).Encode(data))
