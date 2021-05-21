@@ -14,7 +14,7 @@ import (
 // CMD defines the apoco train command.
 var datCMD = &cobra.Command{
 	Use:   "dat",
-	Short: "Print data for diagrams",
+	Short: "Print data for gnuplot",
 	Run:   run,
 }
 
