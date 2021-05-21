@@ -69,6 +69,7 @@ type stats struct {
 	merges, splits                            int
 	tokenErrBefore, tokenErrAfter, tokenTotal int
 	charErrBefore, charErrAfter, charTotal    int
+	suspErrBefore, suspErrAfter, suspTotal    int
 }
 
 func (s *stats) stat(dtd string) error {
@@ -115,15 +116,27 @@ func (s *stats) stat(dtd string) error {
 	default:
 		s.charErrAfter += s.mat.Distance(t.OCR, t.GT)
 	}
+	// Gather errors on suspicious tokens
+	if !t.Skipped {
+		s.suspTotal++
+		if t.ErrBefore() {
+			s.suspErrBefore++
+		}
+		if t.ErrAfter() {
+			s.suspErrAfter++
+		}
+	}
 
 	s.before = t
 	return nil
 }
 
 func (s *stats) write(name string, verbose bool) {
-	tokenErrRateBefore, tokenErrRateAfter := s.tokenErrorRates()
-	charErrRateBefore, charErrRateAfter := s.charErrorRates()
+	tokenErrRateBefore, tokenErrRateAfter := errorRates(s.tokenErrBefore, s.tokenErrAfter, s.tokenTotal)
+	charErrRateBefore, charErrRateAfter := errorRates(s.charErrBefore, s.charErrAfter, s.charTotal)
+	suspErrRateBefore, suspErrRateAfter := errorRates(s.suspErrBefore, s.suspErrAfter, s.suspTotal)
 	accBefore, accAfter := 1.0-tokenErrRateBefore, 1.0-tokenErrRateAfter
+	suspAccBefore, suspAccAfter := 1.0-suspErrRateBefore, 1.0-suspErrRateAfter
 	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
 	improvement := s.improvement()
 	charImprovement := ((charErrRateAfter - charErrRateBefore) / charErrRateBefore) * 100
@@ -138,6 +151,9 @@ func (s *stats) write(name string, verbose bool) {
 	fmt.Printf("Total errors (before/after)     = %d/%d\n", s.tokenErrBefore, s.tokenErrAfter)
 	fmt.Printf("Correct (before/after)          = %d/%d\n", corbefore, corafter)
 	fmt.Printf("Total tokens                    = %d\n", s.tokenTotal)
+	fmt.Printf("Susp. error rate (before/after) = %g/%g\n", suspErrRateBefore, suspErrRateAfter)
+	fmt.Printf("Susp. accuracy (before/after)   = %g/%g\n", suspAccBefore, suspAccAfter)
+	fmt.Printf("Suspicious tokens               = %d\n", s.suspTotal)
 	if !verbose {
 		fmt.Printf("Successful corrections          = %d\n", s.types[internal.SuccessfulCorrection])
 		fmt.Printf("Missed opportunities            = %d\n", s.types[internal.MissedOpportunity])
@@ -195,12 +211,8 @@ func (s *stats) write(name string, verbose bool) {
 	fmt.Printf("            └─ missing corr     = %d\n", s.causes[internal.SuspiciousNotReplacedNotCorrectErr][internal.MissingCandidate])
 }
 
-func (s *stats) charErrorRates() (before, after float64) {
-	return float64(s.charErrBefore) / float64(s.charTotal), float64(s.charErrAfter) / float64(s.charTotal)
-}
-
-func (s *stats) tokenErrorRates() (before, after float64) {
-	return float64(s.tokenErrBefore) / float64(s.tokenTotal), float64(s.tokenErrAfter) / float64(s.tokenTotal)
+func errorRates(before, after, total int) (float64, float64) {
+	return float64(before) / float64(total), float64(after) / float64(total)
 }
 
 func (s *stats) improvement() float64 {
@@ -225,8 +237,8 @@ func (s *stats) json(name string) {
 
 func (s *stats) data(name string) map[string]interface{} {
 	data := make(map[string]interface{})
-	errRateBefore, errRateAfter := s.tokenErrorRates()
-	charErrRateBefore, charErrRateAfter := s.charErrorRates()
+	errRateBefore, errRateAfter := errorRates(s.tokenErrBefore, s.tokenErrAfter, s.tokenTotal)
+	charErrRateBefore, charErrRateAfter := errorRates(s.charErrBefore, s.charErrAfter, s.charTotal)
 	accBefore, accAfter := 1.0-errRateBefore, 1.0-errRateAfter
 	corbefore, corafter := s.tokenTotal-s.tokenErrBefore, s.tokenTotal-s.tokenErrAfter
 	improvement := s.improvement()
