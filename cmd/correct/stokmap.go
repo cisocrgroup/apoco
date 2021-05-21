@@ -6,6 +6,7 @@ import (
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
+	"github.com/finkf/gofiler"
 )
 
 var stokMapLock sync.Mutex
@@ -37,6 +38,20 @@ func rankings2string(rs []apoco.Ranking, max int) string {
 	strs := make([]string, max)
 	for i := range rs[0:max] {
 		strs[i] = rs[i].Candidate.String()
+	}
+	return strings.Join(strs, "/")
+}
+
+func candidates2string(cs []gofiler.Candidate, max int) string {
+	if len(cs) == 0 {
+		return "ε"
+	}
+	if max == 0 || len(cs) < max {
+		max = len(cs)
+	}
+	strs := make([]string, max)
+	for i := range cs[0:max] {
+		strs[i] = cs[i].String()
 	}
 	return strings.Join(strs, "/")
 }

@@ -42,11 +42,10 @@ func init() {
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n",
 		0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().IntVarP(&flags.cands, "cands", "d",
-		-1, "output ARG cands for ntokens; 0 means all candidates")
+		-1, "output ARG cands for tokens; 0 means all candidates, -1 means no candidates")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "",
 		"set model path (overwrites setting in the configuration file)")
-	CMD.Flags().BoolVarP(&flags.cache, "cache", "c",
-		false, "enable caching of profile")
+	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
 	CMD.Flags().BoolVarP(&flags.gt, "gt", "g", false, "enable ground-truth data")
 }
 
@@ -105,10 +104,14 @@ func run(_ *cobra.Command, args []string) {
 				fmt.Printf("#name=%s", info.document.Group)
 				doc = info.document
 			}
-			if flags.cands == -1 {
+			switch {
+			case flags.cands == -1:
 				fmt.Printf("%s\n", info.Stok)
-			} else {
+			case len(info.rankings) > 0:
 				fmt.Printf("%s cands=%s\n", info.Stok, rankings2string(info.rankings, flags.cands))
+			default:
+				i := info.document.Profile[info.OCR]
+				fmt.Printf("%s cands=%s\n", info.Stok, candidates2string(i.Candidates, flags.cands))
 			}
 		}
 		return
