@@ -3,6 +3,7 @@ package train
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
@@ -19,10 +20,22 @@ var dmCMD = &cobra.Command{
 	Run:   dmRun,
 }
 
+var dmFlags = struct {
+	instances string
+	cautious  bool
+}{}
+
+func init() {
+	dmCMD.Flags().BoolVarP(&dmFlags.cautious, "cautious", "a", false,
+		"use cautious training (overwrites the setting in the configuration file)")
+	dmCMD.Flags().StringVarP(&dmFlags.instances, "instances", "i", "",
+		"set output path of training instances")
+
+}
 func dmRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, flags.cautious, flags.cache, false)
+	c.Overwrite(flags.model, flags.nocr, dmFlags.cautious, flags.cache, false)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)
@@ -42,33 +55,30 @@ func dmRun(_ *cobra.Command, args []string) {
 		apoco.FilterLexiconEntries(),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(lr, fs, c.Nocr),
-		dmTrain(c, m, flags.update),
+		dmTrain(c, m, dmFlags.instances, flags.update),
 	))
 }
 
-func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func dmTrain(c *internal.Config, m apoco.Model, instances string, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := loadDMModel(c, m, update)
 		if err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
-		tokens, err := os.Create("dm-training-tokens.txt")
+		w, err := instanceWriter(dmFlags.instances)
 		if err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
-		defer tokens.Close()
+		defer w.Close()
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if !useTokenForDMTraining(t, c.DM.Cautious) {
 				return nil
 			}
-			xxx := internal.Stok{
-				ID:  t.ID,
-				OCR: t.Tokens[0],
-				GT:  t.Tokens[len(t.Tokens)-1],
-				Sug: t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion,
-			}
-			if _, err := fmt.Fprintf(tokens, "%s val=%g\n", xxx.String(), dmGT(t)); err != nil {
+			_, err := fmt.Fprintf(w, "id=%s ocr=%s sug=%s gt=%s val=%g\n",
+				t.ID, t.Tokens[0], t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion,
+				internal.E(t.Tokens[len(t.Tokens)-1]), dmGT(t))
+			if err != nil {
 				return err
 			}
 			xs = fs.Calculate(xs, t, c.Nocr)
@@ -85,7 +95,7 @@ func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			return fmt.Errorf("train dm: %v", err)
 		}
 		apoco.Log("train dm: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d, cautious=%t",
-			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, flags.cautious)
+			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, c.DM.Cautious)
 		ferr := lr.Fit(x, y)
 		apoco.Log("train dm: remaining error: %g", ferr)
 		m.Put("dm", c.Nocr, lr, c.DM.Features)
@@ -109,6 +119,18 @@ func loadDMModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.
 		Ntrain:       c.DM.Ntrain,
 	}
 	return lr, fs, nil
+}
+
+type noopWriteCloser struct{}
+
+func (noopWriteCloser) Close() error                { return nil }
+func (noopWriteCloser) Write(p []byte) (int, error) { return len(p), nil }
+
+func instanceWriter(path string) (io.WriteCloser, error) {
+	if path == "" {
+		return noopWriteCloser{}, nil
+	}
+	return os.Create(path)
 }
 
 func useTokenForDMTraining(t apoco.T, cautious bool) bool {

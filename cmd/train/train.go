@@ -21,10 +21,10 @@ var CMD = &cobra.Command{
 }
 
 var flags = struct {
-	extensions              []string
-	parameter, model        string
-	nocr                    int
-	cache, cautious, update bool
+	extensions       []string
+	parameter, model string
+	nocr             int
+	cache, update    bool
 }{}
 
 func init() {
@@ -39,8 +39,6 @@ func init() {
 		"set the number of parallel OCRs (overwrites the setting in the configuration file)")
 	CMD.PersistentFlags().BoolVarP(&flags.cache, "cache", "c", false,
 		"enable caching of profiles (overwrites the setting in the configuration file)")
-	CMD.PersistentFlags().BoolVarP(&flags.cautious, "cautious", "a", false,
-		"use cautious training (overwrites the setting in the configuration file)")
 	CMD.PersistentFlags().BoolVarP(&flags.update, "update", "u", false,
 		"update the model if it already exists")
 	// Subcommands
