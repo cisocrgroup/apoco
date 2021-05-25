@@ -47,7 +47,7 @@ func (s Stok) Type() StokType {
 	}
 	if s.Cor && s.GT == s.OCR {
 		if s.Sug == s.GT {
-			return SuspiciousReplacedCorrect
+			return RedundantCorrection
 		}
 		return InfelicitousCorrection
 	}
@@ -132,7 +132,7 @@ const (
 	SkippedNoCandErr                                   // Error in skipped no candidate token.
 	SkippedLex                                         // Skipped lexical token.
 	FalseFriend                                        // Error in skipped lexical token (false friend).
-	SuspiciousReplacedCorrect                          // Redundant correction.
+	RedundantCorrection                                // Redundant correction.
 	InfelicitousCorrection                             // Infelicitous correction.
 	SuccessfulCorrection                               // Successful correction.
 	DoNotCareCorrection                                // Do not care correction.

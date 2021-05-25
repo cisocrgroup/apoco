@@ -14,7 +14,7 @@ func _() {
 	_ = x[SkippedNoCandErr-3]
 	_ = x[SkippedLex-4]
 	_ = x[FalseFriend-5]
-	_ = x[SuspiciousReplacedCorrect-6]
+	_ = x[RedundantCorrection-6]
 	_ = x[InfelicitousCorrection-7]
 	_ = x[SuccessfulCorrection-8]
 	_ = x[DoNotCareCorrection-9]
@@ -24,9 +24,9 @@ func _() {
 	_ = x[SuspiciousNotReplacedNotCorrectErr-13]
 }
 
-const _StokType_name = "SkippedShortSkippedShortErrSkippedNoCandSkippedNoCandErrSkippedLexFalseFriendSuspiciousReplacedCorrectInfelicitousCorrectionSuccessfulCorrectionDoNotCareCorrectionSuspiciousNotReplacedCorrectDodgedBulletMissedOpportunitySuspiciousNotReplacedNotCorrectErr"
+const _StokType_name = "SkippedShortSkippedShortErrSkippedNoCandSkippedNoCandErrSkippedLexFalseFriendRedundantCorrectionInfelicitousCorrectionSuccessfulCorrectionDoNotCareCorrectionSuspiciousNotReplacedCorrectDodgedBulletMissedOpportunitySuspiciousNotReplacedNotCorrectErr"
 
-var _StokType_index = [...]uint8{0, 12, 27, 40, 56, 66, 77, 102, 124, 144, 163, 191, 203, 220, 254}
+var _StokType_index = [...]uint8{0, 12, 27, 40, 56, 66, 77, 96, 118, 138, 157, 185, 197, 214, 248}
 
 func (i StokType) String() string {
 	if i < 0 || i >= StokType(len(_StokType_index)-1) {
