@@ -101,7 +101,7 @@ func run(_ *cobra.Command, args []string) {
 		var doc *apoco.Document
 		for _, info := range sorted {
 			if info.document != doc {
-				fmt.Printf("#name=%s", info.document.Group)
+				fmt.Printf("#name=%s\n", info.document.Group)
 				doc = info.document
 			}
 			switch {
