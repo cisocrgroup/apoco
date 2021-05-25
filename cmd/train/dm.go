@@ -90,7 +90,9 @@ func dmTrain(c *internal.Config, m apoco.Model, instances string, update bool) a
 		}
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
-		chk(logCorrelationMat(c, fs, x, true))
+		if err := logCorrelationMat(c, fs, x, true); err != nil {
+			return fmt.Errorf("train dm: %v", err)
+		}
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
