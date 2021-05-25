@@ -111,7 +111,8 @@ func useTokenForDMTraining(t apoco.T, cautious bool) bool {
 	// We do not want to train with redundant corrections (ocr == gt && sugg == gt).
 	// If ocr == gt and sugg == gt we skip the token for the training.
 	// Note that at this point ocr == gt holds (see above).
-	return t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion != gt
+	// return t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion != gt
+	return true
 }
 
 func dmGT(t apoco.T) float64 {
