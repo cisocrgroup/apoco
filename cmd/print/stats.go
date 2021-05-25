@@ -176,13 +176,13 @@ func (s *stats) write(name string, verbose bool) {
 	fmt.Printf("│  └─ lexicon entries           = %d\n", totalSkippedLex)
 	fmt.Printf("│     └─ false friends          = %d\n", s.types[internal.FalseFriend])
 	totalSusp := s.tokenTotal - totalSkipped
-	totalSuspReplCor := s.types[internal.SuspiciousReplacedCorrect] + s.types[internal.InfelicitousCorrection]
+	totalSuspReplCor := s.types[internal.RedundantCorrection] + s.types[internal.InfelicitousCorrection]
 	totalSuspReplNotCor := s.types[internal.SuccessfulCorrection] + s.types[internal.DoNotCareCorrection]
 	totalSuspRepl := totalSuspReplCor + totalSuspReplNotCor
 	fmt.Printf("└─ suspicious                   = %d\n", totalSusp)
 	fmt.Printf("   ├─ replaced                  = %d\n", totalSuspRepl)
 	fmt.Printf("   │  ├─ ocr correct            = %d\n", totalSuspReplCor)
-	fmt.Printf("   │  │  ├─ redundant corr      = %d\n", s.types[internal.SuspiciousReplacedCorrect])
+	fmt.Printf("   │  │  ├─ redundant corr      = %d\n", s.types[internal.RedundantCorrection])
 	fmt.Printf("   │  │  └─ infelicitous corr   = %d\n", s.types[internal.InfelicitousCorrection])
 	fmt.Printf("   │  │     ├─ bad rank         = %d\n", s.causes[internal.InfelicitousCorrection][internal.BadRank])
 	fmt.Printf("   │  │     ├─ bad limit        = %d\n", s.causes[internal.InfelicitousCorrection][internal.BadLimit])
