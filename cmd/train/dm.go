@@ -52,7 +52,7 @@ func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		if err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
-		tokens, err := os.Open("dm-training-tokens.txt")
+		tokens, err := os.Create("dm-training-tokens.txt")
 		if err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
