@@ -102,10 +102,16 @@ func useTokenForDMTraining(t apoco.T, cautious bool) bool {
 	}
 	ocr := t.Tokens[0]
 	gt := t.Tokens[len(t.Tokens)-1]
-	if gt != ocr {
+	// If ocr != gt we use the token if the correction suggestion is correct.
+	// We skip token with "don't care corrections" (incorrect correction
+	// for an incorrect ocr token).
+	if ocr != gt {
 		return t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion == gt
 	}
-	return true
+	// We do not want to train with redundant corrections (ocr == gt && sugg == gt).
+	// If ocr == gt and sugg == gt we skip the token for the training.
+	// Note that at this point ocr == gt holds (see above).
+	return t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion != gt
 }
 
 func dmGT(t apoco.T) float64 {
