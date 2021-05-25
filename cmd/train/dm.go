@@ -3,6 +3,7 @@ package train
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -51,10 +52,24 @@ func dmTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		if err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
+		tokens, err := os.Open("dm-training-tokens.txt")
+		if err != nil {
+			return fmt.Errorf("train dm: %v", err)
+		}
+		defer tokens.Close()
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if !useTokenForDMTraining(t, c.DM.Cautious) {
 				return nil
+			}
+			xxx := internal.Stok{
+				ID:  t.ID,
+				OCR: t.Tokens[0],
+				GT:  t.Tokens[len(t.Tokens)-1],
+				Sug: t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion,
+			}
+			if _, err := fmt.Fprintf(tokens, "%s val=%g\n", xxx.String(), dmGT(t)); err != nil {
+				return err
 			}
 			xs = fs.Calculate(xs, t, c.Nocr)
 			ys = append(ys, dmGT(t))
