@@ -22,21 +22,23 @@ func run(_ *cobra.Command, _ []string) {
 	s := bufio.NewScanner(os.Stdin)
 	data := make(map[string][]pair)
 	var name, suf string
-	var before, after, total, max int
+	var before, after, total int
 	for s.Scan() {
 		line := s.Text()
 		if line == "" {
 			continue
 		}
 		if strings.HasPrefix(line, "#name=") {
-			split := strings.Split(line[6:], "-")
-			name, suf = split[0], split[1]
-			if len(data) != 0 {
+			if len(data) > 0 {
 				addpairs(data, name, suf, before, after, total)
 			}
-			if len(data[name]) > max {
-				max = len(data[name])
+			tmp := line[6:]
+			pos := strings.Index(tmp, "-")
+			if pos < 1 {
+				panic(fmt.Sprintf("bad name: %s", tmp))
 			}
+			name, suf = tmp[:pos], tmp[pos+1:]
+			before, after, total = 0, 0, 0
 			continue
 		}
 		stok, err := internal.MakeStok(line)
@@ -51,9 +53,6 @@ func run(_ *cobra.Command, _ []string) {
 	}
 	chk(s.Err())
 	addpairs(data, name, suf, before, after, total)
-	if len(data[name]) > max {
-		max = len(data[name])
-	}
 
 	// Sort keys for a consistent order
 	names := make([]string, 0, len(data))
@@ -63,6 +62,12 @@ func run(_ *cobra.Command, _ []string) {
 	sort.Slice(names, func(i, j int) bool {
 		return names[i] < names[j]
 	})
+	var max int
+	for _, name := range names {
+		if max < len(data[name]) {
+			max = len(data[name])
+		}
+	}
 
 	for i := 0; i < max; i++ {
 		if i == 0 {
