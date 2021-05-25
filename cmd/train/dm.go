@@ -65,7 +65,7 @@ func dmTrain(c *internal.Config, m apoco.Model, instances string, update bool) a
 		if err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
-		w, err := instanceWriter(dmFlags.instances)
+		w, err := instanceWriter(instances)
 		if err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
