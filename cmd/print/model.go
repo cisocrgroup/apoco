@@ -114,9 +114,11 @@ func jsonfeatures(typ string, ds map[int]apoco.ModelData) []feature {
 		}
 		for i := range names {
 			features = append(features, feature{
-				Name:   names[i],
-				Nocr:   nocr,
-				Weight: ws[i],
+				Name:      names[i],
+				Nocr:      nocr,
+				Weight:    ws[i],
+				Error:     data.Model.Error(),
+				Instances: data.Model.Instances(),
 			})
 		}
 	}
@@ -131,7 +133,9 @@ type modelst struct {
 }
 
 type feature struct {
-	Name   string
-	Weight float64
-	Nocr   int
+	Name      string
+	Weight    float64
+	Nocr      int
+	Error     float64
+	Instances int
 }

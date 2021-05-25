@@ -28,7 +28,9 @@ func Bool(t bool) float64 {
 type LR struct {
 	weights      *mat.VecDense
 	LearningRate float64
+	err          float64
 	Ntrain       int
+	instances    int
 }
 
 func (lr *LR) gradient(x *mat.Dense, y, p, out *mat.VecDense) float64 {
@@ -60,6 +62,16 @@ func (lr *LR) Weights() []float64 {
 	return lr.weights.RawVector().Data
 }
 
+// Instances returns the number of training instances used.
+func (lr *LR) Instances() int {
+	return lr.instances
+}
+
+// Error returns the remaining training error.
+func (lr *LR) Error() float64 {
+	return lr.err
+}
+
 func (lr *LR) predictVec(x *mat.Dense, out *mat.VecDense) {
 	out.MulVec(x, lr.weights)
 	lr.sigmoid(out)
@@ -87,7 +99,8 @@ func (lr *LR) Predict(x *mat.Dense, t float64) *mat.VecDense {
 
 // Fit fits the linear regression model and returns its final error.
 func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
-	_, c := x.Dims()
+	r, c := x.Dims()
+	lr.instances += r
 	lr.weights = mat.NewVecDense(c, nil)
 	errb := math.MaxFloat64
 	var pred, gradient mat.VecDense
@@ -95,26 +108,31 @@ func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 		lr.predictVec(x, &pred)
 		err := lr.gradient(x, y, &pred, &gradient)
 		if errb < err {
-			return errb
+			break
 		}
 		gradient.ScaleVec(lr.LearningRate, &gradient)
 		lr.weights.SubVec(lr.weights, &gradient)
 		errb = err
 	}
+	lr.err = errb
 	return errb
 }
 
 type lrdata struct {
 	Weights      []float64
 	LearningRate float64
+	Error        float64
 	Ntrain       int
+	Instances    int
 }
 
 // MarshalJSON implements the json.Marshal interface.
 func (lr *LR) MarshalJSON() ([]byte, error) {
 	data := lrdata{
 		LearningRate: lr.LearningRate,
+		Error:        lr.err,
 		Ntrain:       lr.Ntrain,
+		Instances:    lr.instances,
 		Weights:      lr.Weights(),
 	}
 	return json.Marshal(data)
@@ -124,7 +142,9 @@ func (lr *LR) MarshalJSON() ([]byte, error) {
 func (lr *LR) GobEncode() ([]byte, error) {
 	data := lrdata{
 		LearningRate: lr.LearningRate,
+		Error:        lr.err,
 		Ntrain:       lr.Ntrain,
+		Instances:    lr.instances,
 		Weights:      lr.Weights(),
 	}
 	var buf bytes.Buffer
@@ -141,6 +161,8 @@ func (lr *LR) UnmarshalJSON(data []byte) error {
 	*lr = LR{
 		Ntrain:       tmp.Ntrain,
 		LearningRate: tmp.LearningRate,
+		err:          tmp.Error,
+		instances:    tmp.Instances,
 		weights:      mat.NewVecDense(len(tmp.Weights), tmp.Weights),
 	}
 	return nil
@@ -156,6 +178,8 @@ func (lr *LR) GobDecode(data []byte) error {
 	*lr = LR{
 		Ntrain:       tmp.Ntrain,
 		LearningRate: tmp.LearningRate,
+		err:          tmp.Error,
+		instances:    tmp.Instances,
 		weights:      mat.NewVecDense(len(tmp.Weights), tmp.Weights),
 	}
 	return nil
