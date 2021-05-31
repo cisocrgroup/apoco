@@ -22,7 +22,7 @@ var dmCMD = &cobra.Command{
 func dmRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, flags.nocr, false, flags.cache, false)
+	c.Overwrite(flags.model, "", flags.nocr, flags.cache, false)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)
