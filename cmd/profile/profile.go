@@ -25,8 +25,9 @@ DIRS.`,
 }
 
 var flags = struct {
-	extensions []string
-	parameter  string
+	extensions  []string
+	parameter   string
+	corrections bool
 }{}
 
 func init() {
@@ -34,6 +35,8 @@ func init() {
 		"set the path to the configuration file")
 	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", nil,
 		"set the input file extensions")
+	CMD.PersistentFlags().BoolVarP(&flags.corrections, "corrections", "c", false,
+		"add corrections to the profiler")
 }
 
 func runProfile(_ *cobra.Command, args []string) {
@@ -43,7 +46,7 @@ func runProfile(_ *cobra.Command, args []string) {
 	if len(args) == 1 {
 		chk(apoco.Pipe(
 			context.Background(),
-			readStoks(os.Stdin),
+			readStoks(os.Stdin, flags.corrections),
 			apoco.FilterBad(1),
 			apoco.Normalize(),
 			apoco.FilterShort(4),
@@ -83,13 +86,13 @@ func writeProfile(c *internal.Config, name string) apoco.StreamFunc {
 	}
 }
 
-func readStoks(in io.Reader) apoco.StreamFunc {
+func readStoks(in io.Reader, corrections bool) apoco.StreamFunc {
 	return func(ctx context.Context, _ <-chan apoco.T, out chan<- apoco.T) error {
 		return eachStok(in, func(stok internal.Stok) error {
 			t := apoco.T{
 				Tokens: []string{stok.OCR, stok.GT},
 			}
-			if !stok.Skipped && stok.Cor {
+			if corrections && !stok.Skipped && stok.Cor {
 				t.Cor = stok.Sug
 			}
 			return apoco.SendTokens(ctx, out, t)
