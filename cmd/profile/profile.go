@@ -18,6 +18,10 @@ var CMD = &cobra.Command{
 	Short: "Create profiles of documents",
 	Args:  cobra.MinimumNArgs(1),
 	Run:   runProfile,
+	Long: `
+Writes gzipped profiles to OUT. Reads stat tokens from 
+stdin if no DIRS are given. Otherwise tokens are read from
+DIRS.`,
 }
 
 var flags = struct {
@@ -35,8 +39,7 @@ func init() {
 func runProfile(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	// If called with only one output file, read stat tokens from
-	// stdin.
+	// If called with only one output file, read stat tokens from stdin.
 	if len(args) == 1 {
 		chk(apoco.Pipe(
 			context.Background(),
@@ -48,6 +51,7 @@ func runProfile(_ *cobra.Command, args []string) {
 		))
 		return
 	}
+	// Otherwise read files from given directories.
 	p := internal.Piper{
 		Exts: flags.extensions,
 		Dirs: args[:len(args)-1],
