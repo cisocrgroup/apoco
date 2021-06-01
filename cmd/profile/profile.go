@@ -102,7 +102,7 @@ func eachStok(in io.Reader, f func(internal.Stok) error) error {
 	for scanner.Scan() {
 		// Skip commented lines (lines starting with #).
 		if len(scanner.Text()) > 0 && scanner.Text()[0] == '#' {
-			return nil
+			continue
 		}
 		t, err := internal.MakeStok(scanner.Text())
 		if err != nil {
