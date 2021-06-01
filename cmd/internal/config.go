@@ -32,7 +32,7 @@ type TrainingSettings struct {
 // DMSettings encloses settings for dm training.
 type DMSettings struct {
 	TrainingSettings
-	FilterInstances string // cautious, courageous or redundant
+	Filter string `json:"filter"` // cautious, courageous or redundant
 }
 
 // ReadConfig reads the config from a json or toml file.  If
@@ -71,12 +71,12 @@ func ReadConfig(name string) (*Config, error) {
 // Overwrite overwrites the appropriate variables in the config file
 // with the given values.  Values only overwrite the variables if they
 // are not go's default zero value.
-func (c *Config) Overwrite(model, filterInstances string, nocr int, cache, gt bool) {
+func (c *Config) Overwrite(model, filter string, nocr int, cache, gt bool) {
 	if model != "" {
 		c.Model = model
 	}
-	if filterInstances != "" {
-		c.DM.FilterInstances = filterInstances
+	if filter != "" {
+		c.DM.Filter = filter
 	}
 	if nocr != 0 {
 		c.Nocr = nocr
@@ -88,3 +88,9 @@ func (c *Config) Overwrite(model, filterInstances string, nocr int, cache, gt bo
 		c.GT = gt
 	}
 }
+
+const (
+	Cautious   string = "cautious"
+	Courageous string = "courageous"
+	Redundant  string = "redundant"
+)

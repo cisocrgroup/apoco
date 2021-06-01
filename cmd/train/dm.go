@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -22,12 +21,12 @@ var dmCMD = &cobra.Command{
 }
 
 var dmFlags = struct {
-	instances       string
-	filterInstances string
+	instances string
+	filter    string
 }{}
 
 func init() {
-	dmCMD.Flags().StringVarP(&dmFlags.filterInstances, "filter", "f", "courageous",
+	dmCMD.Flags().StringVarP(&dmFlags.filter, "filter", "f", "courageous",
 		"use cautious training (overwrites the setting in the configuration file)")
 	dmCMD.Flags().StringVarP(&dmFlags.instances, "instances", "i", "",
 		"set output path of training instances")
@@ -36,7 +35,7 @@ func init() {
 func dmRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, dmFlags.filterInstances, flags.nocr, flags.cache, false)
+	c.Overwrite(flags.model, dmFlags.filter, flags.nocr, flags.cache, false)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)
@@ -73,7 +72,7 @@ func dmTrain(c *internal.Config, m apoco.Model, instances string, update bool) a
 		defer w.Close()
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
-			if !useTokenForDMTraining(t, c.DM.FilterInstances) {
+			if !useTokenForDMTraining(t, c.DM.Filter) {
 				return nil
 			}
 			_, err := fmt.Fprintf(w, "id=%s ocr=%s sug=%s gt=%s val=%g\n",
@@ -98,7 +97,7 @@ func dmTrain(c *internal.Config, m apoco.Model, instances string, update bool) a
 			return fmt.Errorf("train dm: %v", err)
 		}
 		apoco.Log("train dm: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d, filter=%s",
-			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, c.DM.FilterInstances)
+			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, c.DM.Filter)
 		ferr := lr.Fit(x, y)
 		apoco.Log("train dm: remaining error: %g", ferr)
 		m.Put("dm", c.Nocr, lr, c.DM.Features)
@@ -137,7 +136,7 @@ func instanceWriter(path string) (io.WriteCloser, error) {
 }
 
 func useTokenForDMTraining(t apoco.T, filter string) bool {
-	if strings.ToLower(filter) == "cautious" {
+	if filter == internal.Cautious {
 		return true
 	}
 	ocr := t.Tokens[0]
@@ -151,7 +150,7 @@ func useTokenForDMTraining(t apoco.T, filter string) bool {
 	// We do not want to train with redundant corrections (ocr == gt && sugg == gt).
 	// If ocr == gt and sugg == gt we skip the token for the training.
 	// Note that at this point ocr == gt holds (see above).
-	if strings.ToLower(filter) == "redundant" {
+	if filter == internal.Redundant {
 		return t.Payload.([]apoco.Ranking)[0].Candidate.Suggestion != gt
 	}
 	return true
