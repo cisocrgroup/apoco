@@ -20,7 +20,7 @@ func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.json, "json", "J", false, "set json output")
 	// Subcommands
 	CMD.AddCommand(statsCMD, tokensCMD, modelCMD, protocolCMD, profileCMD, charsetCMD,
-		typesCMD, trigramsCMD, datCMD)
+		typesCMD, trigramsCMD)
 }
 
 func chk(err error) {

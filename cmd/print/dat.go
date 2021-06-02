@@ -3,6 +3,7 @@ package print
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -18,31 +19,37 @@ var datCMD = &cobra.Command{
 	Run:   run,
 }
 
+var datFlags = struct {
+	typ string
+}{}
+
+func init() {
+	datCMD.Flags().StringVarP(&datFlags.typ, "type", "t", "general", "set type of data")
+	CMD.AddCommand(datCMD)
+}
+
 func run(_ *cobra.Command, _ []string) {
-	s := bufio.NewScanner(os.Stdin)
+	switch datFlags.typ {
+	case "general":
+		runGeneral()
+	default:
+		panic("bad type: " + datFlags.typ)
+	}
+}
+
+func runGeneral() {
 	data := make(map[string][]pair)
-	var name, suf string
+	var year, suf string
 	var before, after, total int
-	for s.Scan() {
-		line := s.Text()
-		if line == "" {
-			continue
-		}
-		if strings.HasPrefix(line, "#name=") {
-			if len(data) > 0 {
-				addpairs(data, name, suf, before, after, total)
-			}
-			tmp := line[6:]
-			pos := strings.Index(tmp, "-")
+	eachStok(os.Stdin, func(name string, stok internal.Stok) {
+		if year == "" || !strings.HasPrefix(name, year) {
+			pos := strings.Index(name, "-")
 			if pos < 1 {
-				panic(fmt.Sprintf("bad name: %s", tmp))
+				panic("bad name: " + name)
 			}
-			name, suf = tmp[:pos], tmp[pos+1:]
+			year, suf = name[:pos], name[pos+1:]
 			before, after, total = 0, 0, 0
-			continue
 		}
-		stok, err := internal.MakeStok(line)
-		chk(err)
 		total++
 		if stok.ErrBefore() {
 			before++
@@ -50,9 +57,8 @@ func run(_ *cobra.Command, _ []string) {
 		if stok.ErrAfter() {
 			after++
 		}
-	}
-	chk(s.Err())
-	addpairs(data, name, suf, before, after, total)
+	})
+	addpairs(data, year, suf, before, after, total)
 
 	// Sort keys for a consistent order
 	names := make([]string, 0, len(data))
@@ -83,6 +89,28 @@ func run(_ *cobra.Command, _ []string) {
 		}
 		fmt.Println()
 	}
+}
+
+func eachStok(r io.Reader, f func(string, internal.Stok)) {
+	s := bufio.NewScanner(r)
+	var name string
+	for s.Scan() {
+		line := s.Text()
+		if len(line) == 0 {
+			continue
+		}
+		if strings.HasPrefix(line, "#name=") {
+			name = strings.Trim(line[6:], " \t\n")
+			continue
+		}
+		if line[0] == '#' {
+			continue
+		}
+		stok, err := internal.MakeStok(line)
+		chk(err)
+		f(name, stok)
+	}
+	chk(s.Err())
 }
 
 func addpairs(data map[string][]pair, name, suf string, before, after, total int) {
