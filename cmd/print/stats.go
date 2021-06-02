@@ -38,7 +38,7 @@ func init() {
 func runStats(_ *cobra.Command, args []string) {
 	scanner := bufio.NewScanner(os.Stdin)
 	var s stats
-	filename := statsFlags.name
+	var filename string
 	for scanner.Scan() {
 		dtd := scanner.Text()
 		if dtd != "" && dtd[0] == '#' {
@@ -51,6 +51,10 @@ func runStats(_ *cobra.Command, args []string) {
 			continue
 		}
 		chk(s.stat(dtd))
+	}
+	// Overwrite file name if a name was given on the command line.
+	if statsFlags.name != "" {
+		filename = statsFlags.name
 	}
 	switch {
 	case flags.json:
