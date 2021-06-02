@@ -14,9 +14,13 @@ import (
 
 // CMD defines the apoco train command.
 var datCMD = &cobra.Command{
-	Use:   "dat",
+	Use:   "dat [FILES...]",
 	Short: "Print data for gnuplot",
 	Run:   run,
+	Long: `
+Prints the data for gnuplot from FILES. Reads
+from stdin, if no FILES.
+	`,
 }
 
 var datFlags = struct {
@@ -28,20 +32,20 @@ func init() {
 	CMD.AddCommand(datCMD)
 }
 
-func run(_ *cobra.Command, _ []string) {
+func run(_ *cobra.Command, args []string) {
 	switch datFlags.typ {
 	case "general":
-		runGeneral()
+		runGeneral(args)
 	default:
 		panic("bad type: " + datFlags.typ)
 	}
 }
 
-func runGeneral() {
+func runGeneral(files []string) {
 	data := make(map[string][]pair)
 	var year, suf string
 	var before, after, total int
-	eachStok(os.Stdin, func(name string, stok internal.Stok) {
+	eachStok(files, func(name string, stok internal.Stok) {
 		if year == "" || !strings.HasPrefix(name, year) {
 			pos := strings.Index(name, "-")
 			if pos < 1 {
@@ -91,7 +95,24 @@ func runGeneral() {
 	}
 }
 
-func eachStok(r io.Reader, f func(string, internal.Stok)) {
+func eachStok(files []string, f func(string, internal.Stok)) {
+	if len(files) == 0 {
+		eachStokR(os.Stdin, f)
+		return
+	}
+	for _, file := range files {
+		eachStokF(file, f)
+	}
+}
+
+func eachStokF(file string, f func(string, internal.Stok)) {
+	r, err := os.Open(file)
+	chk(err)
+	defer r.Close()
+	eachStokR(r, f)
+}
+
+func eachStokR(r io.Reader, f func(string, internal.Stok)) {
 	s := bufio.NewScanner(r)
 	var name string
 	for s.Scan() {
