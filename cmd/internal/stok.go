@@ -1,8 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"strings"
+	"unicode/utf8"
+
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
 )
 
 const stokFormat = "id=%s skipped=%t short=%t lex=%t cor=%t conf=%g rank=%d ocr=%s sug=%s gt=%s"
@@ -14,6 +19,18 @@ type Stok struct {
 	Conf                     float64
 	Rank                     int
 	Skipped, Short, Lex, Cor bool
+}
+
+func MakeStokFromT(t apoco.T, gt bool) Stok {
+	ret := Stok{
+		ID:    t.ID,
+		OCR:   t.Tokens[0],
+		Short: utf8.RuneCountInString(t.Tokens[0]) < 4,
+	}
+	if gt {
+		ret.GT = t.Tokens[len(t.Tokens)-1]
+	}
+	return ret
 }
 
 // MakeStok creates a new stats token from a according formatted line.
@@ -166,4 +183,33 @@ func E(str string) string {
 		return "ε"
 	}
 	return strings.ToLower(strings.Replace(str, " ", "_", -1))
+}
+
+// EachStok calls the given callback function f for each token read
+// from r with the according name.  Stokens are read line by line
+// from the reader, lines starting with # are skipped.  If a line starting
+// with '#name=x' is encountered the name for the callback function is
+// updated accordingly.
+func EachStok(r io.Reader, f func(string, Stok)) error {
+	s := bufio.NewScanner(r)
+	var name string
+	for s.Scan() {
+		line := s.Text()
+		if len(line) == 0 {
+			continue
+		}
+		if strings.HasPrefix(line, "#name=") {
+			name = strings.Trim(line[6:], " \t\n")
+			continue
+		}
+		if line[0] == '#' {
+			continue
+		}
+		stok, err := MakeStok(line)
+		if err != nil {
+			return err
+		}
+		f(name, stok)
+	}
+	return s.Err()
 }
