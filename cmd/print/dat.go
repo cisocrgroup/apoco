@@ -37,15 +37,18 @@ func init() {
 func run(_ *cobra.Command, args []string) {
 	switch datFlags.typ {
 	case "acc":
-		runAcc(args)
+		acc{}.run(args)
 	case "err":
-		runErr(datFlags.limit, datFlags.shorts, args)
+		err{datFlags.limit, datFlags.shorts}.run(args)
 	default:
 		panic("bad type: " + datFlags.typ)
 	}
 }
 
-func runAcc(files []string) {
+type acc struct {
+}
+
+func (acc) run(files []string) {
 	data := make(map[string][]accPair)
 	var year, suf string
 	var before, after, total int
@@ -111,7 +114,12 @@ type accPair struct {
 	data float64
 }
 
-func runErr(limit int, shorts bool, files []string) {
+type err struct {
+	limit  int
+	shorts bool
+}
+
+func (e err) run(files []string) {
 	var year string
 	data := make(map[string]map[string]int)
 	eachStok(files, func(name string, stok internal.Stok) {
@@ -119,7 +127,7 @@ func runErr(limit int, shorts bool, files []string) {
 			year = name[0:4]
 			data[year] = make(map[string]int)
 		}
-		if stok.Short && !shorts {
+		if stok.Short && !e.shorts {
 			return
 		}
 		switch stok.Type() {
@@ -134,7 +142,7 @@ func runErr(limit int, shorts bool, files []string) {
 			if stok.Short {
 				data[year]["short errors"]++
 			}
-			switch stok.Cause(limit) {
+			switch stok.Cause(e.limit) {
 			case internal.BadLimit:
 				data[year]["bad limit"]++
 			case internal.MissingCandidate:
@@ -145,23 +153,30 @@ func runErr(limit int, shorts bool, files []string) {
 			data[year]["total"]++
 		}
 	})
-	printErrs(shorts, data)
+	e.print(data)
 }
 
-func printErrs(shorts bool, data map[string]map[string]int) {
+func (e err) print(data map[string]map[string]int) {
+	years := make([]string, 0, len(data))
+	for year := range data {
+		years = append(years, year)
+	}
+	sort.Slice(years, func(i, j int) bool {
+		return years[i] < years[j]
+	})
 	fmt.Printf("#")
 	for k := range data {
 		fmt.Printf(" %s", k)
 	}
 	fmt.Println()
 	names := []string{"short errors", "missing c", "bad limit", "bad rank", "missed op", "infel c"}
-	if !shorts {
+	if !e.shorts {
 		names = names[1:]
 	}
 	for _, t := range names {
 		fmt.Printf("%q", t)
-		for k := range data {
-			fmt.Printf(" %g", float64(data[k][t])/float64(data[k]["total"]))
+		for _, y := range years {
+			fmt.Printf(" %g", float64(data[y][t])/float64(data[y]["total"]))
 		}
 		fmt.Println()
 	}
