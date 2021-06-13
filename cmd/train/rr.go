@@ -66,13 +66,7 @@ func rrTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 		}
 		x := mat.NewDense(n, len(xs)/n, xs)
 		y := mat.NewVecDense(n, ys)
-<<<<<<< HEAD
-		if err := logCorrelationMat(c, fs, x, false); err != nil {
-			return fmt.Errorf("train rr: %v", err)
-		}
-=======
 		chk(logCorrelationMat(c, fs, x, "rr"))
->>>>>>> Basic implementation for merging of splits
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("train rr: %v", err)
 		}

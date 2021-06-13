@@ -93,13 +93,7 @@ func dmTrain(c *internal.Config, m apoco.Model, instances string, update bool) a
 		}
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
-<<<<<<< HEAD
-		if err := logCorrelationMat(c, fs, x, true); err != nil {
-			return fmt.Errorf("train dm: %v", err)
-		}
-=======
 		chk(logCorrelationMat(c, fs, x, "dm"))
->>>>>>> Basic implementation for merging of splits
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}

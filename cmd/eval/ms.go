@@ -34,7 +34,6 @@ func msRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Model, flags.model)
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
 	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
-	internal.UpdateInConfig(&c.DM.Cautious, flags.cautious)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
