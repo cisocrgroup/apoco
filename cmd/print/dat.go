@@ -2,9 +2,10 @@ package print
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"sort"
-	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
@@ -45,21 +46,19 @@ func run(_ *cobra.Command, args []string) {
 	}
 }
 
-type acc struct {
-}
+type acc struct{}
 
 func (acc) run(files []string) {
 	data := make(map[string][]accPair)
-	var year, suf string
+	var fyear, fsuf string
 	var before, after, total int
-	eachStok(files, func(name string, stok internal.Stok) {
-		if year == "" || !strings.HasPrefix(name, year) {
-			pos := strings.Index(name, "-")
-			if pos < 1 {
-				panic("bad name: " + name)
+	eachStok(files, func(year, suf string, new bool, stok internal.Stok) {
+		if new {
+			if total > 0 {
+				addpairs(data, fyear, fsuf, before, after, total)
+				before, after, total = 0, 0, 0
 			}
-			year, suf = name[:pos], name[pos+1:]
-			before, after, total = 0, 0, 0
+			fyear, fsuf = year, suf
 		}
 		total++
 		if stok.ErrBefore() {
@@ -69,7 +68,9 @@ func (acc) run(files []string) {
 			after++
 		}
 	})
-	addpairs(data, year, suf, before, after, total)
+	if total > 0 {
+		addpairs(data, fyear, fsuf, before, after, total)
+	}
 
 	// Sort keys for a consistent order
 	names := make([]string, 0, len(data))
@@ -120,11 +121,9 @@ type err struct {
 }
 
 func (e err) run(files []string) {
-	var year string
 	data := make(map[string]map[string]int)
-	eachStok(files, func(name string, stok internal.Stok) {
-		if len(name) >= 4 && (year == "" || !strings.HasPrefix(name, year)) {
-			year = name[0:4]
+	eachStok(files, func(year, suf string, new bool, stok internal.Stok) {
+		if new {
 			data[year] = make(map[string]int)
 		}
 		if stok.Short && !e.shorts {
@@ -182,9 +181,9 @@ func (e err) print(data map[string]map[string]int) {
 	}
 }
 
-func eachStok(files []string, f func(string, internal.Stok)) {
+func eachStok(files []string, f func(string, string, bool, internal.Stok)) {
 	if len(files) == 0 {
-		chk(internal.EachStok(os.Stdin, f))
+		eachStokReader(os.Stdin, f)
 		return
 	}
 	for _, file := range files {
@@ -192,9 +191,23 @@ func eachStok(files []string, f func(string, internal.Stok)) {
 	}
 }
 
-func eachStokInFile(file string, f func(string, internal.Stok)) {
+func eachStokInFile(file string, f func(string, string, bool, internal.Stok)) {
 	r, err := os.Open(file)
 	chk(err)
 	defer r.Close()
-	chk(internal.EachStok(r, f))
+	eachStokReader(r, f)
+}
+
+func eachStokReader(r io.Reader, f func(string, string, bool, internal.Stok)) {
+	var fname, year, suf string
+	chk(internal.EachStok(r, func(name string, stok internal.Stok) {
+		if fname == "" || fname != name {
+			fname = name
+			name = filepath.Base(name)
+			year, suf = name[0:4], name[5:]
+			f(year, suf, true, stok)
+			return
+		}
+		f(year, suf, false, stok)
+	}))
 }
