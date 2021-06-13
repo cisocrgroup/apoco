@@ -72,26 +72,8 @@ func UpdateInConfig(dest, val interface{}) {
 	}
 }
 
-func UpdateBool(key *bool, val bool) {
-	if val {
-		*key = val
-	}
-}
-
-func UpdateInt(key *int, val int) {
-	if val != 0 {
-		*key = val
-	}
-}
-
-func UpdateString(key *string, val string) {
-	if val != "" {
-		*key = val
-	}
-}
-
-// MSSettings are the settings for the mrg training.
-type MSSettings struct {
+// MRGSettings are the settings for the mrg training.
+type MRGSettings struct {
 	TrainingSettings
 	Window int `json:"window"`
 }
