@@ -208,7 +208,7 @@ func eachStokInFile(name string, f func(string, string, bool, internal.Stok)) {
 	r, err := os.Open(name)
 	chk(err)
 	defer r.Close()
-	name = filepath.Base(name)
+	name = cleanName(name)
 	year, suf := name[:4], name[5:]
 	new := true
 	chk(internal.EachStok(r, func(name string, stok internal.Stok) {
@@ -223,13 +223,22 @@ func eachStokReader(r io.Reader, f func(string, string, bool, internal.Stok)) {
 	chk(internal.EachStok(r, func(name string, stok internal.Stok) {
 		if fname == "" || fname != name {
 			fname = name
-			name = filepath.Base(name)
+			name = cleanName(name)
 			year, suf = name[:4], name[5:]
 			f(year, suf, true, stok)
 			return
 		}
 		f(year, suf, false, stok)
 	}))
+}
+
+func cleanName(name string) string {
+	name = filepath.Base(name)
+	pos := strings.Index(name, ".")
+	if pos != -1 {
+		return name[:pos]
+	}
+	return name
 }
 
 type replacer interface {
