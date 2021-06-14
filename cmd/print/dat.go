@@ -5,7 +5,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"github.com/spf13/cobra"
@@ -18,18 +20,20 @@ var datCMD = &cobra.Command{
 	Run:   run,
 	Long: `
 Prints the data for gnuplot from FILES. Reads
-from stdin, if no FILES.
-	`,
+from stdin, if no FILES.`,
 }
 
 var datFlags = struct {
-	typ    string
-	limit  int
+	typ      string
+	replace  string
+	limit    int
 	noshorts bool
 }{}
 
 func init() {
 	datCMD.Flags().StringVarP(&datFlags.typ, "type", "t", "acc", "set type of data")
+	datCMD.Flags().StringVarP(&datFlags.replace, "replace", "r", "",
+		"replace secondary names (sed s/// syntax)")
 	datCMD.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
 		"exclude short tokens (len<4) from the evaluation")
 	datCMD.Flags().IntVarP(&datFlags.limit, "limit", "m", 0, "set candidate limit")
@@ -39,7 +43,9 @@ func init() {
 func run(_ *cobra.Command, args []string) {
 	switch datFlags.typ {
 	case "acc":
-		acc{datFlags.noshorts}.run(args)
+		replacer, err := newReplacer(datFlags.replace)
+		chk(err)
+		acc{replacer, datFlags.noshorts}.run(args)
 	case "err":
 		err{datFlags.limit, datFlags.noshorts}.run(args)
 	default:
@@ -47,7 +53,8 @@ func run(_ *cobra.Command, args []string) {
 	}
 }
 
-type acc struct{
+type acc struct {
+	replacer replacer
 	noshorts bool
 }
 
@@ -61,10 +68,10 @@ func (a acc) run(files []string) {
 				addpairs(data, fyear, fsuf, before, after, total)
 				before, after, total = 0, 0, 0
 			}
-			fyear, fsuf = year, suf
+			fyear, fsuf = year, a.replacer.replace(suf)
 		}
 		if stok.Short && a.noshorts {
-			return 
+			return
 		}
 		total++
 		if stok.ErrBefore() {
@@ -122,7 +129,7 @@ type accPair struct {
 }
 
 type err struct {
-	limit  int
+	limit    int
 	noshorts bool
 }
 
@@ -197,10 +204,17 @@ func eachStok(files []string, f func(string, string, bool, internal.Stok)) {
 	}
 }
 
-func eachStokInFile(file string, f func(string, string, bool, internal.Stok)) {
-	r, err := os.Open(file)
+func eachStokInFile(name string, f func(string, string, bool, internal.Stok)) {
+	r, err := os.Open(name)
 	chk(err)
 	defer r.Close()
+	name = filepath.Base(name)
+	year, suf := name[0:4], name[:5]
+	new := true
+	chk(internal.EachStok(r, func(name string, stok internal.Stok) {
+		f(year, suf, new, stok)
+		new = false
+	}))
 	eachStokReader(r, f)
 }
 
@@ -217,3 +231,41 @@ func eachStokReader(r io.Reader, f func(string, string, bool, internal.Stok)) {
 		f(year, suf, false, stok)
 	}))
 }
+
+type replacer interface {
+	replace(string) string
+}
+
+func newReplacer(expr string) (replacer, error) {
+	if expr == "" {
+		return noop{}, nil
+	}
+	if len(expr) < 4 {
+		return nil, fmt.Errorf("invalid expression %q", expr)
+	}
+	fields := strings.Split(expr, expr[1:2])
+	if len(fields) != 4 {
+		return nil, fmt.Errorf("invalid expression %q", expr)
+	}
+	if fields[0] != "s" {
+		return nil, fmt.Errorf("invalid expression %q", expr)
+	}
+	re, err := regexp.Compile(fields[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid expression %q: %v", expr, err)
+	}
+	return substitute{re: re, repl: fields[2]}, nil
+}
+
+type substitute struct {
+	re   *regexp.Regexp
+	repl string
+}
+
+func (s substitute) replace(str string) string {
+	return s.re.ReplaceAllString(str, s.repl)
+}
+
+type noop struct{}
+
+func (noop) replace(str string) string { return str }
