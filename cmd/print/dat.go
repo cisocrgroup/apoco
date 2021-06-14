@@ -25,12 +25,13 @@ from stdin, if no FILES.
 var datFlags = struct {
 	typ    string
 	limit  int
-	shorts bool
+	noshorts bool
 }{}
 
 func init() {
 	datCMD.Flags().StringVarP(&datFlags.typ, "type", "t", "acc", "set type of data")
-	datCMD.Flags().BoolVarP(&datFlags.shorts, "shorts", "s", false, "consider short errors")
+	datCMD.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
+		"exclude short tokens (len<4) from the evaluation")
 	datCMD.Flags().IntVarP(&datFlags.limit, "limit", "m", 0, "set candidate limit")
 	CMD.AddCommand(datCMD)
 }
@@ -38,17 +39,19 @@ func init() {
 func run(_ *cobra.Command, args []string) {
 	switch datFlags.typ {
 	case "acc":
-		acc{}.run(args)
+		acc{datFlags.noshorts}.run(args)
 	case "err":
-		err{datFlags.limit, datFlags.shorts}.run(args)
+		err{datFlags.limit, datFlags.noshorts}.run(args)
 	default:
 		panic("bad type: " + datFlags.typ)
 	}
 }
 
-type acc struct{}
+type acc struct{
+	noshorts bool
+}
 
-func (acc) run(files []string) {
+func (a acc) run(files []string) {
 	data := make(map[string][]accPair)
 	var fyear, fsuf string
 	var before, after, total int
@@ -59,6 +62,9 @@ func (acc) run(files []string) {
 				before, after, total = 0, 0, 0
 			}
 			fyear, fsuf = year, suf
+		}
+		if stok.Short && a.noshorts {
+			return 
 		}
 		total++
 		if stok.ErrBefore() {
@@ -117,7 +123,7 @@ type accPair struct {
 
 type err struct {
 	limit  int
-	shorts bool
+	noshorts bool
 }
 
 func (e err) run(files []string) {
@@ -126,7 +132,7 @@ func (e err) run(files []string) {
 		if new {
 			data[year] = make(map[string]int)
 		}
-		if stok.Short && !e.shorts {
+		if stok.Short && e.noshorts {
 			return
 		}
 		switch stok.Type() {
@@ -169,7 +175,7 @@ func (e err) print(data map[string]map[string]int) {
 	}
 	fmt.Println()
 	names := []string{"short errors", "missing c", "bad limit", "bad rank", "missed op", "infel c"}
-	if !e.shorts {
+	if e.noshorts {
 		names = names[1:]
 	}
 	for _, t := range names {

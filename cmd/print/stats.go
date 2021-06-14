@@ -29,8 +29,8 @@ var statsCMD = &cobra.Command{
 func init() {
 	statsCMD.Flags().StringVarP(&statsFlags.name, "name", "n", "", "set name")
 	statsCMD.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
-	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "skip-short", "s", false,
-		"exclude short tokens (len<3) from the evaluation")
+	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "noshort", "s", false,
+		"exclude short tokens (len<4) from the evaluation")
 	statsCMD.Flags().BoolVarP(&statsFlags.verbose, "verbose", "v", false,
 		"enable more verbose error and correction output")
 }
