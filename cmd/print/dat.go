@@ -209,7 +209,7 @@ func eachStokInFile(name string, f func(string, string, bool, internal.Stok)) {
 	chk(err)
 	defer r.Close()
 	name = filepath.Base(name)
-	year, suf := name[0:4], name[:5]
+	year, suf := name[:4], name[5:]
 	new := true
 	chk(internal.EachStok(r, func(name string, stok internal.Stok) {
 		f(year, suf, new, stok)
@@ -224,7 +224,7 @@ func eachStokReader(r io.Reader, f func(string, string, bool, internal.Stok)) {
 		if fname == "" || fname != name {
 			fname = name
 			name = filepath.Base(name)
-			year, suf = name[0:4], name[5:]
+			year, suf = name[:4], name[5:]
 			f(year, suf, true, stok)
 			return
 		}
