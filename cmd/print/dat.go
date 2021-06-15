@@ -32,8 +32,8 @@ var datFlags = struct {
 
 func init() {
 	datCMD.Flags().StringVarP(&datFlags.typ, "type", "t", "acc", "set type of data")
-	datCMD.Flags().StringVarP(&datFlags.replace, "replace", "r", "",
-		"replace secondary names (sed s/// syntax)")
+	datCMD.Flags().StringVarP(&datFlags.replace, "expression", "e", "",
+		"set expression applied to file names (sed s/// syntax)")
 	datCMD.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
 		"exclude short tokens (len<4) from the evaluation")
 	datCMD.Flags().IntVarP(&datFlags.limit, "limit", "m", 0, "set candidate limit")
