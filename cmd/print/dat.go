@@ -150,10 +150,7 @@ func (e err) run(files []string) {
 		case internal.MissedOpportunity:
 			data[year]["missed op"]++
 		}
-		if stok.ErrAfter() {
-			if stok.Short {
-				data[year]["short errors"]++
-			}
+		if !stok.Skipped && stok.Type().Err() {
 			switch stok.Cause(e.limit) {
 			case internal.BadLimit:
 				data[year]["bad limit"]++
@@ -162,7 +159,12 @@ func (e err) run(files []string) {
 			case internal.BadRank:
 				data[year]["bad rank"]++
 			}
+		}
+		if stok.ErrAfter() {
 			data[year]["total"]++
+			if stok.Short {
+				data[year]["short errors"]++
+			}
 		}
 	})
 	e.print(data)
