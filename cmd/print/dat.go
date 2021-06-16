@@ -31,7 +31,7 @@ var datFlags = struct {
 }{}
 
 func init() {
-	datCMD.Flags().StringVarP(&datFlags.typ, "type", "t", "acc", "set type of data")
+	datCMD.Flags().StringVarP(&datFlags.typ, "type", "t", "acc", "set type of evaluation")
 	datCMD.Flags().StringVarP(&datFlags.replace, "expression", "e", "",
 		"set expression applied to file names (sed s/// syntax)")
 	datCMD.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
@@ -86,31 +86,31 @@ func (a acc) run(files []string) {
 	}
 
 	// Sort keys for a consistent order
-	names := make([]string, 0, len(data))
-	for name := range data {
-		names = append(names, name)
+	years := make([]string, 0, len(data))
+	for year := range data {
+		years = append(years, year)
 	}
-	sort.Slice(names, func(i, j int) bool {
-		return names[i] < names[j]
+	sort.Slice(years, func(i, j int) bool {
+		return years[i] < years[j]
 	})
 	var max int
-	for _, name := range names {
-		if max < len(data[name]) {
-			max = len(data[name])
+	for _, year := range years {
+		if max < len(data[year]) {
+			max = len(data[year])
 		}
 	}
 
 	for i := 0; i < max; i++ {
 		if i == 0 {
 			fmt.Print("#")
-			for _, name := range names {
+			for _, name := range years {
 				fmt.Printf(" %s", name)
 			}
 			fmt.Println()
 		}
-		fmt.Printf("%s", data[names[0]][i].name)
-		for _, name := range names {
-			fmt.Printf(" %g", 1-data[name][i].data)
+		fmt.Printf("%s", data[years[0]][i].name)
+		for _, year := range years {
+			fmt.Printf(" %g", 1-data[year][i].data)
 		}
 		fmt.Println()
 	}
@@ -177,8 +177,8 @@ func (e err) print(data map[string]map[string]int) {
 		return years[i] < years[j]
 	})
 	fmt.Printf("#")
-	for k := range data {
-		fmt.Printf(" %s", k)
+	for _, year := range years {
+		fmt.Printf(" %s", year)
 	}
 	fmt.Println()
 	names := []string{"short errors", "missing c", "bad limit", "bad rank", "missed op", "infel c"}
