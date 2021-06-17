@@ -63,7 +63,7 @@ func (m stokMap) get(t apoco.T, withGT bool) *stok {
 		m[t.File] = make(map[string]*stok)
 	}
 	if _, ok := m[t.File][t.ID]; !ok {
-		s := &stok{Stok: internal.Stok{OCR: t.Tokens[0]}}
+		s := &stok{Stok: internal.MakeStokFromT(t, withGT)}
 		if withGT {
 			s.GT = t.Tokens[len(t.Tokens)-1]
 		}

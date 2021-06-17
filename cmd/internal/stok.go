@@ -10,22 +10,22 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 )
 
-const stokFormat = "id=%s skipped=%t short=%t lex=%t cor=%t conf=%g rank=%d ocr=%s sug=%s gt=%s"
-
-// Stok represents a stats token. Stat tokens explain correction
-// decisions of apoco.
+// Stok represents a stats token. Stat tokens explain
+// the correction decisions of apoco and form the basis
+// of the correction protocols.
 type Stok struct {
 	OCR, Sug, GT, ID         string
-	Conf                     float64
+	Conf, OCRConf            float64
 	Rank                     int
 	Skipped, Short, Lex, Cor bool
 }
 
 func MakeStokFromT(t apoco.T, gt bool) Stok {
 	ret := Stok{
-		ID:    t.ID,
-		OCR:   t.Tokens[0],
-		Short: utf8.RuneCountInString(t.Tokens[0]) < 4,
+		ID:      t.ID,
+		OCR:     t.Tokens[0],
+		Short:   utf8.RuneCountInString(t.Tokens[0]) < 4,
+		OCRConf: avrg(t.Chars),
 	}
 	if gt {
 		ret.GT = t.Tokens[len(t.Tokens)-1]
@@ -33,12 +33,25 @@ func MakeStokFromT(t apoco.T, gt bool) Stok {
 	return ret
 }
 
+func avrg(chars apoco.Chars) float64 {
+	if len(chars) == 0 {
+		return 0
+	}
+	sum := 0.0
+	for _, char := range chars {
+		sum += char.Conf
+	}
+	return sum / float64(len(chars))
+}
+
+const stokFormat = "id=%s skipped=%t short=%t lex=%t cor=%t ocrconf=%g conf=%g rank=%d ocr=%s sug=%s gt=%s"
+
 // MakeStok creates a new stats token from a according formatted line.
 func MakeStok(line string) (Stok, error) {
 	var s Stok
 	_, err := fmt.Sscanf(line, stokFormat,
 		&s.ID, &s.Skipped, &s.Short, &s.Lex, &s.Cor,
-		&s.Conf, &s.Rank, &s.OCR, &s.Sug, &s.GT)
+		&s.OCRConf, &s.Conf, &s.Rank, &s.OCR, &s.Sug, &s.GT)
 	if err != nil {
 		return Stok{}, fmt.Errorf("bad stats line: %s", line)
 	}
@@ -48,7 +61,7 @@ func MakeStok(line string) (Stok, error) {
 func (s Stok) String() string {
 	return fmt.Sprintf(stokFormat,
 		s.ID, s.Skipped, s.Short, s.Lex, s.Cor,
-		s.Conf, s.Rank, E(s.OCR), E(s.Sug), E(s.GT))
+		s.OCRConf, s.Conf, s.Rank, E(s.OCR), E(s.Sug), E(s.GT))
 }
 
 // Type returns the correction type of the stok.
