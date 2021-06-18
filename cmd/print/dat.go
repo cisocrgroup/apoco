@@ -139,7 +139,7 @@ func (e err) run(files []string) {
 		if new {
 			data[year] = make(map[string]int)
 		}
-		if stok.Short && e.noshorts {
+		if stok.Short && e.noshorts || stok.Skipped || !stok.ErrAfter() {
 			return
 		}
 		switch stok.Type() {
@@ -150,21 +150,17 @@ func (e err) run(files []string) {
 		case internal.MissedOpportunity:
 			data[year]["missed op"]++
 		}
-		if !stok.Skipped && stok.Type().Err() {
-			switch stok.Cause(e.limit) {
-			case internal.BadLimit:
-				data[year]["bad limit"]++
-			case internal.MissingCandidate:
-				data[year]["missing c"]++
-			case internal.BadRank:
-				data[year]["bad rank"]++
-			}
+		switch stok.Cause(e.limit) {
+		case internal.BadLimit:
+			data[year]["bad limit"]++
+		case internal.MissingCandidate:
+			data[year]["missing c"]++
+		case internal.BadRank:
+			data[year]["bad rank"]++
 		}
-		if stok.ErrAfter() {
-			data[year]["total"]++
-			if stok.Short {
-				data[year]["short errors"]++
-			}
+		data[year]["total"]++
+		if stok.Short {
+			data[year]["short errors"]++
 		}
 	})
 	e.print(data)
