@@ -139,8 +139,12 @@ func (e err) run(files []string) {
 		if new {
 			data[year] = make(map[string]int)
 		}
-		if stok.Short && e.noshorts || stok.Skipped || !stok.ErrAfter() {
+		if stok.Short && e.noshorts || !stok.ErrAfter() {
 			return
+		}
+		data[year]["total"]++
+		if stok.Short {
+			data[year]["short errors"]++
 		}
 		switch stok.Type() {
 		case internal.InfelicitousCorrection:
@@ -157,10 +161,6 @@ func (e err) run(files []string) {
 			data[year]["missing c"]++
 		case internal.BadRank:
 			data[year]["bad rank"]++
-		}
-		data[year]["total"]++
-		if stok.Short {
-			data[year]["short errors"]++
 		}
 	})
 	e.print(data)
