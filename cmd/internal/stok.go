@@ -15,17 +15,18 @@ import (
 // of the correction protocols.
 type Stok struct {
 	OCR, Sug, GT, ID         string
-	Conf, OCRConf            float64
+	OCRConfs                 []float64
+	Conf                     float64
 	Rank                     int
 	Skipped, Short, Lex, Cor bool
 }
 
 func MakeStokFromT(t apoco.T, gt bool) Stok {
 	ret := Stok{
-		ID:      t.ID,
-		OCR:     t.Tokens[0],
-		Short:   utf8.RuneCountInString(t.Tokens[0]) < 4,
-		OCRConf: avrg(t.Chars),
+		ID:       t.ID,
+		OCR:      t.Tokens[0],
+		Short:    utf8.RuneCountInString(t.Tokens[0]) < 4,
+		OCRConfs: t.Chars.Confs(),
 	}
 	if gt {
 		ret.GT = t.Tokens[len(t.Tokens)-1]
@@ -33,35 +34,104 @@ func MakeStokFromT(t apoco.T, gt bool) Stok {
 	return ret
 }
 
-func avrg(chars apoco.Chars) float64 {
-	if len(chars) == 0 {
-		return 0
-	}
-	sum := 0.0
-	for _, char := range chars {
-		sum += char.Conf
-	}
-	return sum / float64(len(chars))
-}
-
-const stokFormat = "id=%s skipped=%t short=%t lex=%t cor=%t ocrconf=%g conf=%g rank=%d ocr=%s sug=%s gt=%s"
-
 // MakeStok creates a new stats token from a according formatted line.
 func MakeStok(line string) (Stok, error) {
-	var s Stok
-	_, err := fmt.Sscanf(line, stokFormat,
-		&s.ID, &s.Skipped, &s.Short, &s.Lex, &s.Cor,
-		&s.OCRConf, &s.Conf, &s.Rank, &s.OCR, &s.Sug, &s.GT)
-	if err != nil {
-		return Stok{}, fmt.Errorf("bad stats line: %s", line)
+	var stok Stok
+	toks := strings.Split(line, " ")
+	for _, tok := range toks {
+		switch {
+		case strings.HasPrefix(tok, "id="):
+			if _, err := fmt.Sscanf(tok, "id=%s", &stok.ID); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "skipped="):
+			if _, err := fmt.Sscanf(tok, "skipped=%t", &stok.Skipped); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "short="):
+			if _, err := fmt.Sscanf(tok, "short=%t", &stok.Short); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "lex="):
+			if _, err := fmt.Sscanf(tok, "lex=%t", &stok.Lex); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "cor="):
+			if _, err := fmt.Sscanf(tok, "cor=%t", &stok.Cor); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "ocrconfs="):
+			var tmp ocrconfs
+			if _, err := fmt.Sscanf(tok, "ocrconfs=%s", &tmp); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+			stok.OCRConfs = tmp
+		case strings.HasPrefix(tok, "conf="):
+			if _, err := fmt.Sscanf(tok, "conf=%g", &stok.Conf); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "rank="):
+			if _, err := fmt.Sscanf(tok, "rank=%d", &stok.Rank); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "ocr="):
+			if _, err := fmt.Sscanf(tok, "ocr=%s", &stok.OCR); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "sug="):
+			if _, err := fmt.Sscanf(tok, "sug=%s", &stok.Sug); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		case strings.HasPrefix(tok, "gt="):
+			if _, err := fmt.Sscanf(tok, "gt=%s", &stok.GT); err != nil {
+				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
+			}
+		default:
+			return stok, fmt.Errorf("bad stats line: %s", line)
+		}
 	}
-	return s, nil
+	return stok, nil
 }
 
 func (s Stok) String() string {
-	return fmt.Sprintf(stokFormat,
-		s.ID, s.Skipped, s.Short, s.Lex, s.Cor,
-		s.OCRConf, s.Conf, s.Rank, E(s.OCR), E(s.Sug), E(s.GT))
+	return fmt.Sprintf("id=%s skipped=%t short=%t lex=%t cor=%t ocrconfs=%s conf=%g rank=%d ocr=%s sug=%s gt=%s",
+		s.ID, s.Skipped, s.Short, s.Lex, s.Cor, ocrconfs(s.OCRConfs),
+		s.Conf, s.Rank, E(s.OCR), E(s.Sug), E(s.GT))
+
+}
+
+type ocrconfs []float64
+
+func (confs ocrconfs) String() string {
+	var sb strings.Builder
+	for i, conf := range confs {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		fmt.Fprintf(&sb, "%g", conf)
+	}
+	return sb.String()
+}
+
+func (confs *ocrconfs) Scan(state fmt.ScanState, verb rune) error {
+	if verb != 's' {
+		return fmt.Errorf("bad format verb: %c", verb)
+	}
+	bs, err := state.Token(false, func(c rune) bool {
+		return c != ' '
+	})
+	if err != nil {
+		return err
+	}
+	conftoks := strings.Split(string(bs), ",")
+	for _, tok := range conftoks {
+		var conf float64
+		if _, err := fmt.Sscanf(tok, "%g", &conf); err != nil {
+			return err
+		}
+		*confs = append(*confs, conf)
+	}
+	return nil
 }
 
 // Type returns the correction type of the stok.

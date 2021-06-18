@@ -70,24 +70,6 @@ func (chars Chars) String() string {
 	return sb.String()
 }
 
-func (chars *Chars) Scan(state fmt.ScanState, verb rune) error {
-	bs, err := state.Token(false, func(c rune) bool {
-		return c != ' '
-	})
-	if err != nil {
-		return err
-	}
-	chartoks := strings.Split(string(bs), ",")
-	for _, c := range chartoks {
-		var x Char
-		if _, err := fmt.Sscanf(c, "%v", &x); err != nil {
-			return err
-		}
-		*chars = append(*chars, x)
-	}
-	return nil
-}
-
 // Char represents an OCR char with its confidence.
 type Char struct {
 	Conf float64 // confidence of the rune
@@ -96,19 +78,6 @@ type Char struct {
 
 func (char Char) String() string {
 	return fmt.Sprintf("%c:%g", char.Char, char.Conf)
-}
-
-func (char *Char) Scan(state fmt.ScanState, verb rune) error {
-	bs, err := state.Token(false, func(c rune) bool {
-		return c != ' '
-	})
-	if err != nil {
-		return err
-	}
-	if _, err := fmt.Sscanf(string(bs), "%c:%g", &char.Char, &char.Conf); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Ranking maps correction candidates of tokens to their predicted
