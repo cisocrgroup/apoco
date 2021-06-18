@@ -177,7 +177,7 @@ func (e Extensions) readLinesFromSnippets(doc *apoco.Document, file string) (apo
 func makeTokensFromPairs(lines []apoco.Chars) []string {
 	ret := make([]string, len(lines))
 	for i := range lines {
-		ret[i] = lines[i].String()
+		ret[i] = lines[i].Chars()
 	}
 	return ret
 }
