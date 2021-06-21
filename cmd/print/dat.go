@@ -108,7 +108,7 @@ func (a acc) run(files []string) {
 			}
 			fmt.Println()
 		}
-		fmt.Printf("%s", data[years[0]][i].name)
+		fmt.Printf("%q", data[years[0]][i].name)
 		for _, year := range years {
 			fmt.Printf(" %g", 1-data[year][i].data)
 		}
