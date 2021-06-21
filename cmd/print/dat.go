@@ -133,6 +133,16 @@ type err struct {
 	noshorts bool
 }
 
+const (
+	infelc = "infel c (2c)"
+	falsef = "false friends (1d)"
+	missop = "missed op (2b)"
+	shorte = "short erros (1a)"
+	badlim = "bad limit (1c)"
+	badrnk = "bad rank (2a)"
+	miscor = "missing c (1b)"
+)
+
 func (e err) run(files []string) {
 	data := make(map[string]map[string]int)
 	eachStok(files, func(year, suf string, new bool, stok internal.Stok) {
@@ -142,25 +152,28 @@ func (e err) run(files []string) {
 		if stok.Short && e.noshorts || !stok.ErrAfter() {
 			return
 		}
+
 		data[year]["total"]++
-		if stok.Short {
-			data[year]["short errors"]++
-		}
+
 		switch stok.Type() {
 		case internal.InfelicitousCorrection:
-			data[year]["infel c"]++
+			data[year][infelc]++
 		case internal.FalseFriend:
-			data[year]["false friends"]++
+			data[year][falsef]++
+			return // Do not count causes of false friends.
 		case internal.MissedOpportunity:
-			data[year]["missed op"]++
+			data[year][missop]++
+		case internal.SkippedShortErr:
+			data[year][shorte]++
+			return // Do not count causes of short errors.
 		}
 		switch stok.Cause(e.limit) {
 		case internal.BadLimit:
-			data[year]["bad limit"]++
+			data[year][badlim]++
 		case internal.MissingCandidate:
-			data[year]["missing c"]++
+			data[year][miscor]++
 		case internal.BadRank:
-			data[year]["bad rank"]++
+			data[year][badrnk]++
 		}
 	})
 	e.print(data)
@@ -179,7 +192,7 @@ func (e err) print(data map[string]map[string]int) {
 		fmt.Printf(" %s", year)
 	}
 	fmt.Println()
-	names := []string{"short errors", "missing c", "bad limit", "bad rank", "missed op", "infel c"}
+	names := []string{shorte, miscor, badlim, falsef, badrnk, missop, infelc}
 	if e.noshorts {
 		names = names[1:]
 	}
