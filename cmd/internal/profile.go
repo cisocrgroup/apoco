@@ -54,5 +54,7 @@ func profilerCachePath(group, suffix string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	return filepath.Join(dir, "apoco", strings.ReplaceAll(group, "/", "-")+suffix), true
+	cacheDir := filepath.Join(dir, "apoco")
+	_ = os.MkdirAll(cacheDir, 0755)
+	return filepath.Join(cacheDir, strings.ReplaceAll(group, "/", "-")+suffix), true
 }
