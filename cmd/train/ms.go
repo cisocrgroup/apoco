@@ -20,7 +20,8 @@ var msCMD = &cobra.Command{
 }
 
 var msFlags struct {
-	window int
+	threshold float64
+	window    int
 }
 
 func init() {
@@ -33,8 +34,8 @@ func msRun(_ *cobra.Command, args []string) {
 	chk(err)
 	internal.UpdateInConfig(&c.Model, flags.model)
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
-	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
+	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	p := internal.Piper{
