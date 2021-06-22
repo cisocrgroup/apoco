@@ -77,15 +77,16 @@ func msEval(c *internal.Config, m apoco.Model, threshold float64, update bool) a
 			if x == nil {
 				x = mat.NewDense(1, len(xs), xs)
 			}
-			pred := lr.Predict(x, threshold)
+			// pred := lr.Predict(x, threshold)
+			probs := lr.PredictProb(x)
 			xs = xs[0:0]
-			switch s.add(gt, pred.AtVec(0)) {
+			switch s.add(gt, ml.Bool(probs.AtVec(0) > threshold)) { //} pred.AtVec(0)) {
 			case tp:
-				apoco.Log("true positive: %s", tstr(t))
+				apoco.Log("true positive: %s (%g)", tstr(t), probs.AtVec(0))
 			case fp:
-				apoco.Log("false positive: %s", tstr(t))
+				apoco.Log("false positive: %s (%g)", tstr(t), probs.AtVec(0))
 			case fn:
-				apoco.Log("false negative: %s", tstr(t))
+				apoco.Log("false negative: %s (%g)", tstr(t), probs.AtVec(0))
 			}
 			return nil
 		})
