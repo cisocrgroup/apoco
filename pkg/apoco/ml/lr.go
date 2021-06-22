@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 
 	"gonum.org/v1/gonum/mat"
@@ -105,7 +106,8 @@ func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 	lr.weights = mat.NewVecDense(c, nil)
 	errb := math.MaxFloat64
 	var pred, gradient mat.VecDense
-	for i := 0; i < lr.Ntrain; i++ {
+	var i int
+	for i = 0; i < lr.Ntrain; i++ {
 		lr.predictVec(x, &pred)
 		err := lr.gradient(x, y, &pred, &gradient)
 		if math.IsNaN(err) || errb < err {
@@ -115,6 +117,7 @@ func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 		lr.weights.SubVec(lr.weights, &gradient)
 		errb = err
 	}
+	log.Printf("iterations: %d", i)
 	lr.err = errb
 	return errb
 }
