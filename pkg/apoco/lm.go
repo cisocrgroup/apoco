@@ -152,21 +152,6 @@ func (d *Document) LoadGzippedNGram(path string) error {
 	return nil
 }
 
-func (d *Document) calculateLexicality(tokens ...T) {
-	var total, lexical int
-	for _, token := range tokens {
-		total++
-		interpretation, ok := d.Profile[token.Tokens[0]]
-		if !ok || len(interpretation.Candidates) == 0 {
-			continue
-		}
-		if interpretation.Candidates[0].Distance == 0 {
-			lexical++
-		}
-	}
-	d.Lexicality = float64(lexical) / float64(total)
-}
-
 // lengthOfWord gives the maximal length of words that the profiler
 // accepts (see lengthOfWord in Global.h in the profiler's source).
 const lengthOfWord = 64
