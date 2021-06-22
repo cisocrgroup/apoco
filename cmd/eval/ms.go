@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
@@ -96,10 +97,17 @@ func msEval(c *internal.Config, m apoco.Model, threshold float64, update bool) a
 	}
 }
 
-func lsplit(t apoco.T) {
+func tstr(t apoco.T) string {
+	var b strings.Builder
+	b.WriteString(t.String())
+	pre := " ("
 	for _, tx := range t.Payload.(apoco.Split).Tokens {
-		apoco.Log(" - %s", tx)
+		b.WriteString(pre)
+		b.WriteString(tx.String())
+		pre = " "
 	}
+	b.WriteString(")")
+	return b.String()
 }
 
 func msGT(ts []apoco.T) float64 {
