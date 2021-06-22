@@ -21,10 +21,12 @@ var msCMD = &cobra.Command{
 }
 
 var msFlags struct {
-	window int
+	threshold float64
+	window    int
 }
 
 func init() {
+	msCMD.Flags().Float64VarP(&msFlags.threshold, "threshold", "t", 0.5, "set the threshold for the merge confidence")
 	msCMD.Flags().IntVarP(&msFlags.window, "window", "w", 2, "set the maximum window size")
 }
 
@@ -54,11 +56,11 @@ func msRun(_ *cobra.Command, args []string) {
 		apoco.ConnectSplitCandidates(),
 		// apoco.FilterLexiconEntries(),
 		// apoco.ConnectCandidates(),
-		msEval(c, m, flags.update),
+		msEval(c, m, msFlags.threshold, flags.update),
 	))
 }
 
-func msEval(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func msEval(c *internal.Config, m apoco.Model, threshold float64, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := m.Get("ms", c.Nocr)
 		if err != nil {
@@ -75,7 +77,7 @@ func msEval(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 			if x == nil {
 				x = mat.NewDense(1, len(xs), xs)
 			}
-			pred := lr.Predict(x, 0.5)
+			pred := lr.Predict(x, threshold)
 			xs = xs[0:0]
 			switch s.add(gt, pred.AtVec(0)) {
 			case tp:
