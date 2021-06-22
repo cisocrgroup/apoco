@@ -42,6 +42,9 @@ type MSSettings struct {
 	Window int `json:"window"`
 }
 
+// UpdateInConfig updates the value in dest with
+// val if the according value is not the zero-type
+// for the underlying type.
 func UpdateInConfig(dest, val interface{}) {
 	switch dest.(type) {
 	case *string:
