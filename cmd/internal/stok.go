@@ -103,6 +103,9 @@ func (s Stok) String() string {
 type ocrconfs []float64
 
 func (confs ocrconfs) String() string {
+	if len(confs) == 0 {
+		return Epsilon
+	}
 	var sb strings.Builder
 	for i, conf := range confs {
 		if i > 0 {
@@ -122,6 +125,11 @@ func (confs *ocrconfs) Scan(state fmt.ScanState, verb rune) error {
 	})
 	if err != nil {
 		return err
+	}
+	str := string(bs)
+	if str == Epsilon {
+		*confs = nil
+		return nil
 	}
 	conftoks := strings.Split(string(bs), ",")
 	for _, tok := range conftoks {
@@ -261,9 +269,12 @@ const (
 	MissingCandidate                  // Bad correction because of a missing correct correction candidate.
 )
 
+// Epsilon is used to mark empty strings and slices in the IO of stoks.
+const Epsilon = "ε"
+
 func E(str string) string {
 	if str == "" {
-		return "ε"
+		return Epsilon
 	}
 	return strings.ToLower(strings.Replace(str, " ", "_", -1))
 }
