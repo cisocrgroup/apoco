@@ -86,6 +86,8 @@ func MakeStok(line string) (Stok, error) {
 			if _, err := fmt.Sscanf(tok, "gt=%s", &stok.GT); err != nil {
 				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
 			}
+		case strings.HasPrefix(tok, "type="):
+			// Just ignore this token
 		default:
 			return stok, fmt.Errorf("bad stats line: %s", line)
 		}
