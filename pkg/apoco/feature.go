@@ -42,6 +42,7 @@ var register = map[string]FeatureFunc{
 	"SplitOtherOCR":                  splitOtherOCR,
 	"SplitNumShortTokens":            splitNumShortTokens,
 	"SplitUnigramTokenConf":          splitUnigramTokenConf,
+	"SplitNumberOfLexiconEntries":    countLexiconEntriesInMergedSplits,
 	"SplitIsLexiconEntry":            isLexiconEntry,
 	"IsStartOfLine":                  isSOL,
 	"IsEndOfLine":                    isEOL,
@@ -550,6 +551,20 @@ func isLexiconEntry(t T, i, n int) (float64, bool) {
 		return ml.True, true
 	}
 	return ml.False, true
+}
+
+func countLexiconEntriesInMergedSplits(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	ts := t.Payload.(Split).Tokens
+	number := 0.0
+	for _, t := range ts {
+		if t.IsLexiconEntry() {
+			number++
+		}
+	}
+	return number, true
 }
 
 func isSOL(t T, i, n int) (float64, bool) {
