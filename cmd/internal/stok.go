@@ -87,7 +87,8 @@ func MakeStok(line string) (Stok, error) {
 				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
 			}
 		case strings.HasPrefix(tok, "type="):
-			// Just ignore this token
+			// The command print types adds an additional type=... argument to
+			// the stats IO.  Ignore this argument for reading stoks.
 		default:
 			return stok, fmt.Errorf("bad stats line: %s", line)
 		}
