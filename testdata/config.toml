@@ -4,11 +4,14 @@ model = "model.gz"
 # Number of parallel OCRs (overwrite with -n/--nocr)
 nocr = 2
 
-# Enable/disable caching (overwrite with -c/--cache)
-cache = true
+# Enable caching of profiles (overwrite with -c/--cache)
+cache = false
 
 # Enable additional ground-truth data for evaluation (disable with -g/--nogt).
 gt = false
+
+# Use Levenshtein-Alignment (enable with -v/--alignlev)
+alignLev = false 
 
 #
 # Profiler settings.
@@ -40,9 +43,8 @@ features = [
 
 # Training settings for the decision maker.
 [dm]
-# Cautious or courageous decision maker training (overwrite with
-# -a/--cautious)
-cautious = false 
+# Filter for training instances (overwrite with -f/--filter)
+filter = "courageous"
 learningRate = 0.9
 ntrain = 100_000
 features = [

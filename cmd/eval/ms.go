@@ -33,10 +33,13 @@ func init() {
 func msRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
+
 	internal.UpdateInConfig(&c.Model, flags.model)
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
 	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
+	internal.UpdateInConfig(&c.AlignLev, flags.alev)
+
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	p := internal.Piper{

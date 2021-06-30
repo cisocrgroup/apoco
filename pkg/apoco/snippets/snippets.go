@@ -27,8 +27,8 @@ type Extensions []string
 // Tokenize is a helper function that combines ReadLines and
 // TokenizeLines into one function.  It is the same as calling
 // `apoco.Pipe(ReadLines, TokenizeLines,...)`.
-func (e Extensions) Tokenize(ctx context.Context, dirs ...string) apoco.StreamFunc {
-	return apoco.Combine(ctx, e.ReadLines(dirs...), e.TokenizeLines())
+func (e Extensions) Tokenize(ctx context.Context, lev bool, dirs ...string) apoco.StreamFunc {
+	return apoco.Combine(ctx, e.ReadLines(dirs...), e.TokenizeLines(lev))
 }
 
 // ReadLines returns a stream function that reads snippet files in
@@ -185,11 +185,15 @@ func makeTokensFromPairs(lines []apoco.Chars) []string {
 
 // TokenizeLines returns a stream function that tokenizes
 // and aligns line tokens.
-func (e Extensions) TokenizeLines() apoco.StreamFunc {
+func (e Extensions) TokenizeLines(alev bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
-		var mat lev.Mat
+		var matrix lev.Mat
+		mat := &matrix
+		if !alev {
+			mat = nil
+		}
 		return apoco.EachToken(ctx, in, func(line apoco.T) error {
-			alignments := alignLines(&mat, line.Tokens...)
+			alignments := alignLines(mat, line.Tokens...)
 			var ts []apoco.T
 			for i := range alignments {
 				t := apoco.T{
@@ -238,8 +242,10 @@ func alignLines(mat *lev.Mat, lines ...string) [][]align.Pos {
 	for i := range lines {
 		rs[i] = []rune(lines[i])
 	}
-	return align.Lev(mat, rs[0], rs[1:]...)
-	// return align.Do(rs[0], rs[1:]...)
+	if mat != nil {
+		return align.Lev(mat, rs[0], rs[1:]...)
+	}
+	return align.Do(rs[0], rs[1:]...)
 }
 
 func readSnippetFile(path string) (apoco.Chars, error) {

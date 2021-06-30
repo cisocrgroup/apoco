@@ -21,6 +21,7 @@ type Config struct {
 	Nocr           int              `json:"nocr"`
 	Cache          bool             `json:"cache"`
 	GT             bool             `json:"gt"`
+	AlignLev       bool             `json:"alignLev"`
 }
 
 // TrainingSettings encloses different training settings.
