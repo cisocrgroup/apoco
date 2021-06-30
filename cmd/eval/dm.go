@@ -19,10 +19,25 @@ var dmCMD = &cobra.Command{
 	Run:   dmRun,
 }
 
+var dmFlags = struct {
+	filter string
+}{}
+
+func init() {
+	dmCMD.Flags().StringVarP(&dmFlags.filter, "filter", "f", "courageous",
+		"use cautious training (overwrites the setting in the configuration file)")
+}
+
 func dmRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, "", flags.nocr, flags.cache, false)
+
+	internal.UpdateInConfig(&c.Model, flags.model)
+	internal.UpdateInConfig(&c.Nocr, flags.nocr)
+	internal.UpdateInConfig(&c.Cache, flags.cache)
+	internal.UpdateInConfig(&c.AlignLev, flags.alev)
+	internal.UpdateInConfig(&c.DM.Filter, dmFlags.filter)
+
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)

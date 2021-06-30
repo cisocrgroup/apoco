@@ -8,6 +8,8 @@ import (
 
 // Version defines the version of apoco.
 const Version = "v0.0.48"
+
+// PStep defines the OCR-D processing step.
 const PStep = "recognition/post-correction"
 
 // IDFromFilePath generates an id based on the file group and the file

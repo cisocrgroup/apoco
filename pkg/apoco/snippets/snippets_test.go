@@ -31,7 +31,7 @@ func TestTokenizeDir(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
 	n, want := 0, 17
 	ctx := context.Background()
-	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(t, func(tok apoco.T) error {
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, true, testDir), iterate(t, func(tok apoco.T) error {
 		n++
 		if len(tok.Tokens) != 3 {
 			t.Errorf("bad token: %s", tok)
@@ -59,7 +59,7 @@ func TestTokenizeDirParallel(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
 	n, want := 0, 17
 	ctx := context.Background()
-	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDirA, testDirB), iterate(t, func(tok apoco.T) error {
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, true, testDirA, testDirB), iterate(t, func(tok apoco.T) error {
 		n++
 		if len(tok.Tokens) != 3 {
 			t.Errorf("bad token: %s", tok)
@@ -84,7 +84,7 @@ func TestTokenizeDirParallel(t *testing.T) {
 func TestTokenizeDirError(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
 	ctx := context.Background()
-	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDirA, testDirB), iterate(t, func(tok apoco.T) error {
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, true, testDirA, testDirB), iterate(t, func(tok apoco.T) error {
 		return fmt.Errorf("error")
 	}))
 	if err == nil {
@@ -95,7 +95,7 @@ func TestTokenizeDirError(t *testing.T) {
 func TestTokenizeBadDir(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
 	ctx := context.Background()
-	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDirA, "bad-dir", testDirB), iterate(t, func(tok apoco.T) error {
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, true, testDirA, "bad-dir", testDirB), iterate(t, func(tok apoco.T) error {
 		return fmt.Errorf("error")
 	}))
 	if err == nil {
@@ -109,7 +109,7 @@ func TestCalamari(t *testing.T) {
 	want := []string{"voll.", "Diſe", "wurtzel", "reiniget", "die", "mů"}
 	var i int
 	ctx := context.Background()
-	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir), iterate(t, func(tok apoco.T) error {
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, true, testDir), iterate(t, func(tok apoco.T) error {
 		if len(tok.Tokens) != 1 {
 			t.Errorf("bad token: %s", tok)
 		}
@@ -137,7 +137,7 @@ func TestTokenizeDir2(t *testing.T) {
 	ext := Extensions{".prob.1", ".prob.2", ".gt.txt"}
 	n, want := 0, 10
 	ctx := context.Background()
-	err := apoco.Pipe(ctx, ext.Tokenize(ctx, testDir2), iterate(t, func(tok apoco.T) error {
+	err := apoco.Pipe(ctx, ext.Tokenize(ctx, true, testDir2), iterate(t, func(tok apoco.T) error {
 		n++
 		if len(tok.Tokens) != 3 {
 			t.Errorf("bad token: %s", tok)

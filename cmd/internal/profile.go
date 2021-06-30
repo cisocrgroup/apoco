@@ -38,6 +38,13 @@ func readProfile(ctx context.Context, c *Config, group, suffix string, ts []apoc
 			return profile, nil
 		}
 	}
+	var merged []apoco.T
+	for _, t := range ts {
+		if split, ok := t.Payload.(apoco.Split); ok {
+			merged = append(merged, split.Tokens...)
+		}
+	}
+	ts = append(ts, merged...)
 	profile, err := apoco.RunProfiler(ctx, c.ProfilerBin, c.ProfilerConfig, ts...)
 	if err != nil {
 		return nil, err

@@ -30,12 +30,18 @@ func init() {
 		"use cautious training (overwrites the setting in the configuration file)")
 	dmCMD.Flags().StringVarP(&dmFlags.instances, "instances", "i", "",
 		"set output path of training instances")
-
 }
+
 func dmRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, dmFlags.filter, flags.nocr, flags.cache, false)
+
+	internal.UpdateInConfig(&c.Model, flags.model)
+	internal.UpdateInConfig(&c.Nocr, flags.nocr)
+	internal.UpdateInConfig(&c.Cache, flags.cache)
+	internal.UpdateInConfig(&c.AlignLev, flags.alev)
+	internal.UpdateInConfig(&c.DM.Filter, dmFlags.filter)
+
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)

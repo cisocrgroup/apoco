@@ -21,10 +21,10 @@ var CMD = &cobra.Command{
 }
 
 var flags = struct {
-	extensions       []string
-	parameter, model string
-	nocr             int
-	cache, update    bool
+	extensions          []string
+	parameter, model    string
+	nocr                int
+	cache, update, alev bool
 }{}
 
 func init() {
@@ -41,6 +41,8 @@ func init() {
 		"enable caching of profiles (overwrites the setting in the configuration file)")
 	CMD.PersistentFlags().BoolVarP(&flags.update, "update", "u", false,
 		"update the model if it already exists")
+	CMD.PersistentFlags().BoolVarP(&flags.alev, "alignlev", "v", false,
+		"align using Levenshtein (matrix) alignment")
 	// Subcommands
 	CMD.AddCommand(rrCMD, dmCMD, msCMD)
 }

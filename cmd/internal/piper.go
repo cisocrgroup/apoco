@@ -11,6 +11,7 @@ import (
 type Piper struct {
 	IFGS, Exts, Dirs []string
 	METS             string
+	AlignLev         bool
 }
 
 func (p Piper) Pipe(ctx context.Context, fns ...apoco.StreamFunc) error {
@@ -29,6 +30,6 @@ func (p Piper) Pipe(ctx context.Context, fns ...apoco.StreamFunc) error {
 	e := snippets.Extensions(p.Exts)
 	return apoco.Pipe(
 		ctx,
-		append([]apoco.StreamFunc{e.ReadLines(p.Dirs...), e.TokenizeLines()}, fns...)...,
+		append([]apoco.StreamFunc{e.ReadLines(p.Dirs...), e.TokenizeLines(p.AlignLev)}, fns...)...,
 	)
 }

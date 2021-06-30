@@ -33,10 +33,13 @@ func init() {
 func msRun(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
+
 	internal.UpdateInConfig(&c.Model, flags.model)
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
 	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
+	internal.UpdateInConfig(&c.AlignLev, flags.alev)
+
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	p := internal.Piper{
@@ -79,15 +82,15 @@ func msEval(c *internal.Config, m apoco.Model, threshold float64, update bool) a
 			}
 			// pred := lr.Predict(x, threshold)
 			probs := lr.PredictProb(x)
-			xs = xs[0:0]
 			switch s.add(gt, ml.Bool(probs.AtVec(0) > threshold)) { //} pred.AtVec(0)) {
 			case tp:
-				apoco.Log("true positive: %s (%g)", tstr(t), probs.AtVec(0))
+				apoco.Log("true positive: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs))
 			case fp:
-				apoco.Log("false positive: %s (%g)", tstr(t), probs.AtVec(0))
+				apoco.Log("false positive: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs))
 			case fn:
-				apoco.Log("false negative: %s (%g)", tstr(t), probs.AtVec(0))
+				apoco.Log("false negative: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs))
 			}
+			xs = xs[0:0]
 			return nil
 		})
 		if err != nil {
@@ -95,6 +98,17 @@ func msEval(c *internal.Config, m apoco.Model, threshold float64, update bool) a
 		}
 		return s.print(os.Stdout, "ms", c.Nocr)
 	}
+}
+
+func fs2str(xs []float64) string {
+	var b strings.Builder
+	pre := ""
+	for _, x := range xs {
+		b.WriteString(pre)
+		pre = ","
+		b.WriteString(fmt.Sprintf("%g", x))
+	}
+	return b.String()
 }
 
 func tstr(t apoco.T) string {

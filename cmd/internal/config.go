@@ -21,6 +21,7 @@ type Config struct {
 	Nocr           int              `json:"nocr"`
 	Cache          bool             `json:"cache"`
 	GT             bool             `json:"gt"`
+	AlignLev       bool             `json:"alignLev"`
 }
 
 // TrainingSettings encloses different training settings.
@@ -70,6 +71,12 @@ func UpdateInConfig(dest, val interface{}) {
 	default:
 		panic("bad type")
 	}
+}
+
+// MRGSettings are the settings for the mrg training.
+type MRGSettings struct {
+	TrainingSettings
+	Window int `json:"window"`
 }
 
 func UpdateBool(key *bool, val bool) {
