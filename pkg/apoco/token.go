@@ -30,13 +30,31 @@ func (t T) IsLexiconEntry() bool {
 	if !ok {
 		return false
 	}
-	return len(interp.Candidates) == 1 &&
-		len(interp.Candidates[0].OCRPatterns) == 0 &&
-		len(interp.Candidates[0].HistPatterns) == 0
+	return CandidatesContainsLexiconEntry(interp.Candidates)
 }
 
 func (t T) String() string {
 	return strings.Join(t.Tokens, "|")
+}
+
+// CandidateIsLexiconEntry returns true if the given candidate represents a
+// lexicon entry, i.e. it contains no OCR- and/or historic patterns.
+func CandidateIsLexiconEntry(cand gofiler.Candidate) bool {
+	return len(cand.OCRPatterns) == 0 && len(cand.HistPatterns) == 0
+}
+
+// CandidatesContainsLexiconEntry returns true if any of the given candidates
+// contains a candidate that represents a lexicon entry.
+func CandidatesContainsLexiconEntry(cands []gofiler.Candidate) bool {
+	if len(cands) == 0 {
+		return false
+	}
+	for _, cand := range cands {
+		if CandidateIsLexiconEntry(cand) {
+			return true
+		}
+	}
+	return false
 }
 
 // Chars represents the master OCR chars with the respective confidences.
