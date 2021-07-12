@@ -30,7 +30,10 @@ func (t T) IsLexiconEntry() bool {
 	if !ok {
 		return false
 	}
-	return CandidatesContainsLexiconEntry(interp.Candidates)
+	if len(interp.Candidates) != 1 {
+		return false
+	}
+	return CandidateIsLexiconEntry(interp.Candidates[0])
 }
 
 func (t T) String() string {
