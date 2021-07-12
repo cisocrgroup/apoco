@@ -165,6 +165,7 @@ func filterLex(m stokMap, withGT bool) apoco.StreamFunc {
 				m.get(t, withGT).Lex = true
 				return nil
 			}
+			m.get(t, withGT).Lex = t.ContainsLexiconEntry()
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("filterLex: %v", err)
 			}

@@ -36,6 +36,19 @@ func (t T) IsLexiconEntry() bool {
 	return CandidateIsLexiconEntry(interp.Candidates[0])
 }
 
+// ContainsLexiconEntry returns true if any of the suggestions
+// of the token are a lexicon entry.
+func (t T) ContainsLexiconEntry() bool {
+	if t.Document == nil {
+		return false
+	}
+	interp, ok := t.Document.Profile[t.Tokens[0]]
+	if !ok {
+		return false
+	}
+	return CandidatesContainsLexiconEntry(interp.Candidates)
+}
+
 func (t T) String() string {
 	return strings.Join(t.Tokens, "|")
 }
