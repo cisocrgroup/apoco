@@ -98,7 +98,7 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	if info == nil {
 		return nil
 	}
-	prefix := idFromFilePath(file, cor.ofg)
+	prefix := internal.IDFromFilePath(file, cor.ofg)
 	info.ID = prefix + "_" + info.ID // Prefix the id with the output file group and the file name.
 	if info.Skipped {
 		newU.FirstChild.Data = ocr
@@ -213,7 +213,7 @@ func (cor *corrector) readMETS(name string) error {
 }
 
 func (cor *corrector) addFileToFileGrp(file, ifg string) string {
-	newID := idFromFilePath(file, cor.ofg)
+	newID := internal.IDFromFilePath(file, cor.ofg)
 	filePath := newID + ".xml"
 	// Build parent file node
 	fnode := &xmlquery.Node{
@@ -338,14 +338,4 @@ func resetTextEquiv(p *xmlquery.Node, data string) {
 	unicode := newUnicode(te, data)
 	node.AppendChild(te, unicode)
 	node.AppendChild(p, te)
-}
-
-// idFromFilePath generates an id based on the file group and the file path.
-func idFromFilePath(path, fg string) string {
-	// Use base path and remove file extensions.
-	path = filepath.Base(path)
-	path = path[0 : len(path)-len(filepath.Ext(path))]
-	// Split everything after the last `_`.
-	splits := strings.Split(path, "_")
-	return fmt.Sprintf("%s_%s", fg, splits[len(splits)-1])
 }
