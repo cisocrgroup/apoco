@@ -3,7 +3,7 @@ module git.sr.ht/~flobar/apoco
 go 1.16
 
 require (
-	git.sr.ht/~flobar/lev v1.3.0
+	git.sr.ht/~flobar/lev v1.4.0
 	github.com/BurntSushi/toml v0.3.1
 	github.com/antchfx/xmlquery v1.3.6
 	github.com/antchfx/xpath v1.1.11 // indirect

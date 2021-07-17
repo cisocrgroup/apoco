@@ -13,8 +13,8 @@ cloud.google.com/go/storage v1.0.0/go.mod h1:IhtSnM/ZTZV8YYJWCY8RULGVqBDmpoyjwiy
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20201218220906-28db891af037/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 gioui.org v0.0.0-20210308172011-57750fc8a0a6/go.mod h1:RSH6KIUZ0p2xy5zHDxgAM4zumjgTw83q2ge/PI+yyw8=
-git.sr.ht/~flobar/lev v1.3.0 h1:cjpwu/CGUOamDbpTwIqWWvCxoXDDOWsCBp6Dk0eGgr0=
-git.sr.ht/~flobar/lev v1.3.0/go.mod h1:lvKxpnG6QZv7gILcCWwd9PANKZ8ip202yVpCQiXTdYg=
+git.sr.ht/~flobar/lev v1.4.0 h1:tlxQkUETEi48C8kIhVYKGkqYxFZzDIhdiMWwM6ccsDs=
+git.sr.ht/~flobar/lev v1.4.0/go.mod h1:lvKxpnG6QZv7gILcCWwd9PANKZ8ip202yVpCQiXTdYg=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=

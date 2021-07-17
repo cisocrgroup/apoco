@@ -93,6 +93,7 @@ func TestLev(t *testing.T) {
 		{"n uch ter in", "nuchter in",
 			[]string{"n", "nuchter", "uch", "nuchter", "ter", "nuchter", "in", "in"}},
 		{"a bc  d", "a b d", []string{"a", "a", "bc", "b", "d", "d"}},
+		{"a c  e", "ab cd ef", []string{"a", "ab", "c", "cd", "e", "ef"}},
 	} {
 		t.Run(tc.master, func(t *testing.T) {
 			var m lev.Mat

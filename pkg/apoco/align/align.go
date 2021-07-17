@@ -15,6 +15,9 @@ type Pos struct {
 // mkpos creates a new Pos instance with leading and subsequent
 // whitespace removed.
 func mkpos(b, e int, str []rune) Pos {
+	for e < len(str) && !unicode.IsSpace(str[e]) {
+		e++
+	}
 	b, e = strip(b, e, str)
 	if e < b {
 		e = b
@@ -155,60 +158,58 @@ func Lev(m *lev.Mat, primary []rune, rest ...[]rune) [][]Pos {
 }
 
 func alignPair(m *lev.Mat, p, s []rune) []Pos {
-	// log.Printf("alignPair(%s, %s)", string(p), string(s))
+	if len(p) == 0 {
+		return []Pos{mkpos(0, len(s), s)}
+	}
+	p = append(p, ' ')
+	s = append(s, ' ')
 	m.DistanceR(p, s)
 	trace := m.TraceR(p, s)
 
 	var pos []Pos
-	var pi, si /*, pb*/, sb int
-	// x, zz := lev.AlignTrace(string(p), string(s), trace)
-	// log.Printf("align: %s", string(x))
-	// log.Printf("align: %s", string(trace))
-	// log.Printf("align: %s", string(zz))
-	for i := range trace {
-		if pi >= len(p) || si >= len(s) {
-			break
+	var pi, si /*pb,*/, sb int
+	pa, sa := lev.AlignTraceR(p, s, trace)
+	for i := 0; i < len(trace); {
+		if unicode.IsSpace(pa[i]) && unicode.IsSpace(sa[i]) {
+			pos = append(pos, mkpos(sb, si, s))
+			skip(trace, pa, sa, &i, &pi, &si)
+			sb = si
+			continue
 		}
-		if unicode.IsSpace(p[pi]) {
-			end := y(s, si)
-			// log.Printf("%d:%d %d:%d", pb, pi, sb, end)
-			// log.Printf("%s %s", string(p[pb:pi]), string(s[sb:end]))
-			pos = append(pos, mkpos(sb, end, s))
-			// pb = z(p, pi)
-			// pb = pi + 1
-			if end <= pi {
-				sb = z(s, end)
+		if unicode.IsSpace(pa[i]) {
+			pos = append(pos, mkpos(sb, si, s))
+			if skip(trace, pa, sa, &i, &pi, &si) {
+				sb = si
 			}
+			continue
 		}
-		switch trace[i] {
-		case '#':
-			pi++
-			si++
-		case '+':
-			si++
-		case '-':
-			pi++
-		}
+		next(trace, &i, &pi, &si)
 	}
-	// end := y(s, si)
-	pos = append(pos, mkpos(sb, len(s), s))
-	// log.Printf("%s %s", string(p[pb:pi]), string(s[sb:]))
 	return pos
 }
 
-func y(str []rune, p int) int {
-	for i := p; i < len(str); i++ {
-		if unicode.IsSpace(str[i]) {
-			return i
+func skip(trace []byte, pa, sa []rune, i, pi, si *int) bool {
+	var ret bool
+	for *i < len(trace) && unicode.IsSpace(pa[*i]) {
+		if unicode.IsSpace(sa[*si]) {
+			ret = true
 		}
+		next(trace, i, pi, si)
 	}
-	return len(str)
+	return ret
 }
 
-func z(str []rune, p int) int {
-	for ; p < len(str) && unicode.IsSpace(str[p]); p++ {
+func next(trace []byte, i, pi, si *int) {
+	switch trace[*i] {
+	case '#', '|':
+		*pi++
+		*si++
+	case '+':
+		*si++
+	case '-':
+		*pi++
 	}
-	return p
+	*i++
 }
 
 func stripR(str []rune) []rune {
