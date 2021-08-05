@@ -64,6 +64,7 @@ func (m *Model) readGzippedNgrams(name string) error {
 		return fmt.Errorf("readGzippedNGrams %s: %v", name, err)
 	}
 	defer gz.Close()
+	m.Ngrams = &FreqList{}
 	if err := m.Ngrams.loadCSV(gz); err != nil {
 		return fmt.Errorf("readGzippedNGrams: %s: %v", name, err)
 	}

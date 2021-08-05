@@ -100,7 +100,7 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 	// Create dummy tokens to test if the features activate.
 	t := T{
 		Tokens:   make([]string, nocr+1),
-		Document: new(Document),
+		Document: &Document{LM: &FreqList{}},
 	}
 	switch typ {
 	case "dm":
