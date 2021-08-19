@@ -549,10 +549,8 @@ func isLexiconEntry(t T, i, n int) (float64, bool) {
 		return 0, false
 	}
 	cands := t.Payload.(Split).Candidates
-	if len(cands) == 1 && len(cands[0].OCRPatterns) == 0 && len(cands[0].HistPatterns) == 0 {
-		return ml.True, true
-	}
-	return ml.False, true
+	ret := CandidatesContainsLexiconEntry(cands)
+	return ml.Bool(ret), true
 }
 
 func countLexiconEntriesInMergedSplits(t T, i, n int) (float64, bool) {
