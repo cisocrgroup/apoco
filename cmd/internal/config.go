@@ -11,17 +11,22 @@ import (
 
 // Config defines the command's configuration.
 type Config struct {
-	Model          string           `json:"model,omitempty"`
-	Ngrams         string           `json:"ngrams"`
-	ProfilerBin    string           `json:"profilerBin"`
-	ProfilerConfig string           `json:"profilerConfig"`
-	RR             TrainingSettings `json:"rr"`
-	DM             DMSettings       `json:"dm"`
-	MS             MSSettings       `json:"ms"`
-	Nocr           int              `json:"nocr"`
-	Cache          bool             `json:"cache"`
-	GT             bool             `json:"gt"`
-	AlignLev       bool             `json:"alignLev"`
+	Model    string           `json:"model,omitempty"`
+	Ngrams   string           `json:"ngrams"`
+	Profiler ProfilerConfig   `json:"profiler"`
+	RR       TrainingSettings `json:"rr"`
+	DM       DMSettings       `json:"dm"`
+	MS       MSSettings       `json:"ms"`
+	Nocr     int              `json:"nocr"`
+	Cache    bool             `json:"cache"`
+	GT       bool             `json:"gt"`
+	AlignLev bool             `json:"alignLev"`
+}
+
+// ProfilerConfig holds the profiler's configuration values.
+type ProfilerConfig struct {
+	Exe    string `json:"exe"`
+	Config string `json:"config"`
 }
 
 // TrainingSettings encloses different training settings.

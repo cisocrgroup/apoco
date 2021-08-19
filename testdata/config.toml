@@ -11,22 +11,17 @@ cache = false
 gt = false
 
 # Use Levenshtein-Alignment (enable with -v/--alignlev)
-alignLev = false 
-
-#
-# Profiler settings.
-#
-
-# Path to the profiler binary.
-profilerBin = "/usr/share/bin/profiler"
-
-# Path to the profiler language configuration file.
-profilerConfig = "/etc/profiler/german.ini"
+alignLev = false
 
 # Path to the 3-gram model csv file. Set it to the empty string to
 # disable the usage of trigrams.  This reduces the size of the model
 # files, but you cannot use any of the *Trigram* features.
 ngrams = "data/3gs.csv.gz"
+
+# Profiler settings.
+[profiler]
+exe = "/usr/share/bin/profiler"
+config = "/etc/profiler/german.ini"
 
 # Training settings for the re-ranker
 [rr]

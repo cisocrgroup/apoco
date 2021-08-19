@@ -19,7 +19,7 @@ var CMD = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run:   runProfile,
 	Long: `
-Writes gzipped profiles to OUT. Reads stat tokens from 
+Writes gzipped profiles to OUT. Reads stat tokens from
 stdin if no DIRS are given. Otherwise tokens are read from
 DIRS.`,
 }
@@ -78,7 +78,7 @@ func writeProfile(c *internal.Config, name string) apoco.StreamFunc {
 		if err != nil {
 			return err
 		}
-		profile, err := apoco.RunProfiler(ctx, c.ProfilerBin, c.ProfilerConfig, ts...)
+		profile, err := apoco.RunProfiler(ctx, c.Profiler.Exe, c.Profiler.Config, ts...)
 		if err != nil {
 			return err
 		}

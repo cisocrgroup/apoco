@@ -45,7 +45,7 @@ func readProfile(ctx context.Context, c *Config, group, suffix string, ts []apoc
 		}
 	}
 	ts = append(ts, merged...)
-	profile, err := apoco.RunProfiler(ctx, c.ProfilerBin, c.ProfilerConfig, ts...)
+	profile, err := apoco.RunProfiler(ctx, c.Profiler.Exe, c.Profiler.Config, ts...)
 	if err != nil {
 		return nil, err
 	}
