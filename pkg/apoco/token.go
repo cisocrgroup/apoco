@@ -36,8 +36,8 @@ func (t T) IsLexiconEntry() bool {
 	return CandidateIsLexiconEntry(interp.Candidates[0])
 }
 
-// ContainsLexiconEntry returns true if any of the suggestions
-// of the token are a lexicon entry.
+// ContainsLexiconEntry returns true if any of the suggestions of the
+// token are a lexicon entry.
 func (t T) ContainsLexiconEntry() bool {
 	if t.Document == nil {
 		return false
@@ -53,14 +53,15 @@ func (t T) String() string {
 	return strings.Join(t.Tokens, "|")
 }
 
-// CandidateIsLexiconEntry returns true if the given candidate represents a
-// lexicon entry, i.e. it contains no OCR- and/or historic patterns.
+// CandidateIsLexiconEntry returns true if the given candidate
+// represents a lexicon entry, i.e. it contains no OCR- and/or
+// historic patterns.
 func CandidateIsLexiconEntry(cand gofiler.Candidate) bool {
 	return len(cand.OCRPatterns) == 0 && len(cand.HistPatterns) == 0
 }
 
-// CandidatesContainsLexiconEntry returns true if any of the given candidates
-// contains a candidate that represents a lexicon entry.
+// CandidatesContainsLexiconEntry returns true if any of the given
+// candidates contains a candidate that represents a lexicon entry.
 func CandidatesContainsLexiconEntry(cands []gofiler.Candidate) bool {
 	if len(cands) == 0 {
 		return false
@@ -73,7 +74,8 @@ func CandidatesContainsLexiconEntry(cands []gofiler.Candidate) bool {
 	return false
 }
 
-// Chars represents the master OCR chars with the respective confidences.
+// Chars represents the master OCR chars with the respective
+// confidences.
 type Chars []Char
 
 // Chars converts a char array to a string containing the chars.
@@ -133,8 +135,8 @@ type Correction struct {
 	Conf      float64
 }
 
-// ApplyOCRToCorrection applies the casing of the master OCR string to the
-// correction's candidate suggestion and prepends and appends any
+// ApplyOCRToCorrection applies the casing of the master OCR string to
+// the correction's candidate suggestion and prepends and appends any
 // punctuation of the master OCR to the suggestion.
 func ApplyOCRToCorrection(ocr, sug string) string {
 	correction := []rune(sug)
