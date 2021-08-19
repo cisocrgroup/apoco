@@ -52,7 +52,10 @@ func init() {
 func run(_ *cobra.Command, args []string) {
 	c, err := internal.ReadConfig(flags.parameter)
 	chk(err)
-	c.Overwrite(flags.model, "", flags.nocr, flags.cache, flags.gt)
+	internal.UpdateInConfig(&c.Model, flags.model)
+	internal.UpdateInConfig(&c.Nocr, flags.nocr)
+	internal.UpdateInConfig(&c.Cache, flags.cache)
+	internal.UpdateInConfig(&c.GT, flags.gt)
 	m, err := apoco.ReadModel(c.Model, c.Ngrams)
 	chk(err)
 	rrlr, rrfs, err := m.Get("rr", c.Nocr)

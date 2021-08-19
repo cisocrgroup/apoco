@@ -48,9 +48,10 @@ type MSSettings struct {
 	Window int `json:"window"`
 }
 
-// UpdateInConfig updates the value in dest with
-// val if the according value is not the zero-type
-// for the underlying type.
+// UpdateInConfig updates the value in dest with val if the according
+// value is not the zero-type for the underlying type.  Dest must be a
+// pointer type to either string, int, float64 or bool.  Otherwise the
+// function panics.
 func UpdateInConfig(dest, val interface{}) {
 	switch dest.(type) {
 	case *string:
@@ -84,24 +85,6 @@ type MRGSettings struct {
 	Window int `json:"window"`
 }
 
-func UpdateBool(key *bool, val bool) {
-	if val {
-		*key = val
-	}
-}
-
-func UpdateInt(key *int, val int) {
-	if val != 0 {
-		*key = val
-	}
-}
-
-func UpdateString(key *string, val string) {
-	if val != "" {
-		*key = val
-	}
-}
-
 // ReadConfig reads the config from a json or toml file.  If
 // the name is empty, an empty configuration file is returned.
 // If name has the prefix '{' and the suffix '}' the name is
@@ -133,27 +116,6 @@ func ReadConfig(name string) (*Config, error) {
 		return nil, fmt.Errorf("readConfig %s: %v", name, err)
 	}
 	return &config, nil
-}
-
-// Overwrite overwrites the appropriate variables in the config file
-// with the given values.  Values only overwrite the variables if they
-// are not go's default zero value.
-func (c *Config) Overwrite(model, filter string, nocr int, cache, gt bool) {
-	if model != "" {
-		c.Model = model
-	}
-	if filter != "" {
-		c.DM.Filter = filter
-	}
-	if nocr != 0 {
-		c.Nocr = nocr
-	}
-	if cache {
-		c.Cache = cache
-	}
-	if gt {
-		c.GT = gt
-	}
 }
 
 const (
