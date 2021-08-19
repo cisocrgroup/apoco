@@ -56,12 +56,16 @@ func readProfile(ctx context.Context, c *Config, group, suffix string, ts []apoc
 	return profile, nil
 }
 
-func profilerCachePath(group, suffix string) (string, bool) {
+func profilerCachePath(base, suffix string) (string, bool) {
 	dir, err := os.UserCacheDir()
 	if err != nil {
 		return "", false
 	}
 	cacheDir := filepath.Join(dir, "apoco")
 	_ = os.MkdirAll(cacheDir, 0755)
-	return filepath.Join(cacheDir, strings.ReplaceAll(group, "/", "-")+suffix), true
+	for strings.HasSuffix(base, "/") {
+		base = base[0 : len(base)-1]
+	}
+	base = strings.ReplaceAll(base, "/", "-") + suffix
+	return filepath.Join(cacheDir, base), true
 }
