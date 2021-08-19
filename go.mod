@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/antchfx/xmlquery v1.3.6
 	github.com/antchfx/xpath v1.1.11 // indirect
-	github.com/finkf/gofiler v0.6.0
+	github.com/finkf/gofiler v0.10.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/spf13/cobra v1.1.3
 	golang.org/x/exp v0.0.0-20210514180818-737f94c0881e // indirect

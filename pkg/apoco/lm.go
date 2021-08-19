@@ -159,24 +159,30 @@ const lengthOfWord = 64
 // RunProfiler runs the profiler over the given tokens (using the
 // token entries at index 0) with the given executable and config
 // file.  The profiler's output is logged to stderr.
-func RunProfiler(ctx context.Context, exe, config string, tokens ...T) (gofiler.Profile, error) {
-	var profilerTokens []gofiler.Token
+func RunProfiler(ctx context.Context, exe, config string, ts ...T) (gofiler.Profile, error) {
+	var pts []gofiler.Token
 	var adaptive bool
-	for _, token := range tokens {
+	for _, t := range ts {
 		// Skip words that are too long for the profiler.  They are
 		// only skipped for the input for the profiler not from the
 		// general token stream.
-		if len(token.Tokens[0]) > lengthOfWord {
+		if len(t.Tokens[0]) > lengthOfWord {
 			continue
 		}
-		profilerTokens = append(profilerTokens, gofiler.Token{
-			OCR: token.Tokens[0],
-			COR: token.Cor,
+		pts = append(pts, gofiler.Token{
+			OCR: t.Tokens[0],
+			COR: t.Cor,
 		})
-		adaptive = adaptive || token.Cor != ""
+		adaptive = adaptive || t.Cor != ""
 	}
-	profiler := gofiler.Profiler{Exe: exe, Types: true, Adaptive: adaptive, Log: logger{}}
-	profile, err := profiler.Run(ctx, config, profilerTokens)
+	profiler := gofiler.Profiler{
+		Exe:      exe,
+		Config:   config,
+		Types:    true,
+		Adaptive: adaptive,
+		Log:      logger{},
+	}
+	profile, err := profiler.Run(ctx, pts)
 	if err != nil {
 		return nil, fmt.Errorf("run profiler %s %s: %v", exe, config, err)
 	}
