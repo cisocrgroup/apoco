@@ -28,7 +28,7 @@ func rrRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
 
-	m, err := apoco.ReadModel(c.Model, c.Ngrams)
+	m, err := internal.ReadModel(c.Model, c.LM)
 	chk(err)
 	p := internal.Piper{
 		Exts:     flags.extensions,
@@ -40,7 +40,7 @@ func rrRun(_ *cobra.Command, args []string) {
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(4),
-		apoco.ConnectLanguageModel(m.Ngrams),
+		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
 		internal.ConnectProfile(c, "-profile.json.gz"),
 		apoco.FilterLexiconEntries(),
@@ -49,7 +49,7 @@ func rrRun(_ *cobra.Command, args []string) {
 	))
 }
 
-func rrTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func rrTrain(c *internal.Config, m *internal.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := loadRRModel(c, m, update)
 		if err != nil {
@@ -90,7 +90,7 @@ func rrTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	}
 }
 
-func loadRRModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
+func loadRRModel(c *internal.Config, m *internal.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
 	if update {
 		return m.Get("rr", c.Nocr)
 	}

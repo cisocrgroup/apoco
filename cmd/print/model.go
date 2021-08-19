@@ -7,6 +7,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"git.sr.ht/~flobar/apoco/cmd/internal"
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +34,7 @@ func init() {
 
 func runModel(_ *cobra.Command, args []string) {
 	for _, name := range args {
-		model, err := apoco.ReadModel(name, "")
+		model, err := internal.ReadModel(name, nil)
 		chk(err)
 		if flags.json {
 			printmodeljson(name, model)
@@ -43,7 +44,7 @@ func runModel(_ *cobra.Command, args []string) {
 	}
 }
 
-func printmodel(name string, model apoco.Model) {
+func printmodel(name string, model *internal.Model) {
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	defer func() {
 		chk(w.Flush())
@@ -61,7 +62,7 @@ func printmodel(name string, model apoco.Model) {
 	}
 }
 
-func printmodeldata(out io.Writer, name, typ string, ds map[int]apoco.ModelData) {
+func printmodeldata(out io.Writer, name, typ string, ds map[int]internal.ModelData) {
 	for nocr, data := range ds {
 		ws := data.Model.Weights()
 		fs, err := apoco.NewFeatureSet(data.Features...)
@@ -85,7 +86,7 @@ func printpats(out io.Writer, name, typ string, pats map[string]float64) {
 	}
 }
 
-func printmodeljson(name string, model apoco.Model) {
+func printmodeljson(name string, model *internal.Model) {
 	st := modelst{Name: name}
 	if modelFlags.histPats {
 		st.GlobalHistPatterns = model.GlobalHistPatterns
@@ -102,7 +103,7 @@ func printmodeljson(name string, model apoco.Model) {
 	chk(json.NewEncoder(os.Stdout).Encode(st))
 }
 
-func jsonfeatures(typ string, ds map[int]apoco.ModelData) []feature {
+func jsonfeatures(typ string, ds map[int]internal.ModelData) []feature {
 	var features []feature
 	for nocr, data := range ds {
 		ws := data.Model.Weights()

@@ -56,7 +56,7 @@ func run(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.GT, flags.gt)
-	m, err := apoco.ReadModel(c.Model, c.Ngrams)
+	m, err := internal.ReadModel(c.Model, c.LM)
 	chk(err)
 	rrlr, rrfs, err := m.Get("rr", c.Nocr)
 	chk(err)
@@ -75,9 +75,9 @@ func run(_ *cobra.Command, args []string) {
 		apoco.Normalize(),
 		register(stoks, flags.gt),
 		filterShort(stoks, flags.gt),
-		apoco.ConnectLanguageModel(m.Ngrams),
+		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
-		connectProfile(c, m.Ngrams, flags.profile),
+		connectProfile(c, m.LM, flags.profile),
 		filterLex(stoks, flags.gt),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(rrlr, rrfs, c.Nocr),
@@ -215,7 +215,7 @@ func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 	}
 }
 
-func connectProfile(c *internal.Config, ngrams *apoco.FreqList, profile string) apoco.StreamFunc {
+func connectProfile(c *internal.Config, lm map[string]*apoco.FreqList, profile string) apoco.StreamFunc {
 	if profile == "" {
 		return internal.ConnectProfile(c, "-profiler.json.gz")
 	}

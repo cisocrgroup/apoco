@@ -38,7 +38,7 @@ func dmRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
 	internal.UpdateInConfig(&c.DM.Filter, dmFlags.filter)
 
-	m, err := apoco.ReadModel(c.Model, c.Ngrams)
+	m, err := internal.ReadModel(c.Model, c.LM)
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)
 	chk(err)
@@ -51,7 +51,7 @@ func dmRun(_ *cobra.Command, args []string) {
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(4),
-		apoco.ConnectLanguageModel(m.Ngrams),
+		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
 		internal.ConnectProfile(c, "-profile.json.gz"),
 		apoco.FilterLexiconEntries(),
@@ -61,7 +61,7 @@ func dmRun(_ *cobra.Command, args []string) {
 	))
 }
 
-func dmEval(c *internal.Config, m apoco.Model) apoco.StreamFunc {
+func dmEval(c *internal.Config, m *internal.Model) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := m.Get("dm", c.Nocr)
 		if err != nil {

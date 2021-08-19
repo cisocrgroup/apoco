@@ -37,7 +37,7 @@ func msRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
 	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
-	m, err := apoco.ReadModel(c.Model, c.Ngrams)
+	m, err := internal.ReadModel(c.Model, c.LM)
 	chk(err)
 	p := internal.Piper{
 		Exts:     flags.extensions,
@@ -50,7 +50,7 @@ func msRun(_ *cobra.Command, args []string) {
 		apoco.Normalize(),
 		apoco.FilterShort(1), // skip empty token
 		countMerges(),
-		apoco.ConnectLanguageModel(m.Ngrams),
+		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
 		apoco.ConnectMergesWithGT(c.MS.Window),
 		internal.ConnectProfile(c, "-ms-profile.json.gz"),
@@ -79,7 +79,7 @@ func countMerges() apoco.StreamFunc {
 	}
 }
 
-func msTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
+func msTrain(c *internal.Config, m *internal.Model, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := loadMSModel(c, m, flags.update)
 		if err != nil {
@@ -134,7 +134,7 @@ func msTrain(c *internal.Config, m apoco.Model, update bool) apoco.StreamFunc {
 	}
 }
 
-func loadMSModel(c *internal.Config, m apoco.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
+func loadMSModel(c *internal.Config, m *internal.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
 	if update {
 		return m.Get("ms", c.Nocr)
 	}

@@ -439,7 +439,7 @@ func ConnectUnigrams() StreamFunc {
 }
 
 // ConnectLanguageModel connects the document of the tokens to a language model.
-func ConnectLanguageModel(lm *FreqList) StreamFunc {
+func ConnectLanguageModel(lm map[string]*FreqList) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		return EachTokenInDocument(ctx, in, func(d *Document, tokens ...T) error {
 			d.LM = lm

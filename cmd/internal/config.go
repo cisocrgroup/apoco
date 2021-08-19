@@ -11,16 +11,21 @@ import (
 
 // Config defines the command's configuration.
 type Config struct {
-	Model    string           `json:"model,omitempty"`
-	Ngrams   string           `json:"ngrams"`
-	Profiler ProfilerConfig   `json:"profiler"`
-	RR       TrainingSettings `json:"rr"`
-	DM       DMSettings       `json:"dm"`
-	MS       MSSettings       `json:"ms"`
-	Nocr     int              `json:"nocr"`
-	Cache    bool             `json:"cache"`
-	GT       bool             `json:"gt"`
-	AlignLev bool             `json:"alignLev"`
+	Model    string              `json:"model,omitempty"`
+	LM       map[string]LMConfig `json:"lm"`
+	Profiler ProfilerConfig      `json:"profiler"`
+	RR       TrainingConfig      `json:"rr"`
+	DM       DMConfig            `json:"dm"`
+	MS       MSConfig            `json:"ms"`
+	Nocr     int                 `json:"nocr"`
+	Cache    bool                `json:"cache"`
+	GT       bool                `json:"gt"`
+	AlignLev bool                `json:"alignLev"`
+}
+
+// LMConfig configures the path to a language model csv file.
+type LMConfig struct {
+	Path string `json:"path"`
 }
 
 // ProfilerConfig holds the profiler's configuration values.
@@ -29,22 +34,22 @@ type ProfilerConfig struct {
 	Config string `json:"config"`
 }
 
-// TrainingSettings encloses different training settings.
-type TrainingSettings struct {
+// TrainingConfig encloses different training settings.
+type TrainingConfig struct {
 	Features     []string `json:"features"`
 	LearningRate float64  `json:"learningRate"`
 	Ntrain       int      `json:"ntrain"`
 }
 
-// DMSettings encloses settings for dm training.
-type DMSettings struct {
-	TrainingSettings
+// DMConfig encloses settings for dm training.
+type DMConfig struct {
+	TrainingConfig
 	Filter string `json:"filter"` // cautious, courageous or redundant
 }
 
-// MSSettings are the settings for the mrg training.
-type MSSettings struct {
-	TrainingSettings
+// MSConfig are the settings for the mrg training.
+type MSConfig struct {
+	TrainingConfig
 	Window int `json:"window"`
 }
 
@@ -81,7 +86,7 @@ func UpdateInConfig(dest, val interface{}) {
 
 // MRGSettings are the settings for the mrg training.
 type MRGSettings struct {
-	TrainingSettings
+	TrainingConfig
 	Window int `json:"window"`
 }
 

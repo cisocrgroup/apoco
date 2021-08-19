@@ -40,7 +40,7 @@ func msRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
 
-	m, err := apoco.ReadModel(c.Model, c.Ngrams)
+	m, err := internal.ReadModel(c.Model, c.LM)
 	chk(err)
 	p := internal.Piper{
 		Exts: flags.extensions,
@@ -51,7 +51,7 @@ func msRun(_ *cobra.Command, args []string) {
 		apoco.FilterBad(c.Nocr+1), // at least n ocr + ground truth
 		apoco.Normalize(),
 		apoco.FilterShort(1), // skip empty token
-		apoco.ConnectLanguageModel(m.Ngrams),
+		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
 		apoco.ConnectMergesWithGT(c.MS.Window),
 		internal.ConnectProfile(c, "-ms-profile.json.gz"),
@@ -63,7 +63,7 @@ func msRun(_ *cobra.Command, args []string) {
 	))
 }
 
-func msEval(c *internal.Config, m apoco.Model, threshold float64, update bool) apoco.StreamFunc {
+func msEval(c *internal.Config, m *internal.Model, threshold float64, update bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		lr, fs, err := m.Get("ms", c.Nocr)
 		if err != nil {

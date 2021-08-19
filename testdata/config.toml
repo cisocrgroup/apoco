@@ -13,10 +13,9 @@ gt = false
 # Use Levenshtein-Alignment (enable with -v/--alignlev)
 alignLev = false
 
-# Path to the 3-gram model csv file. Set it to the empty string to
-# disable the usage of trigrams.  This reduces the size of the model
-# files, but you cannot use any of the *Trigram* features.
-ngrams = "data/3gs.csv.gz"
+# Settings for the various language models
+[lm.3grams]
+path = "data/3gs.csv.gz"
 
 # Profiler settings.
 [profiler]

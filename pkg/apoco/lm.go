@@ -69,11 +69,11 @@ func (f *FreqList) loadCSV(in io.Reader) error {
 
 // Document represents the token's document.
 type Document struct {
-	LM         *FreqList       // Global ngram model
-	Unigrams   FreqList        // Document-wise unigram model
-	Profile    gofiler.Profile // Document-wise profile
-	Group      string          // File group or directory of the document
-	Lexicality float64         // Lexicality score
+	LM         map[string]*FreqList // Global language models
+	Unigrams   FreqList             // Document-wise unigram model
+	Profile    gofiler.Profile      // Document-wise profile
+	Group      string               // File group or directory of the document
+	Lexicality float64              // Lexicality score
 }
 
 // AddUnigram adds the token to the language model's unigram map.
@@ -97,7 +97,7 @@ func (d *Document) Trigram(str string) float64 {
 	}
 	ret := 1.0
 	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
-		ret *= d.LM.relative(string(tmp[i:j]))
+		ret *= d.LM["3grams"].relative(string(tmp[i:j]))
 	}
 	return ret
 }
@@ -129,27 +129,8 @@ func EachTrigram(str string, f func(string)) {
 // product of the token's trigrams.
 func (d *Document) EachTrigram(str string, f func(float64)) {
 	EachTrigram(str, func(trigram string) {
-		f(d.LM.relative(trigram))
+		f(d.LM["3grams"].relative(trigram))
 	})
-}
-
-// LoadGzippedNGram loads the (gzipped) ngram model file.  The expected format
-// for each line is `%d,%s`.
-func (d *Document) LoadGzippedNGram(path string) error {
-	is, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf("load ngrams %s: %v", path, err)
-	}
-	defer is.Close()
-	gz, err := gzip.NewReader(is)
-	if err != nil {
-		return fmt.Errorf("load ngrams %s: %v", path, err)
-	}
-	defer gz.Close()
-	if err := d.LM.loadCSV(gz); err != nil {
-		return fmt.Errorf("load ngrams: %s: %v", path, err)
-	}
-	return nil
 }
 
 // lengthOfWord gives the maximal length of words that the profiler
