@@ -42,7 +42,7 @@ func dmRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
 	internal.UpdateInConfig(&c.DM.Filter, dmFlags.filter)
 
-	m, err := internal.ReadModel(c.Model, c.LM)
+	m, err := internal.ReadModel(c.Model, c.LM, true)
 	chk(err)
 	lr, fs, err := m.Get("rr", c.Nocr)
 	chk(err)

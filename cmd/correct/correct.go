@@ -56,7 +56,7 @@ func run(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.GT, flags.gt)
-	m, err := internal.ReadModel(c.Model, c.LM)
+	m, err := internal.ReadModel(c.Model, c.LM, false)
 	chk(err)
 	rrlr, rrfs, err := m.Get("rr", c.Nocr)
 	chk(err)

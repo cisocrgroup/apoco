@@ -40,7 +40,7 @@ func msRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
 
-	m, err := internal.ReadModel(c.Model, c.LM)
+	m, err := internal.ReadModel(c.Model, c.LM, false)
 	chk(err)
 	p := internal.Piper{
 		Exts: flags.extensions,

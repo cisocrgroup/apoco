@@ -34,7 +34,7 @@ func init() {
 
 func runModel(_ *cobra.Command, args []string) {
 	for _, name := range args {
-		model, err := internal.ReadModel(name, nil)
+		model, err := internal.ReadModel(name, nil, false)
 		chk(err)
 		if flags.json {
 			printmodeljson(name, model)

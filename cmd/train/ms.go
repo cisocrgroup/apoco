@@ -37,7 +37,7 @@ func msRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
 	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
-	m, err := internal.ReadModel(c.Model, c.LM)
+	m, err := internal.ReadModel(c.Model, c.LM, true)
 	chk(err)
 	p := internal.Piper{
 		Exts:     flags.extensions,

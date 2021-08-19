@@ -29,14 +29,16 @@ type ModelData struct {
 
 // ReadModel reads a model from a gob compressed input file.  If the
 // given file does not exist, the according language models are loaded
-// and a new model is returned.
-func ReadModel(name string, lms map[string]LMConfig) (*Model, error) {
+// and a new model is returned.  If create is set to false no new
+// model will be created and the model must be read from an existing
+// file.
+func ReadModel(name string, lms map[string]LMConfig, create bool) (*Model, error) {
 	apoco.Log("reading model from %s", name)
 	fail := func(err error) (*Model, error) {
 		return nil, fmt.Errorf("read model %s: %v", name, err)
 	}
 	in, err := os.Open(name)
-	if os.IsNotExist(err) {
+	if create && os.IsNotExist(err) {
 		lms, err := readLMs(lms)
 		if err != nil {
 			return fail(err)
