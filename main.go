@@ -16,7 +16,7 @@ import (
 
 var root = &cobra.Command{
 	Use:   "apoco",
-	Short: "A̲utomatic p̲o̲st c̲o̲rrection of (historical) OCR",
+	Short: "[A]utomatic [po]st [co]rrection of (historical) OCR",
 	PersistentPreRun: func(_ *cobra.Command, _ []string) {
 		apoco.SetLog(strings.ToLower(logLevel) == "debug")
 	},
