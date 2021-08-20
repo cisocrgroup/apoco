@@ -21,6 +21,7 @@ var register = map[string]FeatureFunc{
 	"OCRMaxCharConf":                 OCRMaxCharConf,
 	"OCRMinCharConf":                 OCRMinCharConf,
 	"OCRLevenshteinDist":             OCRLevenshteinDist,
+	"OCRLibFreq":                     ocrLibFreq,
 	"CandidateProfilerWeight":        CandidateProfilerWeight,
 	"CandidateUnigramFreq":           CandidateUnigramFreq,
 	"CandidateTrigramFreq":           CandidateTrigramFreq,
@@ -44,6 +45,7 @@ var register = map[string]FeatureFunc{
 	"SplitUnigramTokenConf":          splitUnigramTokenConf,
 	"SplitNumberOfLexiconEntries":    countLexiconEntriesInMergedSplits,
 	"SplitIsLexiconEntry":            isLexiconEntry,
+	"SplitLen":                       splitLen,
 	"IsStartOfLine":                  isSOL,
 	"IsEndOfLine":                    isEOL,
 }
@@ -389,6 +391,10 @@ func OCRLevenshteinDist(t T, i, n int) (float64, bool) {
 	return float64(lev.Distance(t.Tokens[i], t.Tokens[0])), true
 }
 
+func ocrLibFreq(t T, i, n int) (float64, bool) {
+	return t.Document.LM["lib"].relative(t.Tokens[i]), true
+}
+
 // CandidateLevenshteinDist returns the levenshtein distance between
 // the OCR token and the token's connected profiler candidate.  For
 // the master OCR the according Distance from the profiler candidate
@@ -551,6 +557,14 @@ func isLexiconEntry(t T, i, n int) (float64, bool) {
 	cands := t.Payload.(Split).Candidates
 	ret := CandidatesContainsLexiconEntry(cands)
 	return ml.Bool(ret), true
+}
+
+func splitLen(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	ts := t.Payload.(Split).Tokens
+	return float64(len(ts)), true
 }
 
 func countLexiconEntriesInMergedSplits(t T, i, n int) (float64, bool) {
