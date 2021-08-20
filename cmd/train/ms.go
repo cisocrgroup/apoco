@@ -15,13 +15,12 @@ import (
 // msCMD defines the apoco train ms command.
 var msCMD = &cobra.Command{
 	Use:   "ms [DIRS...]",
-	Short: "Train an apoco merge splits model",
+	Short: "Train an apoco-merge splits model",
 	Run:   msRun,
 }
 
 var msFlags struct {
-	threshold float64
-	window    int
+	window int
 }
 
 func init() {
