@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -93,15 +94,18 @@ func (m *Model) Put(mod string, nocr int, lr *ml.LR, fs []string) {
 // Get loads the the model and the according feature set for the given
 // configuration.
 func (m *Model) Get(mod string, nocr int) (*ml.LR, apoco.FeatureSet, error) {
+	fail := func(err error) (*ml.LR, apoco.FeatureSet, error) {
+		return nil, nil, fmt.Errorf("get %s/%d: %v", mod, nocr, err)
+	}
 	if _, ok := m.Models[mod]; !ok {
-		return nil, nil, fmt.Errorf("load: cannot find: %s/%d", mod, nocr)
+		return fail(errors.New("cannot find"))
 	}
 	if _, ok := m.Models[mod][nocr]; !ok {
-		return nil, nil, fmt.Errorf("load: cannot find: %s/%d", mod, nocr)
+		return fail(errors.New("cannot find"))
 	}
 	fs, err := apoco.NewFeatureSet(m.Models[mod][nocr].Features...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("load: %v", err)
+		return fail(err)
 	}
 	return m.Models[mod][nocr].Model, fs, nil
 }
