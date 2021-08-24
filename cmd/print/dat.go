@@ -205,9 +205,9 @@ func (e err) print(data map[string]map[string]int) {
 	}
 	// Absolute values.
 	for _, t := range names {
-		fmt.Printf("# %q", t)
+		fmt.Printf("# [%s]", t)
 		for _, y := range years {
-			fmt.Printf(" %d", data[y][t])
+			fmt.Printf(" %d (%d)", data[y][t], data[y]["total"])
 		}
 		fmt.Println()
 	}
