@@ -203,6 +203,14 @@ func (e err) print(data map[string]map[string]int) {
 		}
 		fmt.Println()
 	}
+	// Absolute values.
+	for _, t := range names {
+		fmt.Printf("# %q", t)
+		for _, y := range years {
+			fmt.Printf(" %d", data[y][t])
+		}
+		fmt.Println()
+	}
 }
 
 func eachStok(files []string, f func(string, string, bool, internal.Stok)) {
