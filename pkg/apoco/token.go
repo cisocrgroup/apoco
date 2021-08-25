@@ -10,7 +10,7 @@ import (
 
 // T represents aligned OCR-tokens.
 type T struct {
-	Document *Document   // Document of this token
+	Document *Document   // Document this token belongs to.
 	Payload  interface{} // Token payload; either *gofiler.Candidate, []Ranking, Correction or Split
 	Cor      string      // Correction for the token
 	File     string      // The file of the token
@@ -47,6 +47,10 @@ func (t T) ContainsLexiconEntry() bool {
 		return false
 	}
 	return CandidatesContainsLexiconEntry(interp.Candidates)
+}
+
+func (t T) GT() string {
+	return t.Tokens[len(t.Tokens)-1]
 }
 
 func (t T) String() string {
@@ -127,6 +131,7 @@ type Ranking struct {
 type Split struct {
 	Candidates []gofiler.Candidate
 	Tokens     []T
+	Valid      bool
 }
 
 // Correction represents a correction decision for tokens.
