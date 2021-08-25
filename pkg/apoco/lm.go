@@ -147,7 +147,7 @@ func RunProfiler(ctx context.Context, exe, config string, ts ...T) (gofiler.Prof
 		// Skip words that are too long for the profiler.  They are
 		// only skipped for the input for the profiler not from the
 		// general token stream.
-		if len(t.Tokens[0]) > lengthOfWord {
+		if len(t.Tokens[0]) >= lengthOfWord {
 			continue
 		}
 		pts = append(pts, gofiler.Token{
@@ -156,6 +156,14 @@ func RunProfiler(ctx context.Context, exe, config string, ts ...T) (gofiler.Prof
 		})
 		adaptive = adaptive || t.Cor != ""
 	}
+	w, err := os.Create("profile.txt")
+	if err != nil {
+		return nil, err
+	}
+	defer w.Close()
+	for _, t := range pts {
+		fmt.Fprintln(w, t.String())
+	}
 	profiler := gofiler.Profiler{
 		Exe:      exe,
 		Config:   config,
@@ -163,6 +171,7 @@ func RunProfiler(ctx context.Context, exe, config string, ts ...T) (gofiler.Prof
 		Adaptive: adaptive,
 		Log:      logger{},
 	}
+	Log("len(pts) = %d", len(pts))
 	profile, err := profiler.Run(ctx, pts)
 	if err != nil {
 		return nil, fmt.Errorf("run profiler %s %s: %v", exe, config, err)
@@ -191,14 +200,14 @@ func ReadProfile(name string) (gofiler.Profile, error) {
 
 // WriteProfile writes the profile as gzipped json formatted file.
 func WriteProfile(name string, profile gofiler.Profile) error {
-	out, err := os.Create(name)
+	w, err := os.Create(name)
 	if err != nil {
 		return fmt.Errorf("write profile %s: %v", name, err)
 	}
-	defer out.Close()
-	w := gzip.NewWriter(out)
 	defer w.Close()
-	if err := json.NewEncoder(w).Encode(profile); err != nil {
+	zip := gzip.NewWriter(w)
+	defer zip.Close()
+	if err := json.NewEncoder(zip).Encode(profile); err != nil {
 		return fmt.Errorf("write profile %s: %v", name, err)
 	}
 	return nil
