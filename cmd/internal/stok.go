@@ -288,6 +288,7 @@ func E(str string) string {
 // with '#name=x' is encountered the name for the callback function is
 // updated accordingly.
 func EachStok(r io.Reader, f func(string, Stok) error) error {
+	const namepref = "#name="
 	s := bufio.NewScanner(r)
 	var name string
 	for s.Scan() {
@@ -295,8 +296,8 @@ func EachStok(r io.Reader, f func(string, Stok) error) error {
 		if len(line) == 0 {
 			continue
 		}
-		if strings.HasPrefix(line, "#name=") {
-			name = strings.Trim(line[6:], " \t\n")
+		if strings.HasPrefix(line, namepref) {
+			name = strings.Trim(line[len(namepref):], " \t\n")
 			continue
 		}
 		if line[0] == '#' {
