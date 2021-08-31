@@ -287,7 +287,7 @@ func E(str string) string {
 // from the reader, lines starting with # are skipped.  If a line starting
 // with '#name=x' is encountered the name for the callback function is
 // updated accordingly.
-func EachStok(r io.Reader, f func(string, Stok)) error {
+func EachStok(r io.Reader, f func(string, Stok) error) error {
 	s := bufio.NewScanner(r)
 	var name string
 	for s.Scan() {
@@ -306,7 +306,10 @@ func EachStok(r io.Reader, f func(string, Stok)) error {
 		if err != nil {
 			return err
 		}
-		f(name, stok)
+		if err := f(name, stok); err != nil {
+			return err
+		}
+		return nil
 	}
 	return s.Err()
 }

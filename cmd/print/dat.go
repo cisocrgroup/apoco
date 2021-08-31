@@ -230,24 +230,28 @@ func eachStokInFile(name string, f func(string, string, bool, internal.Stok)) {
 	name = cleanName(name)
 	year, suf := name[:4], name[5:]
 	new := true
-	chk(internal.EachStok(r, func(name string, stok internal.Stok) {
+	chk(internal.EachStok(r, func(name string, stok internal.Stok) error {
 		f(year, suf, new, stok)
 		new = false
+		return nil
 	}))
 	eachStokReader(r, f)
 }
 
 func eachStokReader(r io.Reader, f func(string, string, bool, internal.Stok)) {
 	var fname, year, suf string
-	chk(internal.EachStok(r, func(name string, stok internal.Stok) {
+	chk(internal.EachStok(r, func(name string, stok internal.Stok) error {
 		if fname == "" || fname != name {
 			fname = name
 			name = cleanName(name)
+			if len(name) < 6 {
+				return fmt.Errorf("bad name %s: too short", name)
+			}
 			year, suf = name[:4], name[5:]
 			f(year, suf, true, stok)
-			return
 		}
 		f(year, suf, false, stok)
+		return nil
 	}))
 }
 
@@ -268,8 +272,8 @@ func newReplacer(expr string) (replacer, error) {
 	if expr == "" {
 		return noop{}, nil
 	}
-	if len(expr) < 4 {
-		return nil, fmt.Errorf("invalid expression %q", expr)
+	if len(expr) < 4 || !strings.HasPrefix(expr, "s") {
+		return nil, fmt.Errorf("invalid subustitute expression %q", expr)
 	}
 	fields := strings.Split(expr, expr[1:2])
 	if len(fields) != 4 {
