@@ -16,7 +16,7 @@ type Config struct {
 	Profiler ProfilerConfig      `json:"profiler"`
 	RR       TrainingConfig      `json:"rr"`
 	DM       DMConfig            `json:"dm"`
-	MS       MSConfig            `json:"ms"`
+	MS       TrainingConfig      `json:"ms"`
 	Nocr     int                 `json:"nocr"`
 	Cache    bool                `json:"cache"`
 	GT       bool                `json:"gt"`
@@ -45,12 +45,6 @@ type TrainingConfig struct {
 type DMConfig struct {
 	TrainingConfig
 	Filter string `json:"filter"` // cautious, courageous or redundant
-}
-
-// MSConfig are the settings for the mrg training.
-type MSConfig struct {
-	TrainingConfig
-	Window int `json:"window"`
 }
 
 // UpdateInConfig updates the value in dest with val if the according

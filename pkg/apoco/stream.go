@@ -399,6 +399,11 @@ func ConnectSplitCandidates() StreamFunc {
 			}
 			split := t.Payload.(Split)
 			split.Candidates = interp.Candidates
+			for i := range split.Tokens {
+				if interp, ok := t.Document.Profile[split.Tokens[i].Tokens[0]]; ok {
+					split.Tokens[i].Payload = interp.Candidates
+				}
+			}
 			t.Payload = split
 			return SendTokens(ctx, out, t)
 		})
@@ -553,30 +558,37 @@ func connectCorrections(lr *ml.LR, fs FeatureSet, nocr int, tokens []T) {
 	}
 }
 
-func ConnectMergesWithGT(max int) StreamFunc {
+func ConnectMergesWithGT() StreamFunc {
+	samegt := func(ts []T) bool {
+		for i := 1; i < len(ts); i++ {
+			if ts[0].GT() != ts[i].GT() {
+				return false
+			}
+		}
+		return true
+	}
+
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		var ts []T
 		err := EachLine(ctx, in, func(line []T) error {
 			for i := 0; i < len(line); i++ {
-				for m := max; m > 1; m-- {
-					if i+m > len(line) {
-						continue
-					}
-					slice := line[i : i+m] // slice is not empty!
-					t := makeMRGToken(slice)
-					ts = append(ts, t)
-					// TODO: it is unclear how to tokenize the split tokens
-					// We use the ground truth to enforce the "tokenization" of merges.
-					if slice[0].Tokens[len(slice[0].Tokens)-1] == t.Tokens[len(t.Tokens)-1] {
-						i += len(slice) - 1 // Regard the i++ in the for loop.
+				ts = ts[0:0]
+				for j := len(line); j > i+1; j-- {
+					ts = append(ts, makeMRGToken(line[i:j]))
+				}
+				// Longest merges are in front of the slice.
+				for i := range ts {
+					if samegt(ts[i].Payload.(Split).Tokens) {
+						split := ts[i].Payload.(Split)
+						split.Valid = true
+						ts[i].Payload = split
 						break
 					}
 				}
+				if err := SendTokens(ctx, out, ts...); err != nil {
+					return fmt.Errorf("connect merges with gt: %v", err)
+				}
 			}
-			if err := SendTokens(ctx, out, ts...); err != nil {
-				return fmt.Errorf("connect merges with gt: %v", err)
-			}
-			ts = ts[0:0]
 			return nil
 		})
 		if err != nil {

@@ -19,14 +19,6 @@ var msCMD = &cobra.Command{
 	Run:   msRun,
 }
 
-var msFlags struct {
-	window int
-}
-
-func init() {
-	msCMD.Flags().IntVarP(&msFlags.window, "window", "w", 2, "set the maximal window size")
-}
-
 func msRun(_ *cobra.Command, args []string) {
 	// Handle configuration file.
 	c, err := internal.ReadConfig(flags.parameter)
@@ -35,7 +27,6 @@ func msRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
-	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
 	m, err := internal.ReadModel(c.Model, c.LM, true)
 	chk(err)
 	p := internal.Piper{
@@ -51,7 +42,7 @@ func msRun(_ *cobra.Command, args []string) {
 		countMerges(),
 		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
-		apoco.ConnectMergesWithGT(c.MS.Window),
+		apoco.ConnectMergesWithGT(),
 		internal.ConnectProfile(c, "-ms-profile.json.gz"),
 		apoco.AddShortTokensToProfile(3),
 		apoco.ConnectSplitCandidates(),
@@ -92,10 +83,12 @@ func msTrain(c *internal.Config, m *internal.Model, update bool) apoco.StreamFun
 			}
 			if gt == ml.True {
 				splits++
+				typ := "unclean"
 				if t.Tokens[0] == t.Tokens[len(t.Tokens)-1] {
 					cleanSplits++
+					typ = "clean"
 				}
-				apoco.Log("merge: %s", t)
+				apoco.Log("merge: %s (%s)", t, typ)
 				for _, xt := range t.Payload.(apoco.Split).Tokens {
 					apoco.Log(" - %s", xt)
 				}
@@ -149,9 +142,12 @@ func loadMSModel(c *internal.Config, m *internal.Model, update bool) (*ml.LR, ap
 }
 
 func msGT(t apoco.T) float64 {
-	ts := t.Payload.(apoco.Split).Tokens
-	if ts[0].Tokens[len(ts[0].Tokens)-1] == t.Tokens[len(t.Tokens)-1] {
-		return ml.True
-	}
-	return ml.False
+	return ml.Bool(t.Payload.(apoco.Split).Valid)
+	// ts := t.Payload.(apoco.Split).Tokens
+	// if ts[0].Tokens[len(ts[0].Tokens)-1] == t.Tokens[len(t.Tokens)-1] {
+	// 	log.Printf("%q == %q", ts[0].Tokens[len(ts[0].Tokens)-1], t.Tokens[len(t.Tokens)-1])
+	// 	log.Printf("TRUE")
+	// 	return ml.True
+	// }
+	// return ml.False
 }

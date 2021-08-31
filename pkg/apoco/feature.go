@@ -528,6 +528,9 @@ func splitOtherOCR(t T, i, n int) (float64, bool) {
 }
 
 func splitNumShortTokens(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
 	ts := t.Payload.(Split).Tokens
 	var sum int
 	for j := range ts {
@@ -574,7 +577,7 @@ func countLexiconEntriesInMergedSplits(t T, i, n int) (float64, bool) {
 	ts := t.Payload.(Split).Tokens
 	number := 0.0
 	for _, t := range ts {
-		if t.IsLexiconEntry() {
+		if t.ContainsLexiconEntry() {
 			number++
 		}
 	}

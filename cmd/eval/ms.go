@@ -22,12 +22,10 @@ var msCMD = &cobra.Command{
 
 var msFlags struct {
 	threshold float64
-	window    int
 }
 
 func init() {
 	msCMD.Flags().Float64VarP(&msFlags.threshold, "threshold", "t", 0.5, "set the threshold for the merge confidence")
-	msCMD.Flags().IntVarP(&msFlags.window, "window", "w", 2, "set the maximum window size")
 }
 
 func msRun(_ *cobra.Command, args []string) {
@@ -36,7 +34,6 @@ func msRun(_ *cobra.Command, args []string) {
 
 	internal.UpdateInConfig(&c.Model, flags.model)
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
-	internal.UpdateInConfig(&c.MS.Window, msFlags.window)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
 
@@ -53,7 +50,7 @@ func msRun(_ *cobra.Command, args []string) {
 		apoco.FilterShort(1), // skip empty token
 		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
-		apoco.ConnectMergesWithGT(c.MS.Window),
+		apoco.ConnectMergesWithGT(),
 		internal.ConnectProfile(c, "-ms-profile.json.gz"),
 		apoco.AddShortTokensToProfile(3),
 		apoco.ConnectSplitCandidates(),
@@ -72,9 +69,9 @@ func msEval(c *internal.Config, m *internal.Model, threshold float64, update boo
 		var xs []float64
 		var x *mat.Dense
 		var s stats
+		names := fs.Names(c.MS.Features, "ms", c.Nocr)
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
-			slice := t.Payload.(apoco.Split).Tokens
-			gt := msGT(slice)
+			gt := msGT(t)
 
 			xs = fs.Calculate(xs, t, c.Nocr)
 			if x == nil {
@@ -82,13 +79,13 @@ func msEval(c *internal.Config, m *internal.Model, threshold float64, update boo
 			}
 			// pred := lr.Predict(x, threshold)
 			probs := lr.PredictProb(x)
-			switch s.add(gt, ml.Bool(probs.AtVec(0) > threshold)) { //} pred.AtVec(0)) {
+			switch s.add(gt, ml.Bool(probs.AtVec(0) >= threshold)) { //} pred.AtVec(0)) {
 			case tp:
-				apoco.Log("true positive: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs))
-			case fp:
-				apoco.Log("false positive: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs))
-			case fn:
-				apoco.Log("false negative: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs))
+				apoco.Log("true positive: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs, names))
+				/*case fp:
+					apoco.Log("false positive: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs, names))
+				case fn:
+					apoco.Log("false negative: %s (%g) %s", tstr(t), probs.AtVec(0), fs2str(xs, names))*/
 			}
 			xs = xs[0:0]
 			return nil
@@ -100,13 +97,13 @@ func msEval(c *internal.Config, m *internal.Model, threshold float64, update boo
 	}
 }
 
-func fs2str(xs []float64) string {
+func fs2str(xs []float64, names []string) string {
 	var b strings.Builder
-	pre := ""
-	for _, x := range xs {
+	pre := "\n- "
+	for i, x := range xs {
 		b.WriteString(pre)
-		pre = ","
-		b.WriteString(fmt.Sprintf("%g", x))
+		pre = "- "
+		b.WriteString(fmt.Sprintf("%s: %g\n", names[i], x))
 	}
 	return b.String()
 }
@@ -124,11 +121,6 @@ func tstr(t apoco.T) string {
 	return b.String()
 }
 
-func msGT(ts []apoco.T) float64 {
-	for i := 1; i < len(ts); i++ {
-		if ts[i-1].Tokens[len(ts[i-1].Tokens)-1] != ts[i].Tokens[len(ts[i].Tokens)-1] {
-			return ml.False
-		}
-	}
-	return ml.True
+func msGT(t apoco.T) float64 {
+	return ml.Bool(t.Payload.(apoco.Split).Valid)
 }
