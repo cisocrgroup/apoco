@@ -122,7 +122,7 @@ func readLMs(lms map[string]LMConfig) (map[string]*apoco.FreqList, error) {
 	}
 	ret := make(map[string]*apoco.FreqList)
 	for name, conf := range lms {
-		apoco.Log("reading language model from %s", conf.Path)
+		apoco.Log("reading language model %q from %s", name, conf.Path)
 		lm, err := readLM(conf.Path)
 		if err != nil {
 			return fail(err)
