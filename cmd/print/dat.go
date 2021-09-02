@@ -235,7 +235,6 @@ func eachStokInFile(name string, f func(string, string, bool, internal.Stok)) {
 		new = false
 		return nil
 	}))
-	eachStokReader(r, f)
 }
 
 func eachStokReader(r io.Reader, f func(string, string, bool, internal.Stok)) {
