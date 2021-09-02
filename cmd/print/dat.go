@@ -25,15 +25,15 @@ from stdin, if no FILES.`,
 
 var datFlags = struct {
 	typ      string
-	replace  string
+	replace  []string
 	limit    int
 	noshorts bool
 }{}
 
 func init() {
 	datCMD.Flags().StringVarP(&datFlags.typ, "type", "t", "acc", "set type of evaluation")
-	datCMD.Flags().StringVarP(&datFlags.replace, "substitute", "e", "",
-		"set expression applied to file names (sed s/// syntax)")
+	datCMD.Flags().StringSliceVarP(&datFlags.replace, "substitute", "e", nil,
+		"set expressions applied to file names (sed s/// syntax)")
 	datCMD.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
 		"exclude short tokens (len<4) from the evaluation")
 	datCMD.Flags().IntVarP(&datFlags.limit, "limit", "m", 0, "set candidate limit")
@@ -268,34 +268,45 @@ type replacer interface {
 	replace(string) string
 }
 
-func newReplacer(expr string) (replacer, error) {
-	if expr == "" {
+func newReplacer(exprs []string) (replacer, error) {
+	if len(exprs) == 0 {
 		return noop{}, nil
 	}
-	if len(expr) < 4 || !strings.HasPrefix(expr, "s") {
-		return nil, fmt.Errorf("invalid subustitute expression %q", expr)
+	var subst substitute
+	for _, expr := range exprs {
+		if expr == "" {
+			continue
+		}
+		if len(expr) < 4 || !strings.HasPrefix(expr, "s") {
+			return nil, fmt.Errorf("invalid subustitute expression %q", expr)
+		}
+		fields := strings.Split(expr, expr[1:2])
+		if len(fields) != 4 {
+			return nil, fmt.Errorf("invalid expression %q", expr)
+		}
+		if fields[0] != "s" {
+			return nil, fmt.Errorf("invalid expression %q", expr)
+		}
+		re, err := regexp.Compile(fields[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid expression %q: %v", expr, err)
+		}
+		subst.res = append(subst.res, re)
+		subst.repls = append(subst.repls, fields[2])
 	}
-	fields := strings.Split(expr, expr[1:2])
-	if len(fields) != 4 {
-		return nil, fmt.Errorf("invalid expression %q", expr)
-	}
-	if fields[0] != "s" {
-		return nil, fmt.Errorf("invalid expression %q", expr)
-	}
-	re, err := regexp.Compile(fields[1])
-	if err != nil {
-		return nil, fmt.Errorf("invalid expression %q: %v", expr, err)
-	}
-	return substitute{re: re, repl: fields[2]}, nil
+	return subst, nil
 }
 
 type substitute struct {
-	re   *regexp.Regexp
-	repl string
+	res   []*regexp.Regexp
+	repls []string
 }
 
 func (s substitute) replace(str string) string {
-	return s.re.ReplaceAllString(str, s.repl)
+	for i := range s.res {
+		str = s.res[i].ReplaceAllString(str, s.repls[i])
+	}
+	return str
 }
 
 type noop struct{}
