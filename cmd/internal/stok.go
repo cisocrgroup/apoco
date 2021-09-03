@@ -282,13 +282,18 @@ func E(str string) string {
 	return strings.ToLower(strings.Replace(str, " ", "_", -1))
 }
 
+// StokNamePref defines the line prefix for file names.
+const StokNamePref = "#name="
+
+// StokComment defines the start of comments.
+const StokComment = "#"
+
 // EachStok calls the given callback function f for each token read
 // from r with the according name.  Stokens are read line by line
 // from the reader, lines starting with # are skipped.  If a line starting
 // with '#name=x' is encountered the name for the callback function is
 // updated accordingly.
 func EachStok(r io.Reader, f func(string, Stok) error) error {
-	const namepref = "#name="
 	s := bufio.NewScanner(r)
 	var name string
 	for s.Scan() {
@@ -296,11 +301,11 @@ func EachStok(r io.Reader, f func(string, Stok) error) error {
 		if len(line) == 0 {
 			continue
 		}
-		if strings.HasPrefix(line, namepref) {
-			name = strings.Trim(line[len(namepref):], " \t\n")
+		if strings.HasPrefix(line, StokNamePref) {
+			name = strings.Trim(line[len(StokNamePref):], " \t\n")
 			continue
 		}
-		if line[0] == '#' {
+		if strings.HasPrefix(line, StokComment) {
 			continue
 		}
 		stok, err := MakeStok(line)
