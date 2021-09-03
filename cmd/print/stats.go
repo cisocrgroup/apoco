@@ -1,7 +1,6 @@
 package print
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,7 +20,7 @@ var statsFlags = struct {
 
 // statsCMD runs the apoco stats command.
 var statsCMD = &cobra.Command{
-	Use:   "stats [DIRS...]",
+	Use:   "stats [FILE...]",
 	Short: "Extract correction stats",
 	Run:   runStats,
 }
@@ -36,32 +35,46 @@ func init() {
 }
 
 func runStats(_ *cobra.Command, args []string) {
-	scanner := bufio.NewScanner(os.Stdin)
-	var s stats
-	var filename string
-	for scanner.Scan() {
-		dtd := scanner.Text()
-		if dtd != "" && dtd[0] == '#' {
-			var tmp string
-			if _, err := fmt.Sscanf(dtd, "#name=%s", &tmp); err != nil {
-				continue // Treat lines starting with # as comments.
-			}
-			filename = tmp
-			s = stats{}
-			continue
+	if len(args) > 0 {
+		for _, arg := range args {
+			chk(statsEachStokInFile(arg))
 		}
-		chk(s.stat(dtd))
+		return
 	}
-	// Overwrite file name if a name was given on the command line.
-	if statsFlags.name != "" {
-		filename = statsFlags.name
+	var fname string
+	var s stats
+	chk(internal.EachStok(os.Stdin, func(name string, stok internal.Stok) error {
+		if fname == "" {
+			fname = name
+			return s.stat(stok)
+		}
+		if fname != name {
+			if err := s.output(fname, flags.json, statsFlags.verbose); err != nil {
+				return err
+			}
+			fname = name
+			s = stats{}
+		}
+		return s.stat(stok)
+	}))
+	chk(s.output(fname, flags.json, statsFlags.verbose))
+}
+
+func statsEachStokInFile(name string) error {
+	in, err := os.Open(name)
+	if err != nil {
+		return err
 	}
-	switch {
-	case flags.json:
-		s.json(filename)
-	default:
-		s.write(filename, statsFlags.verbose)
+	defer in.Close()
+	var s stats
+	internal.EachStok(in, func(_ string, stok internal.Stok) error {
+		return s.stat(stok)
+	})
+	if flags.json {
+		s.json(name)
+		return nil
 	}
+	return s.output(name, flags.json, statsFlags.verbose)
 }
 
 type stats struct {
@@ -76,11 +89,7 @@ type stats struct {
 	suspErrBefore, suspErrAfter, suspTotal    int
 }
 
-func (s *stats) stat(dtd string) error {
-	t, err := internal.MakeStok(dtd)
-	if err != nil {
-		return err
-	}
+func (s *stats) stat(t internal.Stok) error {
 	// Exclude short tokens from the complete evaluation if
 	// the statsFlags.skipShort option is set.
 	if statsFlags.skipShort && t.Skipped && t.Short {
@@ -132,6 +141,15 @@ func (s *stats) stat(dtd string) error {
 	}
 
 	s.before = t
+	return nil
+}
+
+func (s *stats) output(name string, json, verbose bool) error {
+	if json {
+		s.json(name)
+		return nil
+	}
+	s.write(name, verbose)
 	return nil
 }
 
