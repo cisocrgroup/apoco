@@ -310,7 +310,6 @@ func EachStok(r io.Reader, f func(string, Stok) error) error {
 		if err := f(name, stok); err != nil {
 			return err
 		}
-		return nil
 	}
 	return s.Err()
 }
