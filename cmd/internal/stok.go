@@ -298,14 +298,13 @@ func EachStok(r io.Reader, f func(string, Stok) error) error {
 	var name string
 	for s.Scan() {
 		line := s.Text()
-		if len(line) == 0 {
-			continue
-		}
+		// Get name from #name=... lines.
 		if strings.HasPrefix(line, StokNamePref) {
 			name = strings.Trim(line[len(StokNamePref):], " \t\n")
 			continue
 		}
-		if strings.HasPrefix(line, StokComment) {
+		// Skip empty or commented lines.
+		if line == "" || strings.HasPrefix(line, StokComment) {
 			continue
 		}
 		stok, err := MakeStok(line)
