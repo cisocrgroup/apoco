@@ -2,10 +2,12 @@ package correct
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +20,11 @@ import (
 	"github.com/antchfx/xmlquery"
 )
 
-type corrector struct {
+type corrector interface {
+	correct() error
+}
+
+type metsCorrector struct {
 	stoks   stokMap
 	ofg     string
 	ifgs    []string
@@ -26,10 +32,19 @@ type corrector struct {
 	mets    mets.METS
 }
 
-func (cor *corrector) correct(metsName string) error {
-	if err := cor.readMETS(metsName); err != nil {
-		return fmt.Errorf("correct: %v", err)
+func newMETSCorrector(mets, ofg string, stoks stokMap, ifgs ...string) (*metsCorrector, error) {
+	cor := metsCorrector{
+		stoks: stoks,
+		ofg:   ofg,
+		ifgs:  ifgs,
 	}
+	if err := cor.readMETS(mets); err != nil {
+		return nil, err
+	}
+	return &cor, nil
+}
+
+func (cor *metsCorrector) correct() error {
 	for _, ifg := range cor.ifgs {
 		files, err := cor.mets.FilePathsForFileGrp(ifg)
 		if err != nil {
@@ -47,7 +62,7 @@ func (cor *corrector) correct(metsName string) error {
 	return nil
 }
 
-func (cor *corrector) correctFile(file, ifg string) error {
+func (cor *metsCorrector) correctFile(file, ifg string) error {
 	apoco.Log("correcting file %q in input file group %q", file, ifg)
 	is, err := os.Open(file)
 	if err != nil {
@@ -83,7 +98,7 @@ func (cor *corrector) correctFile(file, ifg string) error {
 	return nil
 }
 
-func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
+func (cor *metsCorrector) correctWord(word *xmlquery.Node, file string) error {
 	id, _ := node.LookupAttr(word, xml.Name{Local: "id"})
 	unicodes := pagexml.FindUnicodesInRegionSorted(word)
 	if len(unicodes) == 0 {
@@ -128,7 +143,7 @@ func (cor *corrector) correctWord(word *xmlquery.Node, file string) error {
 	return nil
 }
 
-func (cor *corrector) cleanWord(word *xmlquery.Node, unicodes []*xmlquery.Node) {
+func (cor *metsCorrector) cleanWord(word *xmlquery.Node, unicodes []*xmlquery.Node) {
 	// Remove other TextEquivs.
 	for _, u := range unicodes {
 		node.Delete(u.Parent)
@@ -139,7 +154,7 @@ func (cor *corrector) cleanWord(word *xmlquery.Node, unicodes []*xmlquery.Node) 
 	}
 }
 
-func (cor *corrector) makeTextEquiv(p *xmlquery.Node) *xmlquery.Node {
+func (cor *metsCorrector) makeTextEquiv(p *xmlquery.Node) *xmlquery.Node {
 	newTE := &xmlquery.Node{ // TextEquiv
 		Type:         xmlquery.ElementNode,
 		Data:         p.Data,
@@ -162,7 +177,7 @@ func (cor *corrector) makeTextEquiv(p *xmlquery.Node) *xmlquery.Node {
 	return newTE
 }
 
-func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
+func (cor *metsCorrector) write(doc *xmlquery.Node, file, ifg string) error {
 	pagexml.SetMetadata(doc, agent, time.Now(), time.Now())
 	ofile := cor.addFileToFileGrp(file, ifg)
 	dir := filepath.Join(filepath.Dir(cor.mets.Name), cor.ofg)
@@ -175,15 +190,18 @@ func (cor *corrector) write(doc *xmlquery.Node, file, ifg string) error {
 
 const agent = "ocrd/cis/apoco-correct " + internal.Version
 
-func (cor *corrector) readMETS(name string) error {
+func (cor *metsCorrector) readMETS(name string) error {
+	fail := func(err error) error {
+		return fmt.Errorf("read mets %s: %v", name, err)
+	}
 	m, err := mets.Open(name)
 	if err != nil {
-		return fmt.Errorf("readMETS %s: %v", name, err)
+		return fail(err)
 	}
 	cor.mets = m
 	// Update agent in mets header file.
 	if err := cor.mets.AddAgent(internal.PStep, agent); err != nil {
-		return fmt.Errorf("readMETS: %v", err)
+		return fail(err)
 	}
 	// Check if the given file group already exists and overwrite it.
 	existing := xmlquery.FindOne(cor.mets.Root, fmt.Sprintf("//*[local-name()='fileGrp'][@USE=%q]", cor.ofg))
@@ -197,7 +215,7 @@ func (cor *corrector) readMETS(name string) error {
 	// Add a new filegroup entry.
 	fileGrps := xmlquery.Find(cor.mets.Root, "//*[local-name()='fileGrp']")
 	if len(fileGrps) == 0 {
-		return fmt.Errorf("readMETS %s: missing file grp", cor.mets.Name)
+		return fail(errors.New("missing file group"))
 	}
 	cor.fileGrp = &xmlquery.Node{
 		Data:         "fileGrp",
@@ -212,7 +230,7 @@ func (cor *corrector) readMETS(name string) error {
 	return nil
 }
 
-func (cor *corrector) addFileToFileGrp(file, ifg string) string {
+func (cor *metsCorrector) addFileToFileGrp(file, ifg string) string {
 	newID := internal.IDFromFilePath(file, cor.ofg)
 	filePath := newID + ".xml"
 	// Build parent file node
@@ -263,7 +281,7 @@ func (cor *corrector) addFileToFileGrp(file, ifg string) string {
 //         <mets:fptr FILEID="OCR-D-GT-SEG-BLOCK_0001"/>
 //         <mets:fptr FILEID="OCR-D-GT-SEG-LINE_0001"/>
 //         <mets:fptr FILEID="OCR-D-IMG_0001"/>
-func (cor *corrector) addFileToStructMap(path, newID, ifg string) {
+func (cor *metsCorrector) addFileToStructMap(path, newID, ifg string) {
 	// Check if the according new id already exists.
 	fptr := cor.mets.FindFptr(newID)
 	if fptr != nil {
@@ -338,4 +356,37 @@ func resetTextEquiv(p *xmlquery.Node, data string) {
 	unicode := newUnicode(te, data)
 	node.AppendChild(te, unicode)
 	node.AppendChild(p, te)
+}
+
+type stokCorrector struct {
+	stoks stokMap
+}
+
+func (cor stokCorrector) correct() error {
+	sorted := make([]*stok, 0, len(cor.stoks))
+	for _, ids := range cor.stoks {
+		for _, info := range ids {
+			sorted = append(sorted, info)
+		}
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].order < sorted[j].order
+	})
+	var doc *apoco.Document
+	for _, info := range sorted {
+		if info.document != doc {
+			fmt.Printf("#name=%s\n", info.document.Group)
+			doc = info.document
+		}
+		switch {
+		case flags.cands == -1:
+			fmt.Printf("%s\n", info.Stok)
+		case len(info.rankings) > 0:
+			fmt.Printf("%s cands=%s\n", info.Stok, rankings2string(info.rankings, flags.cands))
+		default:
+			i := info.document.Profile[info.OCR]
+			fmt.Printf("%s cands=%s\n", info.Stok, candidates2string(i.Candidates, flags.cands))
+		}
+	}
+	return nil
 }

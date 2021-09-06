@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sort"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/cmd/internal"
@@ -86,46 +85,23 @@ func run(_ *cobra.Command, args []string) {
 		correct(stoks, flags.gt),
 	))
 	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
+	// Add additional arguments to the input file groups.
+	flags.ifgs = append(args, flags.ifgs...)
+	cor, err := mkcorrector(stoks)
+	chk(err)
+	chk(cor.correct())
+}
+
+func mkcorrector(stoks stokMap) (corrector, error) {
 	// If no output file group is given, we do not need to correct
 	// the according page XML files.  We just output the stoks according
 	// to their ordering.  So if any input file group is given, we output
 	// the stoks.  Only if an output file group is given, we do correct
 	// the according page XML files within the output file group.
 	if flags.ofg == "" {
-		sorted := make([]*stok, 0, len(stoks))
-		for _, ids := range stoks {
-			for _, info := range ids {
-				sorted = append(sorted, info)
-			}
-		}
-		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].order < sorted[j].order
-		})
-		var doc *apoco.Document
-		for _, info := range sorted {
-			if info.document != doc {
-				fmt.Printf("#name=%s\n", info.document.Group)
-				doc = info.document
-			}
-			switch {
-			case flags.cands == -1:
-				fmt.Printf("%s\n", info.Stok)
-			case len(info.rankings) > 0:
-				fmt.Printf("%s cands=%s\n", info.Stok, rankings2string(info.rankings, flags.cands))
-			default:
-				i := info.document.Profile[info.OCR]
-				fmt.Printf("%s cands=%s\n", info.Stok, candidates2string(i.Candidates, flags.cands))
-			}
-		}
-		return
+		return stokCorrector{stoks}, nil
 	}
-	// We need to correct the according page XML files.
-	cor := corrector{
-		stoks: stoks,
-		ifgs:  append(args, flags.ifgs...),
-		ofg:   flags.ofg,
-	}
-	chk(cor.correct(flags.mets))
+	return newMETSCorrector(flags.mets, flags.ofg, stoks, flags.ifgs...)
 }
 
 func correct(m stokMap, withGT bool) apoco.StreamFunc {
