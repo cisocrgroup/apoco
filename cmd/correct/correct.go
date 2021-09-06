@@ -41,7 +41,7 @@ func init() {
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n",
 		0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().IntVarP(&flags.cands, "cands", "d",
-		-1, "output candidatess for tokens; 0 for all candidates, -1 for no candidates")
+		-1, "output candidates for tokens (0=all, -1=no)")
 	CMD.Flags().StringVarP(&flags.model, "model", "M", "",
 		"set model path (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
