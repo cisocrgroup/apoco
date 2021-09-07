@@ -25,6 +25,7 @@ type stok struct {
 	internal.Stok
 	rankings []apoco.Ranking
 	document *apoco.Document
+	raw      string
 	order    int
 }
 
@@ -56,18 +57,14 @@ func candidates2string(cs []gofiler.Candidate, max int) string {
 	return strings.Join(strs, "/")
 }
 
-func (m stokMap) get(t apoco.T, withGT bool) *stok {
+func (m stokMap) get(t apoco.T) *stok {
 	stokMapLock.Lock()
 	defer stokMapLock.Unlock()
 	if _, ok := m[t.File]; !ok {
 		m[t.File] = make(map[string]*stok)
 	}
 	if _, ok := m[t.File][t.ID]; !ok {
-		s := &stok{Stok: internal.MakeStokFromT(t, withGT)}
-		if withGT {
-			s.GT = t.Tokens[len(t.Tokens)-1]
-		}
-		m[t.File][t.ID] = s
+		m[t.File][t.ID] = &stok{}
 	}
 	return m[t.File][t.ID]
 }

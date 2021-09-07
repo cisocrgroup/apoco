@@ -12,10 +12,10 @@ import (
 )
 
 var flags = struct {
-	ifgs, extensions                     []string
-	ofg, mets, model, parameter, profile string
-	nocr, cands                          int
-	cache, gt                            bool
+	ifgs, exts                             []string
+	ofg, mets, model, params, profile, suf string
+	nocr, cands                            int
+	cache, gt, correct                     bool
 }{}
 
 // CMD runs the apoco correct command.
@@ -28,16 +28,18 @@ var CMD = &cobra.Command{
 func init() {
 	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I",
 		nil, "set input file groups")
-	CMD.Flags().StringSliceVarP(&flags.extensions, "extensions", "e",
+	CMD.Flags().StringSliceVarP(&flags.exts, "extensions", "e",
 		[]string{".xml"}, "set input file extensions")
 	CMD.Flags().StringVarP(&flags.ofg, "output-file-grp", "O",
 		"", "set output file group")
 	CMD.Flags().StringVarP(&flags.mets, "mets", "m",
 		"mets.xml", "set path to the mets file")
-	CMD.Flags().StringVarP(&flags.parameter, "parameter", "p",
+	CMD.Flags().StringVarP(&flags.params, "parameter", "p",
 		"config.toml", "set path to the configuration file")
 	CMD.Flags().StringVarP(&flags.profile, "profile", "f",
 		"", "set external profile file")
+	CMD.Flags().StringVarP(&flags.suf, "suffix", "s",
+		".cor.txt", "set the suffix for correction snippet files")
 	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n",
 		0, "set nocr (overwrites setting in the configuration file)")
 	CMD.Flags().IntVarP(&flags.cands, "cands", "d",
@@ -46,10 +48,11 @@ func init() {
 		"set model path (overwrites setting in the configuration file)")
 	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
 	CMD.Flags().BoolVarP(&flags.gt, "gt", "g", false, "enable ground-truth data")
+	CMD.Flags().BoolVarP(&flags.correct, "correct", "C", false, "do not output stoks; correct files directly")
 }
 
 func run(_ *cobra.Command, args []string) {
-	c, err := internal.ReadConfig(flags.parameter)
+	c, err := internal.ReadConfig(flags.params)
 	chk(err)
 	internal.UpdateInConfig(&c.Model, flags.model)
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
@@ -65,24 +68,25 @@ func run(_ *cobra.Command, args []string) {
 	p := internal.Piper{
 		IFGS: flags.ifgs,
 		METS: flags.mets,
-		Exts: flags.extensions,
+		Exts: flags.exts,
 		Dirs: args,
 	}
 	chk(p.Pipe(
 		context.Background(),
 		apoco.FilterBad(c.Nocr),
+		register(stoks),
 		apoco.Normalize(),
-		register(stoks, flags.gt),
-		filterShort(stoks, flags.gt),
+		addTokens(stoks, flags.gt),
+		filterShort(stoks),
 		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
 		connectProfile(c, m.LM, flags.profile),
-		filterLex(stoks, flags.gt),
+		filterLex(stoks),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(rrlr, rrfs, c.Nocr),
 		analyzeRankings(stoks, flags.gt),
 		apoco.ConnectCorrections(dmlr, dmfs, c.Nocr),
-		correct(stoks, flags.gt),
+		correct(stoks),
 	))
 	apoco.Log("correcting %d pages (%d tokens)", len(stoks), stoks.numberOfTokens())
 	// Add additional arguments to the input file groups.
@@ -93,21 +97,19 @@ func run(_ *cobra.Command, args []string) {
 }
 
 func mkcorrector(stoks stokMap) (corrector, error) {
-	// If no output file group is given, we do not need to correct
-	// the according page XML files.  We just output the stoks according
-	// to their ordering.  So if any input file group is given, we output
-	// the stoks.  Only if an output file group is given, we do correct
-	// the according page XML files within the output file group.
-	if flags.ofg == "" {
-		return stokCorrector{stoks}, nil
+	if flags.correct && flags.ofg == "" {
+		return snippetCorrector{stoks, flags.exts[0], flags.suf}, nil
 	}
-	return newMETSCorrector(flags.mets, flags.ofg, stoks, flags.ifgs...)
+	if flags.correct {
+		return newMETSCorrector(flags.mets, flags.ofg, stoks, flags.ifgs...)
+	}
+	return stokCorrector{stoks}, nil
 }
 
-func correct(m stokMap, withGT bool) apoco.StreamFunc {
+func correct(m stokMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			stok := m.get(t, withGT)
+			stok := m.get(t)
 			stok.Skipped = false
 			stok.Cor = t.Payload.(apoco.Correction).Conf > 0.5
 			stok.Conf = t.Payload.(apoco.Correction).Conf
@@ -117,16 +119,14 @@ func correct(m stokMap, withGT bool) apoco.StreamFunc {
 	}
 }
 
-func register(m stokMap, withGT bool) apoco.StreamFunc {
+func register(m stokMap) apoco.StreamFunc {
+	// Register each (unnormalized) token and asign each token
+	// the raw OCR-token and an ordering.
 	order := 0
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			// Each token gets its ID, its order and is skipped as default.
-			// If a token is not skipped, skipped must be explicitly set to false.
-			stok := m.get(t, withGT)
-			stok.ID = t.ID
-			stok.document = t.Document
-			stok.Skipped = true
+			stok := m.get(t)
+			stok.raw = t.Tokens[0]
 			stok.order = order
 			order++
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -137,14 +137,32 @@ func register(m stokMap, withGT bool) apoco.StreamFunc {
 	}
 }
 
-func filterLex(m stokMap, withGT bool) apoco.StreamFunc {
+func addTokens(m stokMap, withGT bool) apoco.StreamFunc {
+	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
+		return apoco.EachToken(ctx, in, func(t apoco.T) error {
+			// Each token gets its ID. It is skipped by default. If a token
+			// should not be skipped, skipped must be explicitly set to false.
+			stok := m.get(t)
+			stok.Stok = internal.MakeStokFromT(t, withGT)
+			stok.ID = t.ID
+			stok.document = t.Document
+			stok.Skipped = true
+			if err := apoco.SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("add tokens: %v", err)
+			}
+			return nil
+		})
+	}
+}
+
+func filterLex(m stokMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if t.IsLexiconEntry() {
-				m.get(t, withGT).Lex = true
+				m.get(t).Lex = true
 				return nil
 			}
-			m.get(t, withGT).Lex = t.ContainsLexiconEntry()
+			m.get(t).Lex = t.ContainsLexiconEntry()
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("filterLex: %v", err)
 			}
@@ -153,11 +171,11 @@ func filterLex(m stokMap, withGT bool) apoco.StreamFunc {
 	}
 }
 
-func filterShort(m stokMap, withGT bool) apoco.StreamFunc {
+func filterShort(m stokMap) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
 			if utf8.RuneCountInString(t.Tokens[0]) <= 3 {
-				m.get(t, withGT).Short = true
+				m.get(t).Short = true
 				return nil
 			}
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
@@ -171,7 +189,7 @@ func filterShort(m stokMap, withGT bool) apoco.StreamFunc {
 func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
-			info := m.get(t, withGT)
+			info := m.get(t)
 			info.rankings = t.Payload.([]apoco.Ranking)
 			if withGT {
 				var rank int
@@ -181,7 +199,7 @@ func analyzeRankings(m stokMap, withGT bool) apoco.StreamFunc {
 						break
 					}
 				}
-				m.get(t, withGT).Rank = rank
+				m.get(t).Rank = rank
 			}
 			if err := apoco.SendTokens(ctx, out, t); err != nil {
 				return fmt.Errorf("analyzeRankings: %v", err)

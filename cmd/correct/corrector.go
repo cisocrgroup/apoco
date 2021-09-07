@@ -390,3 +390,66 @@ func (cor stokCorrector) correct() error {
 	}
 	return nil
 }
+
+type snippetCorrector struct {
+	stoks    stokMap
+	ext, suf string
+}
+
+func (cor snippetCorrector) correct() error {
+	var sorted []*stok
+	for f := range cor.stoks {
+		for id := range cor.stoks[f] {
+			sorted = append(sorted, cor.stoks[f][id])
+			//fmt.Printf("[%s %s] %s/%s\n", f, id, cor.stoks[f][id].OCR, cor.stoks[f][id].GT)
+		}
+		sort.Slice(sorted, func(i, j int) bool {
+			return sorted[i].order < sorted[j].order
+		})
+		if err := cor.write(f, sorted); err != nil {
+			return fmt.Errorf("correct snippets: %v", err)
+		}
+		sorted = sorted[:0]
+	}
+	return nil
+}
+
+func (cor snippetCorrector) write(name string, stoks []*stok) error {
+	if strings.HasSuffix(name, cor.ext) {
+		name = name[0:len(name)-len(cor.ext)] + cor.suf
+	} else {
+		name += cor.suf
+	}
+	fail := func(err error) error {
+		return fmt.Errorf("write %s: %v", name, err)
+	}
+	apoco.Log("write to %s", name)
+	w, err := os.Create(name)
+	if err != nil {
+		return fail(err)
+	}
+	defer w.Close()
+	for i, stok := range stoks {
+		if i > 0 {
+			_, err := fmt.Fprint(w, " ")
+			if err != nil {
+				return fail(err)
+			}
+		}
+		if stok.Cor {
+			_, err := fmt.Fprint(w, apoco.ApplyOCRToCorrection(stok.raw, stok.Sug))
+			if err != nil {
+				return fail(err)
+			}
+		} else {
+			_, err := fmt.Fprint(w, stok.raw)
+			if err != nil {
+				return fail(err)
+			}
+		}
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
+		return fail(err)
+	}
+	return nil
+}
