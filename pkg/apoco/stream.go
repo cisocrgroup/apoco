@@ -417,8 +417,9 @@ func ConnectSplitCandidates() StreamFunc {
 // ConnectProfile returns a stream function that connects the tokens with the profile.
 func ConnectProfile(profile gofiler.Profile) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		return EachTokenInDocument(ctx, in, func(lm *Document, tokens ...T) error {
-			lm.Profile = profile
+		return EachTokenInDocument(ctx, in, func(d *Document, tokens ...T) error {
+			d.Profile = profile
+			d.ocrPats = profile.GlobalOCRPatterns()
 			return SendTokens(ctx, out, tokens...)
 		})
 	}

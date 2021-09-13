@@ -20,7 +20,9 @@ var register = map[string]FeatureFunc{
 	"OCRMinTrigramFreq":              OCRMaxTrigramFreq,
 	"OCRMaxCharConf":                 OCRMaxCharConf,
 	"OCRMinCharConf":                 OCRMinCharConf,
-	"OCRLevenshteinDist":             OCRLevenshteinDist,
+	"OCRLevenshteinDist":             OCRLevDist,
+	"OCRLevDist":                     OCRLevDist,
+	"OCRWLevDist":                    OCRWLevDist,
 	"OCRLibFreq":                     ocrLibFreq,
 	"CandidateProfilerWeight":        CandidateProfilerWeight,
 	"CandidateUnigramFreq":           CandidateUnigramFreq,
@@ -31,7 +33,9 @@ var register = map[string]FeatureFunc{
 	"CandidateOCRPatternConfLog":     CandidateOCRPatternConfLog,
 	"CandidateHistPatternConf":       CandidateHistPatternConf,
 	"CandidateHistPatternConfLog":    CandidateHistPatternConfLog,
-	"CandidateLevenshteinDist":       CandidateLevenshteinDist,
+	"CandidateLevenshteinDist":       CandidateLevDist,
+	"CandidateLevDist":               CandidateLevDist,
+	"CandidateWLevDist":              CandidateWLevDist,
 	"CandidateMaxTrigramFreq":        CandidateMaxTrigramFreq,
 	"CandidateMinTrigramFreq":        CandidateMinTrigramFreq,
 	"CandidateLen":                   CandidateLen,
@@ -382,30 +386,51 @@ func CandidateMatchesOCR(t T, i, n int) (float64, bool) {
 	return ml.Bool(candidate.Suggestion == t.Tokens[i]), true
 }
 
-// OCRLevenshteinDist returns the levenshtein distance between the
+// OCRLevDist returns the levenshtein distance between the
 // secondary OCRs with the primary OCR.
-func OCRLevenshteinDist(t T, i, n int) (float64, bool) {
+func OCRLevDist(t T, i, n int) (float64, bool) {
 	if i == 0 {
 		return 0, false
 	}
 	return float64(lev.Distance(t.Tokens[i], t.Tokens[0])), true
 }
 
+// OCRWLevDist returns the weighted levenshtein distance
+// between the secondary OCRs with the primary OCR.
+func OCRWLevDist(t T, i, n int) (float64, bool) {
+	if i == 0 {
+		return 0, false
+	}
+	m := lev.NewWMat(t.Document.LookupOCRPattern)
+	return m.Distance(t.Tokens[i], t.Tokens[0]), true
+}
+
 func ocrLibFreq(t T, i, n int) (float64, bool) {
 	return t.Document.LM["lib"].relative(t.Tokens[i]), true
 }
 
-// CandidateLevenshteinDist returns the levenshtein distance between
+// CandidateLevDist returns the levenshtein distance between
 // the OCR token and the token's connected profiler candidate.  For
 // the master OCR the according Distance from the profiler candidate
 // is used, whereas for support OCRs the levenshtein distance is
 // calculated.
-func CandidateLevenshteinDist(t T, i, n int) (float64, bool) {
+func CandidateLevDist(t T, i, n int) (float64, bool) {
 	candidate := mustGetCandidate(t)
 	if i == 0 {
 		return float64(candidate.Distance), true
 	}
 	return float64(lev.Distance(t.Tokens[i], candidate.Suggestion)), true
+}
+
+// CandidateLevDist returns the weighted levenshtein distance between
+// the OCR token and the token's connected profiler candidate.  For
+// the master OCR the according Distance from the profiler candidate
+// is used, whereas for support OCRs the levenshtein distance is
+// calculated.
+func CandidateWLevDist(t T, i, n int) (float64, bool) {
+	m := lev.NewWMat(t.Document.LookupOCRPattern)
+	candidate := mustGetCandidate(t)
+	return m.Distance(t.Tokens[i], candidate.Suggestion), true
 }
 
 // CandidateLen returns the length of the connected profiler
