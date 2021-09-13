@@ -107,7 +107,7 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 	t := T{
 		Tokens: make([]string, nocr+1),
 		Document: &Document{
-			LM: map[string]*FreqList{"3grams": &FreqList{}},
+			LM: map[string]*FreqList{"3grams": {}},
 		},
 	}
 	switch typ {
