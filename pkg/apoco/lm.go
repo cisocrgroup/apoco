@@ -1,12 +1,10 @@
 package apoco
 
 import (
-	"bufio"
 	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math"
 	"os"
 	"strings"
@@ -47,24 +45,6 @@ func (f *FreqList) relative(str string) float64 {
 	}
 	abs := f.absolute(str)
 	return float64(abs+1) / float64(f.Total+len(f.FreqList))
-}
-
-func (f *FreqList) loadCSV(in io.Reader) error {
-	f.init()
-	s := bufio.NewScanner(in)
-	for s.Scan() {
-		var n int
-		var str string
-		if _, err := fmt.Sscanf(s.Text(), "%d,%s", &n, &str); err != nil {
-			return fmt.Errorf("loadCSV: %v", err)
-		}
-		f.Total += n
-		f.FreqList[str] += n
-	}
-	if err := s.Err(); err != nil {
-		return fmt.Errorf("loadCSV: %v", err)
-	}
-	return nil
 }
 
 // Document represents the token's document.
