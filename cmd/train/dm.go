@@ -99,10 +99,10 @@ func dmTrain(c *internal.Config, m *internal.Model, instances string, update boo
 		}
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
-		chk(logCorrelationMat(c, fs, x, "dm"))
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("train dm: %v", err)
 		}
+		chk(logCorrelationMat(c, fs, x, "dm"))
 		apoco.Log("train dm: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d, filter=%s",
 			len(ys), len(xs)/len(ys), c.Nocr, lr.LearningRate, lr.Ntrain, c.DM.Filter)
 		ferr := lr.Fit(x, y)

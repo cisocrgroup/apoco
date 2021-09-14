@@ -72,10 +72,10 @@ func rrTrain(c *internal.Config, m *internal.Model, update bool) apoco.StreamFun
 		}
 		x := mat.NewDense(n, len(xs)/n, xs)
 		y := mat.NewVecDense(n, ys)
-		chk(logCorrelationMat(c, fs, x, "rr"))
 		if err := ml.Normalize(x); err != nil {
 			return fmt.Errorf("train rr: %v", err)
 		}
+		chk(logCorrelationMat(c, fs, x, "rr"))
 		apoco.Log("train rr: fitting %d toks, %d feats, nocr=%d, lr=%g, ntrain=%d",
 			n, len(xs)/n, c.Nocr, lr.LearningRate, lr.Ntrain)
 		ferr := lr.Fit(x, y)
