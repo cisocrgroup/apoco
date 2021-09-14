@@ -38,7 +38,8 @@ func ReadModel(name string, lms map[string]LMConfig, create bool) (*Model, error
 	fail := func(err error) (*Model, error) {
 		return nil, fmt.Errorf("read model %s: %v", name, err)
 	}
-	in, err := os.Open(name)
+	r, err := os.Open(name)
+	// Create a new empty model file if it does not already exist and create=true.
 	if create && os.IsNotExist(err) {
 		lms, err := readLMs(lms)
 		if err != nil {
@@ -52,9 +53,9 @@ func ReadModel(name string, lms map[string]LMConfig, create bool) (*Model, error
 	if err != nil {
 		return fail(err)
 	}
-	defer in.Close()
+	defer r.Close()
 	var model Model
-	if err := gob.NewDecoder(in).Decode(&model); err != nil {
+	if err := gob.NewDecoder(r).Decode(&model); err != nil {
 		return fail(err)
 	}
 	apoco.Log("read model from %s", name)
@@ -64,16 +65,16 @@ func ReadModel(name string, lms map[string]LMConfig, create bool) (*Model, error
 // Write writes the model as gob encoded, gziped file to the given
 // path overwriting any previous existing models.
 func (m *Model) Write(name string) (err error) {
-	out, err := os.Create(name)
+	w, err := os.Create(name)
 	if err != nil {
 		return fmt.Errorf("write %s: %v", name, err)
 	}
 	defer func() {
-		if exx := out.Close(); exx != nil && err == nil {
+		if exx := w.Close(); exx != nil && err == nil {
 			err = fmt.Errorf("write %s: %v", name, err)
 		}
 	}()
-	if err := gob.NewEncoder(out).Encode(m); err != nil {
+	if err := gob.NewEncoder(w).Encode(m); err != nil {
 		return fmt.Errorf("write %s: %v", name, err)
 	}
 	return nil
@@ -141,18 +142,16 @@ func readLM(name string) (*apoco.FreqList, error) {
 		return fail(err)
 	}
 	defer r.Close()
+	var rr io.Reader = r
 	if strings.HasSuffix(name, ".gz") {
-		gz, err := gzip.NewReader(r)
+		gzr, err := gzip.NewReader(r)
 		if err != nil {
 			return fail(err)
 		}
-		lm, err := readLMFromReader(gz)
-		if err != nil {
-			return fail(err)
-		}
-		return lm, err
+		defer gzr.Close()
+		rr = gzr
 	}
-	lm, err := readLMFromReader(r)
+	lm, err := readLMFromReader(rr)
 	if err != nil {
 		return fail(err)
 	}
