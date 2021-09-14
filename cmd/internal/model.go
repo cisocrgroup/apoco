@@ -14,18 +14,20 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 )
 
-// Model holds the different models for the different number of OCRs.
+// Model holds the different models for the different training
+// runs for a different number of OCRs.  It is used to save and load
+// the models for the automatic postcorrection.
 type Model struct {
-	Models             map[string]map[int]ModelData
-	GlobalHistPatterns map[string]float64
-	GlobalOCRPatterns  map[string]float64
-	LM                 map[string]*apoco.FreqList
+	Models             map[string]map[int]ModelData // Models map the name and nocr to the model data.
+	GlobalHistPatterns map[string]float64           // Historical pattern frequencies from the profiler.
+	GlobalOCRPatterns  map[string]float64           // OCR pattern frequencies from the profiler.
+	LM                 map[string]*apoco.FreqList   // Language models.
 }
 
 // ModelData holds a linear regression model.
 type ModelData struct {
-	Features []string
-	Model    *ml.LR
+	Features []string // Feature names used to train the model.
+	Model    *ml.LR   // The trained model.
 }
 
 // ReadModel reads a model from a gob compressed input file.  If the
