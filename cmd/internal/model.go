@@ -159,19 +159,24 @@ func readLM(name string) (*apoco.FreqList, error) {
 }
 
 func readLMFromReader(r io.Reader) (*apoco.FreqList, error) {
+	fail := func(n int, err error) (*apoco.FreqList, error) {
+		return nil, fmt.Errorf("read at line %d: %v", n, err)
+	}
 	lm := apoco.FreqList{FreqList: make(map[string]int)}
 	s := bufio.NewScanner(r)
+	line := 0
 	for s.Scan() {
+		line++
 		var n int
 		var str string
 		if _, err := fmt.Sscanf(s.Text(), "%d,%s", &n, &str); err != nil {
-			return nil, err
+			return fail(line, err)
 		}
 		lm.FreqList[str] = n
 		lm.Total += n
 	}
 	if err := s.Err(); err != nil {
-		return nil, err
+		return fail(line, err)
 	}
 	return &lm, nil
 }
