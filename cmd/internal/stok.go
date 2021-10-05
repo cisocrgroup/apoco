@@ -78,6 +78,9 @@ func MakeStok(line string) (Stok, error) {
 			if _, err := fmt.Sscanf(tok, "ocr=%s", &stok.OCR); err != nil {
 				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
 			}
+			if stok.OCR == "$" {
+				stok.OCR = Epsilon
+			}
 		case strings.HasPrefix(tok, "sug="):
 			if _, err := fmt.Sscanf(tok, "sug=%s", &stok.Sug); err != nil {
 				return stok, fmt.Errorf("bad stats line %s: %v", line, err)
@@ -276,7 +279,9 @@ const (
 const Epsilon = "ε"
 
 func E(str string) string {
-	if str == "" {
+	// Map end-of-line markers and empty strings to empty string
+	// (matching it's ground-truth).
+	if str == "" || str == "$" {
 		return Epsilon
 	}
 	return strings.ToLower(strings.Replace(str, " ", "_", -1))
