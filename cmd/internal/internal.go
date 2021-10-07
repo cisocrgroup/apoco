@@ -7,7 +7,7 @@ import (
 )
 
 // Version defines the version of apoco.
-const Version = "v0.0.54"
+const Version = "v0.0.55"
 
 // PStep defines the OCR-D processing step.
 const PStep = "recognition/post-correction"
