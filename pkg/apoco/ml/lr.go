@@ -78,25 +78,20 @@ func (lr *LR) predictVec(x *mat.Dense, out *mat.VecDense) {
 	lr.sigmoid(out)
 }
 
-// PredictProb calculates the probablility predictions for the given values.
-func (lr *LR) PredictProb(x *mat.Dense) *mat.VecDense {
+// Predict calculates the predictions for the given values.
+func (lr *LR) Predict(x *mat.Dense) *mat.VecDense {
 	var tmp mat.VecDense
 	lr.predictVec(x, &tmp)
 	return &tmp
 }
 
-// Predict calculates the predictions for the given values.
-func (lr *LR) Predict(x *mat.Dense, t float64) *mat.VecDense {
-	var tmp mat.VecDense
-	lr.predictVec(x, &tmp)
-	for i := 0; i < tmp.Len(); i++ {
-		if tmp.AtVec(i) > t {
-			tmp.SetVec(i, True)
-		} else {
-			tmp.SetVec(i, False)
-		}
+// ApplyThreshold applies a threshold to the given vector,
+// transforming every value x > t to True and all other values to
+// False.
+func ApplyThreshold(y *mat.VecDense, t float64) {
+	for i := 0; i < y.Len(); i++ {
+		y.SetVec(i, Bool(y.AtVec(i) > t))
 	}
-	return &tmp
 }
 
 // Fit fits the linear regression model and returns its final error.

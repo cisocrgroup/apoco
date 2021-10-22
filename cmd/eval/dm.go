@@ -81,7 +81,8 @@ func dmEval(c *internal.Config, m *internal.Model) apoco.StreamFunc {
 		n := len(ys)
 		x := mat.NewDense(n, len(xs)/n, xs)
 		y := mat.NewVecDense(n, ys)
-		p := lr.Predict(x, 0.5)
+		p := lr.Predict(x)
+		ml.ApplyThreshold(p, 0.5)
 		var s stats
 		for i := 0; i < n; i++ {
 			// cor := tokens[i].Payload.([]apoco.Ranking)[0].Candidate.Suggestion

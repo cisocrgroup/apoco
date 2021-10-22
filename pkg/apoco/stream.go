@@ -499,7 +499,7 @@ func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []T) T {
 	}
 	// calculate prediction probabilities
 	xmat := mat.NewDense(len(tokens), len(xs)/len(tokens), xs)
-	probs := lr.PredictProb(xmat)
+	probs := lr.Predict(xmat)
 	rankings := make([]Ranking, len(tokens))
 	// probs, tokens and rankings all have the same length
 	for i := range tokens {
@@ -550,7 +550,7 @@ func connectCorrections(lr *ml.LR, fs FeatureSet, nocr int, tokens []T) {
 		xs = fs.Calculate(xs, t, nocr)
 	}
 	x := mat.NewDense(len(tokens), len(xs)/len(tokens), xs)
-	p := lr.PredictProb(x)
+	p := lr.Predict(x)
 	for i := range tokens {
 		tokens[i].Payload = Correction{
 			Candidate: tokens[i].Payload.([]Ranking)[0].Candidate,
