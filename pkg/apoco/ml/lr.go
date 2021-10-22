@@ -87,11 +87,12 @@ func (lr *LR) Predict(x *mat.Dense) *mat.VecDense {
 
 // ApplyThreshold applies a threshold to the given vector,
 // transforming every value x > t to True and all other values to
-// False.
-func ApplyThreshold(y *mat.VecDense, t float64) {
+// False. It transforms the input vector and returns it as well.
+func ApplyThreshold(y *mat.VecDense, t float64) *mat.VecDense {
 	for i := 0; i < y.Len(); i++ {
 		y.SetVec(i, Bool(y.AtVec(i) > t))
 	}
+	return y
 }
 
 // Fit fits the linear regression model and returns its final error.

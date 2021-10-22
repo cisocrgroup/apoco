@@ -82,7 +82,7 @@ func TestPredict(t *testing.T) {
 			y := mat.NewVecDense(len(tc.y), tc.y)
 			lr := LR{LearningRate: 0.05, Ntrain: 5}
 			lr.Fit(x, y)
-			if got := lr.Predict(x, 0.5); !eqf64s(got.RawVector().Data, tc.y, 1e-5) {
+			if got := ApplyThreshold(lr.Predict(x), 0.5); !eqf64s(got.RawVector().Data, tc.y, 1e-5) {
 				t.Errorf("expected %v; got %v", tc.y, got.RawVector().Data)
 			}
 		})
