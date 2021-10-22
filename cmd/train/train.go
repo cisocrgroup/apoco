@@ -56,18 +56,18 @@ func train(_ *cobra.Command, args []string) {
 	chk(err)
 	defer f.Close()
 
-	learn, ntrain, fs, err := getTrainingParams(flags.typ, c)
+	learn, ntrain, fn, err := getTrainingParams(c)
 	chk(err)
 	lr := &ml.LR{LearningRate: learn, Ntrain: ntrain}
-	fit(c, lr, f)
+	fit(c, fn, lr, f)
 
 	m, err := internal.ReadModel(c.Model, c.LM, false)
 	chk(err)
-	m.Put(flags.typ, c.Nocr, lr, fs)
+	m.Put(flags.typ, c.Nocr, lr, fn)
 	chk(m.Write(c.Model))
 }
 
-func fit(c *internal.Config, lr *ml.LR, r io.ReadSeeker) {
+func fit(c *internal.Config, fn []string, lr *ml.LR, r io.ReadSeeker) {
 	s := bufio.NewScanner(r)
 	var err float64
 	var xs, ys []float64
@@ -78,6 +78,7 @@ func fit(c *internal.Config, lr *ml.LR, r io.ReadSeeker) {
 				flags.typ, c.Nocr, len(xs), len(ys), lr.LearningRate, lr.Ntrain)
 			x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 			y := mat.NewVecDense(len(ys), ys)
+			chk(logCorrelationMat(c, fn, x))
 			err = lr.Fit(x, y)
 			xs = xs[0:0]
 			ys = ys[0:0]
@@ -89,6 +90,7 @@ func fit(c *internal.Config, lr *ml.LR, r io.ReadSeeker) {
 			flags.typ, c.Nocr, len(xs), len(ys), lr.LearningRate, lr.Ntrain)
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
+		chk(logCorrelationMat(c, fn, x))
 		err = lr.Fit(x, y)
 	}
 	log.Printf("fit %s/%d: remaining error: %g", flags.typ, c.Nocr, err)
@@ -108,8 +110,8 @@ func readFeatures(xs, ys []float64, line string) ([]float64, []float64) {
 	return xs, ys
 }
 
-func getTrainingParams(typ string, c *internal.Config) (float64, int, []string, error) {
-	switch typ {
+func getTrainingParams(c *internal.Config) (float64, int, []string, error) {
+	switch flags.typ {
 	case "rr":
 		return c.DM.LearningRate, c.RR.Ntrain, c.RR.Features, nil
 	case "dm":
@@ -117,23 +119,27 @@ func getTrainingParams(typ string, c *internal.Config) (float64, int, []string, 
 	case "ms":
 		return c.DM.LearningRate, c.MS.Ntrain, c.MS.Features, nil
 	}
-	return 0, 0, nil, fmt.Errorf("bad type: %s", typ)
+	return 0, 0, nil, fmt.Errorf("bad type: %s", flags.typ)
 }
 
-func logCorrelationMat(c *internal.Config, fs apoco.FeatureSet, x *mat.Dense, typ string) error {
+func logCorrelationMat(c *internal.Config, fn []string, x *mat.Dense) error {
 	if !apoco.LogEnabled() {
 		return nil
 	}
+	fs, err := apoco.NewFeatureSet(fn...)
+	if err != nil {
+		return err
+	}
 	var names []string
-	switch typ {
+	switch flags.typ {
 	case "dm":
-		names = fs.Names(c.DM.Features, typ, c.Nocr)
+		names = fs.Names(c.DM.Features, flags.typ, c.Nocr)
 	case "rr":
-		names = fs.Names(c.RR.Features, typ, c.Nocr)
+		names = fs.Names(c.RR.Features, flags.typ, c.Nocr)
 	case "ms":
-		names = fs.Names(c.MS.Features, typ, c.Nocr)
+		names = fs.Names(c.MS.Features, flags.typ, c.Nocr)
 	default:
-		panic("bad type: " + typ)
+		panic("bad type: " + flags.typ)
 	}
 	cor := correlationMat(x)
 	var buf bytes.Buffer
