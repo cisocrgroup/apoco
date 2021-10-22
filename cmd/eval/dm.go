@@ -9,7 +9,6 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/spf13/cobra"
-	"gonum.org/v1/gonum/mat"
 )
 
 // dmCMD defines the apoco train command.
@@ -63,9 +62,12 @@ func dmRun(_ *cobra.Command, args []string) {
 
 func dmEval(c *internal.Config, m *internal.Model) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
+		fail := func(err error) error {
+			return fmt.Errorf("eval dm/%d: %v", c.Nocr, err)
+		}
 		lr, fs, err := m.Get("dm", c.Nocr)
 		if err != nil {
-			return fmt.Errorf("evaldm: %v", err)
+			return fail(err)
 		}
 		var xs, ys []float64
 		var tokens []apoco.T
@@ -76,19 +78,10 @@ func dmEval(c *internal.Config, m *internal.Model) apoco.StreamFunc {
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("evaldm: %v", err)
+			return fail(err)
 		}
-		n := len(ys)
-		x := mat.NewDense(n, len(xs)/n, xs)
-		y := mat.NewVecDense(n, ys)
-		p := lr.Predict(x)
-		ml.ApplyThreshold(p, 0.5)
 		var s stats
-		for i := 0; i < n; i++ {
-			// cor := tokens[i].Payload.([]apoco.Ranking)[0].Candidate.Suggestion
-			// mocr := tokens[i].Tokens[0]
-			s.add(y.AtVec(i), p.AtVec(i))
-		}
+		s.eval(lr, 0.5, xs, ys)
 		return s.print(os.Stdout, "dm", c.Nocr)
 	}
 }

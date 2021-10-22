@@ -7,6 +7,7 @@ import (
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/spf13/cobra"
+	"gonum.org/v1/gonum/mat"
 )
 
 // CMD defines the apoco eval command.
@@ -52,6 +53,18 @@ const (
 	fp
 	fn
 )
+
+func (s *stats) eval(lr *ml.LR, t float64, xs, ys []float64) {
+	xlen := len(xs)
+	ylen := len(ys)
+	x := mat.NewDense(ylen, xlen/ylen, xs)
+	y := mat.NewVecDense(ylen, ys)
+	p := lr.Predict(x)
+	ml.ApplyThreshold(p, t)
+	for i := 0; i < ylen; i++ {
+		s.add(y.AtVec(i), p.AtVec(i))
+	}
+}
 
 func (s *stats) add(y, p float64) typ {
 	if y == ml.True {

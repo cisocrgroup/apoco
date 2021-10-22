@@ -10,7 +10,6 @@ import (
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
 	"github.com/finkf/gofiler"
 	"github.com/spf13/cobra"
-	"gonum.org/v1/gonum/mat"
 )
 
 // rrCMD defines the apoco eval rr command.
@@ -51,9 +50,12 @@ func rrRun(_ *cobra.Command, args []string) {
 
 func rrEval(c *internal.Config, m *internal.Model) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
+		fail := func(err error) error {
+			return fmt.Errorf("eval rr/%d: %v", c.Nocr, err)
+		}
 		lr, fs, err := m.Get("rr", c.Nocr)
 		if err != nil {
-			return fmt.Errorf("rreval: %v", err)
+			return fail(err)
 		}
 		var xs, ys []float64
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
@@ -62,17 +64,10 @@ func rrEval(c *internal.Config, m *internal.Model) apoco.StreamFunc {
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("rreval: %v", err)
+			return fail(err)
 		}
-		n := len(ys)
-		x := mat.NewDense(n, len(xs)/n, xs)
-		y := mat.NewVecDense(n, ys)
-		p := lr.Predict(x)
-		ml.ApplyThreshold(p, 0.5)
 		var s stats
-		for i := 0; i < n; i++ {
-			s.add(y.AtVec(i), p.AtVec(i))
-		}
+		s.eval(lr, 0.5, xs, ys)
 		return s.print(os.Stdout, "rr", c.Nocr)
 	}
 }
