@@ -74,8 +74,8 @@ func fit(lr *ml.LR, nocr int, r io.ReadSeeker) {
 	for s.Scan() {
 		xs, ys = readFeatures(xs, ys, s.Text())
 		if len(ys) >= flags.batch {
-			apoco.Log("fit %s/%d: ys=%d,lr=%g,ntrain=%d",
-				flags.typ, nocr, len(ys), lr.LearningRate, lr.Ntrain)
+			apoco.Log("fit %s/%d: xs=%d,ys=%d,lr=%g,ntrain=%d",
+				flags.typ, nocr, len(xs), len(ys), lr.LearningRate, lr.Ntrain)
 			x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 			y := mat.NewVecDense(len(ys), ys)
 			err = lr.Fit(x, y)
@@ -85,8 +85,8 @@ func fit(lr *ml.LR, nocr int, r io.ReadSeeker) {
 	}
 	chk(s.Err())
 	if len(ys) > 0 {
-		apoco.Log("fit %s/%d: ys=%d,lr=%g,ntrain=%d",
-			flags.typ, nocr, len(ys), lr.LearningRate, lr.Ntrain)
+		apoco.Log("fit %s/%d: xs=%d,ys=%d,lr=%g,ntrain=%d",
+			flags.typ, nocr, len(xs), len(ys), lr.LearningRate, lr.Ntrain)
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
 		err = lr.Fit(x, y)

@@ -67,6 +67,7 @@ func csv(features []string, nocr int, gt func(apoco.T) (float64, bool)) apoco.St
 		}
 		defer f.Close()
 		w := bufio.NewWriterSize(f, bufs)
+		defer w.Flush()
 
 		// Write feature weights and ground-truth to the file.
 		data := make([]float64, 0, len(fs)+1)
