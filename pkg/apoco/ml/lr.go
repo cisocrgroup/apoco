@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 
 	"gonum.org/v1/gonum/mat"
@@ -118,7 +117,6 @@ func (lr *LR) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 		lr.weights.SubVec(lr.weights, &gradient)
 		errb = err
 	}
-	log.Printf("iterations: %d", i)
 	lr.err = errb
 	return errb
 }
