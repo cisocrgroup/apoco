@@ -59,7 +59,7 @@ func train(_ *cobra.Command, args []string) {
 	learn, ntrain, fs, err := getTrainingParams(flags.typ, c)
 	chk(err)
 	lr := &ml.LR{LearningRate: learn, Ntrain: ntrain}
-	fit(lr, c.Nocr, f)
+	fit(c, lr, f)
 
 	m, err := internal.ReadModel(c.Model, c.LM, false)
 	chk(err)
@@ -67,7 +67,7 @@ func train(_ *cobra.Command, args []string) {
 	chk(m.Write(c.Model))
 }
 
-func fit(lr *ml.LR, nocr int, r io.ReadSeeker) {
+func fit(c *internal.Config, lr *ml.LR, r io.ReadSeeker) {
 	s := bufio.NewScanner(r)
 	var err float64
 	var xs, ys []float64
@@ -75,7 +75,7 @@ func fit(lr *ml.LR, nocr int, r io.ReadSeeker) {
 		xs, ys = readFeatures(xs, ys, s.Text())
 		if len(ys) >= flags.batch {
 			apoco.Log("fit %s/%d: xs=%d,ys=%d,lr=%g,ntrain=%d",
-				flags.typ, nocr, len(xs), len(ys), lr.LearningRate, lr.Ntrain)
+				flags.typ, c.Nocr, len(xs), len(ys), lr.LearningRate, lr.Ntrain)
 			x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 			y := mat.NewVecDense(len(ys), ys)
 			err = lr.Fit(x, y)
@@ -86,12 +86,12 @@ func fit(lr *ml.LR, nocr int, r io.ReadSeeker) {
 	chk(s.Err())
 	if len(ys) > 0 {
 		apoco.Log("fit %s/%d: xs=%d,ys=%d,lr=%g,ntrain=%d",
-			flags.typ, nocr, len(xs), len(ys), lr.LearningRate, lr.Ntrain)
+			flags.typ, c.Nocr, len(xs), len(ys), lr.LearningRate, lr.Ntrain)
 		x := mat.NewDense(len(ys), len(xs)/len(ys), xs)
 		y := mat.NewVecDense(len(ys), ys)
 		err = lr.Fit(x, y)
 	}
-	log.Printf("fit %s/%d: remaining error: %g", flags.typ, nocr, err)
+	log.Printf("fit %s/%d: remaining error: %g", flags.typ, c.Nocr, err)
 }
 
 func readFeatures(xs, ys []float64, line string) ([]float64, []float64) {
