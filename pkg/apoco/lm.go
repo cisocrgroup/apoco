@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"strings"
 
@@ -47,6 +46,25 @@ func (f *FreqList) relative(str string) float64 {
 	return float64(abs+1) / float64(f.Total+len(f.FreqList))
 }
 
+// EachTrigram calls the given callback function for each trigram in
+// the given string.
+func (f *FreqList) EachTrigram(str string, fn func(float64)) {
+	EachTrigram(str, func(trg string) {
+		fn(f.relative(trg))
+	})
+}
+
+func EachTrigram(str string, fn func(string)) {
+	runes := []rune("$" + str + "$")
+	begin, end := 0, 3
+	if end > len(runes) {
+		end = len(runes)
+	}
+	for i, j := begin, end; j <= len(runes); i, j = i+1, j+1 {
+		fn(string(runes[i:j]))
+	}
+}
+
 // Document represents the token's document.
 type Document struct {
 	LM         map[string]*FreqList // Global language models.
@@ -73,51 +91,30 @@ func (d *Document) Unigram(str string) float64 {
 	return d.Unigrams.relative(str)
 }
 
-// Trigram looks up the trigrams of the given token and returns the
-// product of the token's trigrams.
-func (d *Document) Trigram(str string) float64 {
-	tmp := []rune("$" + str + "$")
-	begin, end := 0, 3
-	if end > len(tmp) {
-		end = len(tmp)
-	}
-	ret := 1.0
-	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
-		ret *= d.LM["3grams"].relative(string(tmp[i:j]))
-	}
-	return ret
-}
+// // Trigram looks up the trigrams of the given token and returns the
+// // product of the token's trigrams.
+// func (d *Document) Trigram(str string) float64 {
+// 	tmp := []rune("$" + str + "$")
+// 	begin, end := 0, 3
+// 	if end > len(tmp) {
+// 		end = len(tmp)
+// 	}
+// 	ret := 1.0
+// 	for i, j := begin, end; j <= len(tmp); i, j = i+1, j+1 {
+// 		ret *= d.LM["3grams"].relative(string(tmp[i:j]))
+// 	}
+// 	return ret
+// }
 
-// TrigramLog looks up the trigrams of the given token and returns the
-// sum of the logarithmic relative frequency of the token's trigrams.
-func (d *Document) TrigramLog(str string) float64 {
-	var sum float64
-	d.EachTrigram(str, func(freq float64) {
-		sum += math.Log(freq)
-	})
-	return sum
-}
-
-// EachTrigram calls the given callback function for each trigram in
-// the given string.
-func EachTrigram(str string, f func(string)) {
-	runes := []rune("$" + str + "$")
-	begin, end := 0, 3
-	if end > len(runes) {
-		end = len(runes)
-	}
-	for i, j := begin, end; j <= len(runes); i, j = i+1, j+1 {
-		f(string(runes[i:j]))
-	}
-}
-
-// EachTrigram looks up the trigrams of the given token and returns the
-// product of the token's trigrams.
-func (d *Document) EachTrigram(str string, f func(float64)) {
-	EachTrigram(str, func(trigram string) {
-		f(d.LM["3grams"].relative(trigram))
-	})
-}
+// // TrigramLog looks up the trigrams of the given token and returns the
+// // sum of the logarithmic relative frequency of the token's trigrams.
+// func (d *Document) TrigramLog(str string) float64 {
+// 	var sum float64
+// 	d.EachTrigram(str, func(freq float64) {
+// 		sum += math.Log(freq)
+// 	})
+// 	return sum
+// }
 
 // lengthOfWord gives the maximal length of words that the profiler
 // accepts (see lengthOfWord in Global.h in the profiler's source).

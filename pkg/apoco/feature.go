@@ -3,6 +3,8 @@ package apoco
 import (
 	"fmt"
 	"math"
+	"regexp"
+	"strings"
 	"unicode/utf8"
 
 	"git.sr.ht/~flobar/apoco/pkg/apoco/ml"
@@ -10,48 +12,55 @@ import (
 	"github.com/finkf/gofiler"
 )
 
+func _ff(f FeatureFunc) func([]string) (FeatureFunc, error) {
+	return func([]string) (FeatureFunc, error) {
+		return f, nil
+	}
+}
+
 // registered names for feature functions
-var register = map[string]FeatureFunc{
-	"AgreeingOCRs":                   AgreeingOCRs,
-	"OCRTokenLen":                    OCRTokenLen,
-	"OCRUnigramFreq":                 OCRUnigramFreq,
-	"OCRTrigramFreq":                 OCRTrigramFreq,
-	"OCRMaxTrigramFreq":              OCRMinTrigramFreq,
-	"OCRMinTrigramFreq":              OCRMaxTrigramFreq,
-	"OCRMaxCharConf":                 OCRMaxCharConf,
-	"OCRMinCharConf":                 OCRMinCharConf,
-	"OCRLevenshteinDist":             OCRLevDist,
-	"OCRLevDist":                     OCRLevDist,
-	"OCRWLevDist":                    OCRWLevDist,
-	"OCRLibFreq":                     ocrLibFreq,
-	"CandidateProfilerWeight":        CandidateProfilerWeight,
-	"CandidateUnigramFreq":           CandidateUnigramFreq,
-	"CandidateTrigramFreq":           CandidateTrigramFreq,
-	"CandidateTrigramFreqLog":        CandidateTrigramFreqLog,
-	"CandidateAgreeingOCR":           CandidateAgreeingOCR,
-	"CandidateOCRPatternConf":        CandidateOCRPatternConf,
-	"CandidateOCRPatternConfLog":     CandidateOCRPatternConfLog,
-	"CandidateHistPatternConf":       CandidateHistPatternConf,
-	"CandidateHistPatternConfLog":    CandidateHistPatternConfLog,
-	"CandidateLevenshteinDist":       CandidateLevDist,
-	"CandidateLevDist":               CandidateLevDist,
-	"CandidateWLevDist":              CandidateWLevDist,
-	"CandidateMaxTrigramFreq":        CandidateMaxTrigramFreq,
-	"CandidateMinTrigramFreq":        CandidateMinTrigramFreq,
-	"CandidateLen":                   CandidateLen,
-	"CandidateMatchesOCR":            CandidateMatchesOCR,
-	"RankingConf":                    RankingConf,
-	"RankingConfDiffToNext":          RankingConfDiffToNext,
-	"RankingCandidateConfDiffToNext": RankingCandidateConfDiffToNext,
-	"DocumentLexicality":             DocumentLexicality,
-	"SplitOtherOCR":                  splitOtherOCR,
-	"SplitNumShortTokens":            splitNumShortTokens,
-	"SplitUnigramTokenConf":          splitUnigramTokenConf,
-	"SplitNumberOfLexiconEntries":    countLexiconEntriesInMergedSplits,
-	"SplitIsLexiconEntry":            isLexiconEntry,
-	"SplitLen":                       splitLen,
-	"IsStartOfLine":                  isSOL,
-	"IsEndOfLine":                    isEOL,
+//var register = map[string]FeatureFunc{
+var register = map[string]func([]string) (FeatureFunc, error){
+	"AgreeingOCRs":                   _ff(AgreeingOCRs),
+	"OCRTokenLen":                    _ff(OCRTokenLen),
+	"OCRUnigramFreq":                 _ff(OCRUnigramFreq),
+	"OCRTrigramFreq":                 mkOCRTrigramFreq,
+	"OCRMaxTrigramFreq":              mkOCRMinTrigramFreq,
+	"OCRMinTrigramFreq":              mkOCRMaxTrigramFreq,
+	"OCRMaxCharConf":                 _ff(OCRMaxCharConf),
+	"OCRMinCharConf":                 _ff(OCRMinCharConf),
+	"OCRLevenshteinDist":             _ff(OCRLevDist),
+	"OCRLevDist":                     _ff(OCRLevDist),
+	"OCRWLevDist":                    _ff(OCRWLevDist),
+	"OCRLibFreq":                     _ff(ocrLibFreq),
+	"CandidateProfilerWeight":        _ff(CandidateProfilerWeight),
+	"CandidateUnigramFreq":           _ff(CandidateUnigramFreq),
+	"CandidateTrigramFreq":           mkCandidateTrigramFreq,
+	"CandidateTrigramFreqLog":        mkCandidateTrigramFreqLog,
+	"CandidateAgreeingOCR":           _ff(CandidateAgreeingOCR),
+	"CandidateOCRPatternConf":        _ff(CandidateOCRPatternConf),
+	"CandidateOCRPatternConfLog":     _ff(CandidateOCRPatternConfLog),
+	"CandidateHistPatternConf":       _ff(CandidateHistPatternConf),
+	"CandidateHistPatternConfLog":    _ff(CandidateHistPatternConfLog),
+	"CandidateLevenshteinDist":       _ff(CandidateLevDist),
+	"CandidateLevDist":               _ff(CandidateLevDist),
+	"CandidateWLevDist":              _ff(CandidateWLevDist),
+	"CandidateMaxTrigramFreq":        mkCandidateMaxTrigramFreq,
+	"CandidateMinTrigramFreq":        mkCandidateMinTrigramFreq,
+	"CandidateLen":                   _ff(CandidateLen),
+	"CandidateMatchesOCR":            _ff(CandidateMatchesOCR),
+	"RankingConf":                    _ff(RankingConf),
+	"RankingConfDiffToNext":          _ff(RankingConfDiffToNext),
+	"RankingCandidateConfDiffToNext": _ff(RankingCandidateConfDiffToNext),
+	"DocumentLexicality":             _ff(DocumentLexicality),
+	"SplitOtherOCR":                  _ff(splitOtherOCR),
+	"SplitNumShortTokens":            _ff(splitNumShortTokens),
+	"SplitUnigramTokenConf":          _ff(splitUnigramTokenConf),
+	"SplitNumberOfLexiconEntries":    _ff(countLexiconEntriesInMergedSplits),
+	"SplitIsLexiconEntry":            _ff(isLexiconEntry),
+	"SplitLen":                       _ff(splitLen),
+	"IsStartOfLine":                  _ff(isSOL),
+	"IsEndOfLine":                    _ff(isEOL),
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -66,16 +75,46 @@ type FeatureSet []FeatureFunc
 
 // NewFeatureSet creates a new feature set from the list of feature
 // function names.
+//
+// Feature function names can have optional arguments. The arguments
+// of a feature function must be given in a comman-separated list
+// enclosed in `()`. For example `feature`, `feature()`,
+// `feature(arg1,arg2)` are all valid feature function names.
 func NewFeatureSet(names ...string) (FeatureSet, error) {
+	fail := func(err error) (FeatureSet, error) {
+		return nil, fmt.Errorf("new feature set: %v", err)
+	}
 	funcs := make([]FeatureFunc, len(names))
 	for i, name := range names {
-		f, ok := register[name]
-		if !ok {
-			return nil, fmt.Errorf("newFeatureSet %s: no such feature function", name)
+		fname, args, err := parseff(name)
+		if err != nil {
+			return fail(err)
 		}
-		funcs[i] = f
+		f, ok := register[fname]
+		if !ok {
+			return fail(fmt.Errorf("no such feature function %s", fname))
+		}
+		ff, err := f(args)
+		if err != nil {
+			return fail(err)
+		}
+		funcs[i] = ff
 	}
 	return funcs, nil
+}
+
+var ffre = regexp.MustCompile(`^(.*)\((.*)\)$`)
+
+func parseff(name string) (string, []string, error) {
+	m := ffre.FindStringSubmatch(name)
+	if len(m) == 0 {
+		return name, nil, nil
+	}
+	args := strings.Split(m[2], ",")
+	for i := range args {
+		args[i] = strings.Trim(args[i], " \t\n")
+	}
+	return m[1], args, nil
 }
 
 // Calculate calculates the feature vector for the given feature
@@ -164,9 +203,26 @@ func OCRUnigramFreq(t T, i, n int) (float64, bool) {
 	return t.Document.Unigram(t.Tokens[i]), true
 }
 
-// OCRTrigramFreq returns the product of the OCR token's trigrams.
-func OCRTrigramFreq(t T, i, n int) (float64, bool) {
-	return t.Document.Trigram(t.Tokens[i]), true
+func lmFail(name string, err error) (FeatureFunc, error) {
+	return nil, fmt.Errorf("%s: %v", name, err)
+}
+
+func mkOCRTrigramFreq(args []string) (FeatureFunc, error) {
+	if len(args) != 1 {
+		return lmFail("ocr trigram freq", fmt.Errorf("bad arguments: %v", args))
+	}
+	return func(t T, i, n int) (float64, bool) {
+		return ocrTrigramFreq(args[0], t, i, n)
+	}, nil
+}
+
+// ocrTrigramFreq returns the product of the OCR token's trigrams.
+func ocrTrigramFreq(lm string, t T, i, n int) (float64, bool) {
+	prod := 1.0
+	t.Document.LM[lm].EachTrigram(t.Tokens[i], func(val float64) {
+		prod *= val
+	})
+	return prod, true
 }
 
 // OCRMaxCharConf returns the maximal character confidence of the
@@ -199,28 +255,40 @@ func OCRMinCharConf(t T, i, n int) (float64, bool) {
 	return min, true
 }
 
-// OCRMaxTrigramFreq returns the maximal trigram relative frequenzy
-// confidence of the tokens.
-func OCRMaxTrigramFreq(t T, i, n int) (float64, bool) {
-	max := 0.0
-	t.Document.EachTrigram(t.Tokens[i], func(conf float64) {
-		if max < conf {
-			max = conf
-		}
-	})
-	return max, true
+// mkOCRMaxTrigramFreq returns a feature function that calculates the
+// maximal trigram relative frequenzy of the tokens.
+func mkOCRMaxTrigramFreq(args []string) (FeatureFunc, error) {
+	if len(args) != 1 {
+		return lmFail("ocr max trigram freq", fmt.Errorf("bad arguments: %v", args))
+	}
+	lm := args[0]
+	return func(t T, i, n int) (float64, bool) {
+		max := 0.0
+		t.Document.LM[lm].EachTrigram(t.Tokens[i], func(conf float64) {
+			if max < conf {
+				max = conf
+			}
+		})
+		return max, true
+	}, nil
 }
 
-// OCRMinTrigramFreq returns the minimal trigram relative frequenzy
-// confidence of the tokens.
-func OCRMinTrigramFreq(t T, i, n int) (float64, bool) {
-	min := 1.0
-	t.Document.EachTrigram(t.Tokens[i], func(conf float64) {
-		if min > conf {
-			min = conf
-		}
-	})
-	return min, true
+// mkOCRMinTrigramFreq returns a feature function that calculates the
+// minimal trigram relative frequenzy of the tokens.
+func mkOCRMinTrigramFreq(args []string) (FeatureFunc, error) {
+	if len(args) != 1 {
+		return lmFail("ocr min trigram freq", fmt.Errorf("bad arguments: %v", args))
+	}
+	lm := args[0]
+	return func(t T, i, n int) (float64, bool) {
+		min := 0.0
+		t.Document.LM[lm].EachTrigram(t.Tokens[i], func(conf float64) {
+			if min > conf {
+				min = conf
+			}
+		})
+		return min, true
+	}, nil
 }
 
 // CandidateProfilerWeight returns the profiler confidence value for
@@ -243,24 +311,44 @@ func CandidateUnigramFreq(t T, i, n int) (float64, bool) {
 	return t.Document.Unigram(candidate.Suggestion), true
 }
 
-// CandidateTrigramFreq returns the product of the candidate's
-// trigrams.
-func CandidateTrigramFreq(t T, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
+// mkCandidateTrigramFreq returns a feature function that calculates
+// the product of the candidate's trigrams.
+func mkCandidateTrigramFreq(args []string) (FeatureFunc, error) {
+	if len(args) != 1 {
+		return lmFail("ocr trigram freq", fmt.Errorf("bad arguments: %v", args))
 	}
-	candidate := mustGetCandidate(t)
-	return t.Document.Trigram(candidate.Suggestion), true
+	lm := args[0]
+	return func(t T, i, n int) (float64, bool) {
+		if i != 0 {
+			return 0, false
+		}
+		candidate := mustGetCandidate(t)
+		prod := 1.0
+		t.Document.LM[lm].EachTrigram(candidate.Suggestion, func(val float64) {
+			prod *= val
+		})
+		return prod, true
+	}, nil
 }
 
-// CandidateTrigramFreqLog returns the product of the candidate's
-// trigrams.
-func CandidateTrigramFreqLog(t T, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
+// mkCandidateTrigramFreqLog returns a feature function that calculates
+// the sum of the logaritm of the candidate's trigrams.
+func mkCandidateTrigramFreqLog(args []string) (FeatureFunc, error) {
+	if len(args) != 1 {
+		return lmFail("ocr trigram freq log", fmt.Errorf("bad arguments: %v", args))
 	}
-	candidate := mustGetCandidate(t)
-	return t.Document.TrigramLog(candidate.Suggestion), true
+	lm := args[0]
+	return func(t T, i, n int) (float64, bool) {
+		if i != 0 {
+			return 0, false
+		}
+		candidate := mustGetCandidate(t)
+		sum := 0.0
+		t.Document.LM[lm].EachTrigram(candidate.Suggestion, func(val float64) {
+			sum += math.Log(val)
+		})
+		return sum, true
+	}, nil
 }
 
 // CandidateAgreeingOCR returns the number of OCR tokens that agree
@@ -444,36 +532,48 @@ func CandidateLen(t T, i, n int) (float64, bool) {
 	return float64(len), true
 }
 
-// CandidateMaxTrigramFreq returns the maximal trigram frequenzy for
-// the connected candidate.
-func CandidateMaxTrigramFreq(t T, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
+// mkCandidateMaxTrigramFreq returns a feature function that calculates
+// the maximal trigram frequency for the connected candidate.
+func mkCandidateMaxTrigramFreq(args []string) (FeatureFunc, error) {
+	if len(args) != 1 {
+		return lmFail("candidate max trigram freq", fmt.Errorf("bad arguments: %v", args))
 	}
-	candidate := mustGetCandidate(t)
-	max := 0.0
-	t.Document.EachTrigram(candidate.Suggestion, func(conf float64) {
-		if max < conf {
-			max = conf
+	lm := args[0]
+	return func(t T, i, n int) (float64, bool) {
+		if i != 0 {
+			return 0, false
 		}
-	})
-	return max, true
+		candidate := mustGetCandidate(t)
+		max := 0.0
+		t.Document.LM[lm].EachTrigram(candidate.Suggestion, func(conf float64) {
+			if max < conf {
+				max = conf
+			}
+		})
+		return max, true
+	}, nil
 }
 
-// CandidateMinTrigramFreq returns the minimal trigram frequezy for
-// the connected candidate.
-func CandidateMinTrigramFreq(t T, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
+// mkCandidateMinTrigramFreq returns a feature function that calculates
+// the minimal trigram frequency for the connected candidate.
+func mkCandidateMinTrigramFreq(args []string) (FeatureFunc, error) {
+	if len(args) != 1 {
+		return lmFail("candidate min trigram freq", fmt.Errorf("bad arguments: %v", args))
 	}
-	candidate := mustGetCandidate(t)
-	min := 1.0
-	t.Document.EachTrigram(candidate.Suggestion, func(conf float64) {
-		if min > conf {
-			min = conf
+	lm := args[0]
+	return func(t T, i, n int) (float64, bool) {
+		if i != 0 {
+			return 0, false
 		}
-	})
-	return min, true
+		candidate := mustGetCandidate(t)
+		min := 1.0
+		t.Document.LM[lm].EachTrigram(candidate.Suggestion, func(conf float64) {
+			if min > conf {
+				min = conf
+			}
+		})
+		return min, true
+	}, nil
 }
 
 func mustGetCandidate(t T) *gofiler.Candidate {
