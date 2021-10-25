@@ -67,7 +67,7 @@ func train(_ *cobra.Command, args []string) {
 	chk(m.Write(c.Model))
 }
 
-func fit(c *internal.Config, fn []string, lr *ml.LR, r io.ReadSeeker) {
+func fit(c *internal.Config, fn []string, lr *ml.LR, r io.Reader) {
 	s := bufio.NewScanner(r)
 	var err float64
 	var xs, ys []float64
