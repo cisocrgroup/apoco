@@ -228,3 +228,8 @@ func meanNormalization(xs *mat.Dense) error {
 	}
 	return nil
 }
+
+var (
+	_ Predictor = &LR{}
+	_ Fitter    = &LR{}
+)
