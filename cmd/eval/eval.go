@@ -54,15 +54,15 @@ const (
 	fn
 )
 
-func (s *stats) eval(lr *ml.LR, t float64, xs, ys []float64) {
+func (s *stats) eval(p ml.Predictor, t float64, xs, ys []float64) {
 	xlen := len(xs)
 	ylen := len(ys)
 	x := mat.NewDense(ylen, xlen/ylen, xs)
 	y := mat.NewVecDense(ylen, ys)
-	p := lr.Predict(x)
-	ml.ApplyThreshold(p, t)
+	ps := p.Predict(x)
+	ml.ApplyThreshold(ps, t)
 	for i := 0; i < ylen; i++ {
-		s.add(y.AtVec(i), p.AtVec(i))
+		s.add(y.AtVec(i), ps.AtVec(i))
 	}
 }
 

@@ -459,14 +459,14 @@ func ConnectLanguageModel(lm map[string]*FreqList) StreamFunc {
 
 // ConnectRankings connects the tokens of the input stream with their
 // respective rankings.
-func ConnectRankings(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
+func ConnectRankings(p ml.Predictor, fs FeatureSet, n int) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		var lfid, ltid string // last file id and last token id
 		var tokens []T
 		err := EachToken(ctx, in, func(t T) error {
 			if t.File != lfid || t.ID != ltid {
 				if len(tokens) > 0 {
-					tmp := connectRankings(lr, fs, n, tokens)
+					tmp := connectRankings(p, fs, n, tokens)
 					if err := SendTokens(ctx, out, tmp); err != nil {
 						return err
 					}
@@ -482,7 +482,7 @@ func ConnectRankings(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
 			return err
 		}
 		if len(tokens) > 0 {
-			t := connectRankings(lr, fs, n, tokens)
+			t := connectRankings(p, fs, n, tokens)
 			if err := SendTokens(ctx, out, t); err != nil {
 				return err
 			}
@@ -491,7 +491,7 @@ func ConnectRankings(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
 	}
 }
 
-func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []T) T {
+func connectRankings(p ml.Predictor, fs FeatureSet, n int, tokens []T) T {
 	var xs []float64
 	// calculate feature values
 	for _, token := range tokens {
@@ -499,7 +499,7 @@ func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []T) T {
 	}
 	// calculate prediction probabilities
 	xmat := mat.NewDense(len(tokens), len(xs)/len(tokens), xs)
-	probs := lr.Predict(xmat)
+	probs := p.Predict(xmat)
 	rankings := make([]Ranking, len(tokens))
 	// probs, tokens and rankings all have the same length
 	for i := range tokens {
@@ -516,13 +516,13 @@ func connectRankings(lr *ml.LR, fs FeatureSet, n int, tokens []T) T {
 
 // ConnectCorrections connects the tokens with the decider's correction
 // decisions.
-func ConnectCorrections(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
+func ConnectCorrections(p ml.Predictor, fs FeatureSet, n int) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		blen := 1024
 		buf := make([]T, 0, blen)
 		err := EachToken(ctx, in, func(t T) error {
 			if len(buf) >= blen {
-				connectCorrections(lr, fs, n, buf)
+				connectCorrections(p, fs, n, buf)
 				if err := SendTokens(ctx, out, buf...); err != nil {
 					return fmt.Errorf("connectCorrections: %v", err)
 				}
@@ -535,7 +535,7 @@ func ConnectCorrections(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
 			return fmt.Errorf("connectCorrections: %v", err)
 		}
 		if len(buf) > 0 {
-			connectCorrections(lr, fs, n, buf)
+			connectCorrections(p, fs, n, buf)
 			if err := SendTokens(ctx, out, buf...); err != nil {
 				return fmt.Errorf("connectCorrections: %v", err)
 			}
@@ -544,17 +544,17 @@ func ConnectCorrections(lr *ml.LR, fs FeatureSet, n int) StreamFunc {
 	}
 }
 
-func connectCorrections(lr *ml.LR, fs FeatureSet, nocr int, tokens []T) {
+func connectCorrections(p ml.Predictor, fs FeatureSet, nocr int, tokens []T) {
 	xs := make([]float64, 0, len(tokens)*len(fs))
 	for _, t := range tokens {
 		xs = fs.Calculate(xs, t, nocr)
 	}
 	x := mat.NewDense(len(tokens), len(xs)/len(tokens), xs)
-	p := lr.Predict(x)
+	ps := p.Predict(x)
 	for i := range tokens {
 		tokens[i].Payload = Correction{
 			Candidate: tokens[i].Payload.([]Ranking)[0].Candidate,
-			Conf:      p.AtVec(i),
+			Conf:      ps.AtVec(i),
 		}
 	}
 }
