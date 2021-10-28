@@ -45,26 +45,9 @@ func CreateNetwork(input, hidden int, lr float64) *NN {
 	return &nn
 }
 
-func (nn *NN) classes2mat(classes []bool) []float64 {
-	if nn.outputs != 2 {
-		panic("nn: classes2mat: output dimension must be 2")
-	}
-	ys := make([]float64, 0, len(classes)*nn.outputs)
-	for i := range classes {
-		if classes[i] {
-			ys = append(ys, .01)
-			ys = append(ys, .99)
-		} else {
-			ys = append(ys, .99)
-			ys = append(ys, .01)
-		}
-	}
-	return ys
-}
-
 func (nn *NN) vec2mat(vec *mat.VecDense) *mat.Dense {
 	if nn.outputs != 2 {
-		panic("nn: classes2mat: output dimension must be 2")
+		panic("nn: vec2mat: output dimension must be 2")
 	}
 	ys := make([]float64, 0, vec.Len()*nn.outputs)
 	for i := 0; i < vec.Len(); i++ {
