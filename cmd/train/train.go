@@ -21,9 +21,9 @@ import (
 
 // CMD defines the apoco train command.
 var CMD = &cobra.Command{
-	Use:   "train CSV",
+	Use:   "train [CSV...]",
 	Short: "Train post-correction models",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MinimumNArgs(1),
 	Run:   train,
 }
 
@@ -52,19 +52,24 @@ func train(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Model, flags.model)
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
 
-	f, err := os.Open(args[0])
-	chk(err)
-	defer f.Close()
-
 	learn, ntrain, fn, err := getTrainingParams(c)
 	chk(err)
 	lr := &ml.LR{LearningRate: learn, Ntrain: ntrain}
-	fit(c, fn, lr, f)
+	for _, name := range args {
+		fitFile(c, fn, lr, name)
+	}
 
 	m, err := internal.ReadModel(c.Model, c.LM, false)
 	chk(err)
 	m.Put(flags.typ, c.Nocr, lr, fn)
 	chk(m.Write(c.Model))
+}
+
+func fitFile(c *internal.Config, fn []string, f ml.Fitter, name string) {
+	r, err := os.Open(name)
+	chk(err)
+	defer r.Close()
+	fit(c, fn, f, r)
 }
 
 func fit(c *internal.Config, fn []string, f ml.Fitter, r io.Reader) {
