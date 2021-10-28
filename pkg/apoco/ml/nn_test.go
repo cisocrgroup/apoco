@@ -1,6 +1,7 @@
 package ml
 
 import (
+	"log"
 	"testing"
 
 	"gonum.org/v1/gonum/mat"
@@ -17,7 +18,10 @@ var (
 )
 
 func TestXorNN(t *testing.T) {
-	nn := xorfit()
+	nn, err := xorfit()
+	if err >= 1e-5 {
+		t.Errorf("got too large error: %g", err)
+	}
 	got := xorpredict(nn)
 	if got.Len() != xorys.Len() {
 		t.Fatalf("different lengths: expected %d; got %d", xorys.Len(), got.Len())
@@ -27,19 +31,20 @@ func TestXorNN(t *testing.T) {
 			t.Errorf("expected %g; got %g", xorys.AtVec(i), got.AtVec(i))
 		}
 	}
+	log.Printf("error: %g", err)
 }
 
 func BenchmarkXorNN(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		nn := xorfit()
+		nn, _ := xorfit()
 		xorpredict(nn)
 	}
 }
 
-func xorfit() *NN {
+func xorfit() (*NN, float64) {
 	nn := CreateNetwork(NNConfig{Input: 2, Hidden: 4, Epochs: 10000, LearningRate: .5})
-	nn.Fit(xorxs, xorys)
-	return nn
+	err := nn.Fit(xorxs, xorys)
+	return nn, err
 }
 
 func xorpredict(nn *NN) *mat.VecDense {

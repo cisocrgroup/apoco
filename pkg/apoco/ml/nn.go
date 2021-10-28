@@ -97,16 +97,17 @@ func (nn *NN) Predict(x *mat.Dense) *mat.VecDense {
 func (nn *NN) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 	r, _ := x.Dims()
 	ys := nn.vec2mat(y)
+	var lerr mat.Matrix
 	for i := 0; i < nn.epochs; i++ {
 		for i := 0; i < r; i++ {
 			nn.alloc.reset()
-			nn.train(x.RowView(i), ys.RowView(i)) //.T())
+			lerr = nn.train(x.RowView(i), ys.RowView(i)) //.T())
 		}
 	}
-	return 0.0
+	return avgerr(lerr)
 }
 
-func (nn *NN) train(inputs, targets mat.Matrix) {
+func (nn *NN) train(inputs, targets mat.Matrix) mat.Matrix {
 	// Forward propagation.
 	hiddenIn := nn.dot(&nn.wh, inputs)
 	hiddenOut := nn.apply(sigmoid, hiddenIn)
@@ -120,6 +121,18 @@ func (nn *NN) train(inputs, targets mat.Matrix) {
 		nn.dot(nn.multiply(outErr, nn.sigmoidp(finalOut)), hiddenOut.T())))
 	nn.wh.Add(&nn.wh, nn.scale(nn.lr,
 		nn.dot(nn.multiply(hiddenErr, nn.sigmoidp(hiddenOut)), inputs.T())))
+	return outErr
+}
+
+func avgerr(m mat.Matrix) float64 {
+	r, c := m.Dims()
+	sum := 0.0
+	for i := 0; i < r; i++ {
+		for j := 0; j < c; j++ {
+			sum += m.At(i, j)
+		}
+	}
+	return sum / float64(r*c)
 }
 
 func (nn *NN) dot(m, n mat.Matrix) mat.Matrix {
