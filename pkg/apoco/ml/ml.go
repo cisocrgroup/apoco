@@ -4,10 +4,12 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// Predictor is used to predict values based on a ml-model.
 type Predictor interface {
 	Predict(x *mat.Dense) *mat.VecDense
 }
 
+// Fitter is used to train a ml-model on input values.
 type Fitter interface {
 	Fit(x *mat.Dense, y *mat.VecDense) float64
 }
