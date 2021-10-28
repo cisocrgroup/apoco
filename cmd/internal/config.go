@@ -78,12 +78,6 @@ func UpdateInConfig(dest, val interface{}) {
 	}
 }
 
-// MRGSettings are the settings for the mrg training.
-type MRGSettings struct {
-	TrainingConfig
-	Window int `json:"window"`
-}
-
 // ReadConfig reads the config from a json or toml file.  If
 // the name is empty, an empty configuration file is returned.
 // If name has the prefix '{' and the suffix '}' the name is
