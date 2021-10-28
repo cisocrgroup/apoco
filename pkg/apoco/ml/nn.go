@@ -22,16 +22,13 @@ func logmat(pref string, m mat.Matrix) {
 }
 
 type NN struct {
-	wh, wo              mat.Dense
-	outErr, hiddenErr   mat.Dense
-	hiddenIn, hiddenOut mat.Dense
-	finalIn, finalOut   mat.Dense
-	tmp                 mat.Dense
-	lr                  float64
-	inputs              int
-	hiddens             int
-	outputs             int
-	epochs              int
+	wh, wo  mat.Dense
+	alloc   allocator
+	lr      float64
+	inputs  int
+	hiddens int
+	outputs int
+	epochs  int
 }
 
 func CreateNetwork(input, hidden int, lr float64) *NN {
@@ -91,18 +88,18 @@ func (nn *NN) Predict(x *mat.Dense) *mat.VecDense {
 	for i := 0; i < r; i++ {
 		// forward propagation
 		inputs := x.RowView(i) //mat.NewDense(c, 1, xs[i:i+c])
-		nn.hiddenIn.Product(&nn.wh, inputs)
+		hiddenIn := dot(&nn.wh, inputs)
 		// hiddenInputs := dot(&nn.wh, inputs)
-		nn.hiddenOut.Apply(sigmoid, &nn.hiddenIn)
+		hiddenOut := apply(sigmoid, hiddenIn)
 		// hiddenOutputs := apply(sigmoid, hiddenInputs)
-		nn.finalIn.Product(&nn.wo, &nn.hiddenOut)
+		finalIn := dot(&nn.wo, hiddenOut)
 		// finalInputs := dot(&nn.wo, hiddenOutputs)
-		nn.finalOut.Apply(sigmoid, &nn.finalIn)
+		finalOut := apply(sigmoid, finalIn)
 		// finalOutputs := apply(sigmoid, finalInputs)
-		if nn.finalOut.At(0, 0) > nn.finalOut.At(1, 0) {
-			ys.SetVec(i, -math.Abs(nn.finalOut.At(0, 0)))
+		if finalOut.At(0, 0) > finalOut.At(1, 0) {
+			ys.SetVec(i, -math.Abs(finalOut.At(0, 0)))
 		} else {
-			ys.SetVec(i, math.Abs(nn.finalOut.At(1, 0)))
+			ys.SetVec(i, math.Abs(finalOut.At(1, 0)))
 		}
 	}
 	return ys
@@ -144,7 +141,7 @@ func (nn *NN) train(inputs, targets mat.Matrix) {
 	// nn.tmp.Scale(nn.lr, &nn.tmp)
 	// nn.wo.Add(&nn.wo, &nn.tmp)
 	nn.wo.Add(&nn.wo, scale(nn.lr,
-		dot(multiply(&nn.outErr, sigmoidp(&nn.finalOut)), nn.hiddenOut.T())))
+		dot(multiply(outErr, sigmoidp(finalOut)), hiddenOut.T())))
 
 	// sigmoidp(&nn.hiddenOut, &nn.tmp)
 	// nn.tmp.Mul(&nn.hiddenErr, &nn.hiddenOut)
@@ -152,13 +149,14 @@ func (nn *NN) train(inputs, targets mat.Matrix) {
 	// nn.tmp.Scale(nn.lr, &nn.tmp)
 	// nn.wh.Add(&nn.wh, &nn.tmp)
 	nn.wh.Add(&nn.wh, scale(nn.lr,
-		dot(multiply(&nn.hiddenErr, sigmoidp(&nn.hiddenOut)), inputs.T())))
+		dot(multiply(hiddenErr, sigmoidp(hiddenOut)), inputs.T())))
 }
 
 func dot(m, n mat.Matrix) mat.Matrix {
 	r, _ := m.Dims()
 	_, c := n.Dims()
 
+	//o := nn.alloc.newMat(r, c)
 	o := mat.NewDense(r, c, nil)
 
 	o.Product(m, n)
@@ -236,32 +234,40 @@ func randomInit(m *mat.Dense, v float64) {
 }
 
 type allocator struct {
-	data map[int]*node
+	data []*node
+}
+
+func (a *allocator) get(n int) *node {
+	for i := range a.data {
+		if a.data[i].n == n {
+			return a.data[i]
+		}
+	}
+	node := &node{n: n}
+	a.data = append(a.data, node)
+	return node
 }
 
 func (a *allocator) alloc(n int) []float64 {
-	if _, ok := a.data[n]; !ok {
-		a.data[n] = &node{}
-	}
-	return a.data[n].alloc(n)
+	return a.get(n).alloc()
 }
 
-func (a *allocator) newDense(r, c int) *mat.Dense {
+func (a *allocator) newMat(r, c int) *mat.Dense {
 	return mat.NewDense(r, c, a.alloc(r*c))
 }
 
 type node struct {
 	data [][]float64
-	i    int
+	i, n int
 }
 
-func (nd *node) alloc(n int) []float64 {
+func (nd *node) alloc() []float64 {
 	if nd.i < len(nd.data) {
 		ret := nd.data[nd.i]
 		nd.i++
 		return ret
 	}
-	ret := make([]float64, n)
+	ret := make([]float64, nd.n)
 	nd.data = append(nd.data, ret)
 	nd.i = len(nd.data)
 	return ret
