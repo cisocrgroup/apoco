@@ -1,7 +1,6 @@
 package ml
 
 import (
-	"log"
 	"testing"
 
 	"gonum.org/v1/gonum/mat"
@@ -31,7 +30,6 @@ func TestXorNN(t *testing.T) {
 			t.Errorf("expected %g; got %g", xorys.AtVec(i), got.AtVec(i))
 		}
 	}
-	log.Printf("error: %g", err)
 }
 
 func BenchmarkXorNN(b *testing.B) {
