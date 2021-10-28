@@ -86,15 +86,16 @@ func (nn *NN) Predict(x *mat.Dense) *mat.VecDense {
 	r, _ := x.Dims()
 	ys := mat.NewVecDense(r, nil)
 	for i := 0; i < r; i++ {
+		nn.alloc.reset()
 		// forward propagation
 		inputs := x.RowView(i) //mat.NewDense(c, 1, xs[i:i+c])
-		hiddenIn := dot(&nn.wh, inputs)
+		hiddenIn := nn.dot(&nn.wh, inputs)
 		// hiddenInputs := dot(&nn.wh, inputs)
-		hiddenOut := apply(sigmoid, hiddenIn)
+		hiddenOut := nn.apply(sigmoid, hiddenIn)
 		// hiddenOutputs := apply(sigmoid, hiddenInputs)
-		finalIn := dot(&nn.wo, hiddenOut)
+		finalIn := nn.dot(&nn.wo, hiddenOut)
 		// finalInputs := dot(&nn.wo, hiddenOutputs)
-		finalOut := apply(sigmoid, finalIn)
+		finalOut := nn.apply(sigmoid, finalIn)
 		// finalOutputs := apply(sigmoid, finalInputs)
 		if finalOut.At(0, 0) > finalOut.At(1, 0) {
 			ys.SetVec(i, -math.Abs(finalOut.At(0, 0)))
@@ -111,6 +112,7 @@ func (nn *NN) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 	ys := nn.vec2mat(y)
 	for i := 0; i < nn.epochs; i++ {
 		for i := 0; i < r; i++ {
+			nn.alloc.reset()
 			nn.train(x.RowView(i), ys.RowView(i)) //.T())
 		}
 	}
@@ -119,18 +121,18 @@ func (nn *NN) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 
 func (nn *NN) train(inputs, targets mat.Matrix) {
 	// Forward propagation.
-	hiddenIn := dot(&nn.wh, inputs)
-	hiddenOut := apply(sigmoid, hiddenIn)
-	finalIn := dot(&nn.wo, hiddenOut)
-	finalOut := apply(sigmoid, finalIn)
+	hiddenIn := nn.dot(&nn.wh, inputs)
+	hiddenOut := nn.apply(sigmoid, hiddenIn)
+	finalIn := nn.dot(&nn.wo, hiddenOut)
+	finalOut := nn.apply(sigmoid, finalIn)
 	// nn.hiddenIn.Product(&nn.wh, inputs)
 	// nn.hiddenOut.Apply(sigmoid, &nn.hiddenIn)
 	// nn.finalIn.Product(&nn.wo, &nn.hiddenOut)
 	// nn.finalOut.Apply(sigmoid, &nn.finalIn)
 
 	// Calculate errors.
-	outErr := sub(targets, finalOut)
-	hiddenErr := dot(nn.wo.T(), outErr)
+	outErr := nn.sub(targets, finalOut)
+	hiddenErr := nn.dot(nn.wo.T(), outErr)
 	// nn.outErr.Sub(targets, &nn.finalOut)
 	// nn.hiddenErr.Product(nn.wo.T(), &nn.outErr)
 
@@ -140,84 +142,75 @@ func (nn *NN) train(inputs, targets mat.Matrix) {
 	// nn.tmp.Product(&nn.tmp, nn.hiddenOut.T())
 	// nn.tmp.Scale(nn.lr, &nn.tmp)
 	// nn.wo.Add(&nn.wo, &nn.tmp)
-	nn.wo.Add(&nn.wo, scale(nn.lr,
-		dot(multiply(outErr, sigmoidp(finalOut)), hiddenOut.T())))
+	nn.wo.Add(&nn.wo, nn.scale(nn.lr,
+		nn.dot(nn.multiply(outErr, nn.sigmoidp(finalOut)), hiddenOut.T())))
 
 	// sigmoidp(&nn.hiddenOut, &nn.tmp)
 	// nn.tmp.Mul(&nn.hiddenErr, &nn.hiddenOut)
 	// nn.tmp.Product(&nn.tmp, inputs.T())
 	// nn.tmp.Scale(nn.lr, &nn.tmp)
 	// nn.wh.Add(&nn.wh, &nn.tmp)
-	nn.wh.Add(&nn.wh, scale(nn.lr,
-		dot(multiply(hiddenErr, sigmoidp(hiddenOut)), inputs.T())))
+	nn.wh.Add(&nn.wh, nn.scale(nn.lr,
+		nn.dot(nn.multiply(hiddenErr, nn.sigmoidp(hiddenOut)), inputs.T())))
 }
 
-func dot(m, n mat.Matrix) mat.Matrix {
+func (nn *NN) dot(m, n mat.Matrix) mat.Matrix {
 	r, _ := m.Dims()
 	_, c := n.Dims()
-
-	//o := nn.alloc.newMat(r, c)
-	o := mat.NewDense(r, c, nil)
-
+	o := nn.alloc.newMat(r, c)
 	o.Product(m, n)
 	return o
 }
 
-func apply(fn func(i, j int, v float64) float64, m mat.Matrix) mat.Matrix {
+func (nn *NN) apply(fn func(i, j int, v float64) float64, m mat.Matrix) mat.Matrix {
 	r, c := m.Dims()
-	o := mat.NewDense(r, c, nil)
+	o := nn.alloc.newMat(r, c)
 	o.Apply(fn, m)
 	return o
 }
 
-func scale(s float64, m mat.Matrix) mat.Matrix {
+func (nn *NN) scale(s float64, m mat.Matrix) mat.Matrix {
 	r, c := m.Dims()
-	o := mat.NewDense(r, c, nil)
+	o := nn.alloc.newMat(r, c)
 	o.Scale(s, m)
 	return o
 }
 
-func multiply(m, n mat.Matrix) mat.Matrix {
+func (nn *NN) multiply(m, n mat.Matrix) mat.Matrix {
 	r, c := m.Dims()
-	o := mat.NewDense(r, c, nil)
+	o := nn.alloc.newMat(r, c)
 	o.MulElem(m, n)
 	return o
 }
 
-func add(out *mat.Dense, m, n mat.Matrix) mat.Matrix {
-	out.Add(m, n)
-	return out
-}
-
-func sub(m, n mat.Matrix) mat.Matrix {
+func (nn *NN) sub(m, n mat.Matrix) mat.Matrix {
 	r, c := m.Dims()
-	o := mat.NewDense(r, c, nil)
+	o := nn.alloc.newMat(r, c)
 	o.Sub(m, n)
 	return o
 }
 
-func addScalar(i float64, m mat.Matrix) mat.Matrix {
+func (nn *NN) addScalar(i float64, m mat.Matrix) mat.Matrix {
 	r, c := m.Dims()
-	a := make([]float64, r*c)
-	for x := 0; x < r*c; x++ {
-		a[x] = i
-	}
-	n := mat.NewDense(r, c, a)
-	return add(n, m, n)
+	n := nn.alloc.newMat(r, c)
+	n.Apply(func(r, c int, _ float64) float64 {
+		return m.At(r, c) + i
+	}, n)
+	return n
 }
 
-func sigmoid(r, c int, z float64) float64 {
-	return 1.0 / (1 + math.Exp(-1*z))
-}
-
-func sigmoidp(m mat.Matrix) mat.Matrix {
+func (nn *NN) sigmoidp(m mat.Matrix) mat.Matrix {
 	rows, _ := m.Dims()
-	o := make([]float64, rows)
+	o := nn.alloc.alloc(rows)
 	for i := range o {
 		o[i] = 1
 	}
 	ones := mat.NewDense(rows, 1, o)
-	return multiply(m, sub(ones, m))
+	return nn.multiply(m, nn.sub(ones, m))
+}
+
+func sigmoid(_, _ int, z float64) float64 {
+	return 1.0 / (1 + math.Exp(-1*z))
 }
 
 func randomInit(m *mat.Dense, v float64) {
@@ -234,42 +227,52 @@ func randomInit(m *mat.Dense, v float64) {
 }
 
 type allocator struct {
-	data []*node
+	blocks []*block
 }
 
-func (a *allocator) get(n int) *node {
-	for i := range a.data {
-		if a.data[i].n == n {
-			return a.data[i]
+func (a *allocator) reset() {
+	for i := range a.blocks {
+		a.blocks[i].reset()
+	}
+}
+
+func (a *allocator) block(n int) *block {
+	for i := range a.blocks {
+		if a.blocks[i].n == n {
+			return a.blocks[i]
 		}
 	}
-	node := &node{n: n}
-	a.data = append(a.data, node)
+	node := &block{n: n}
+	a.blocks = append(a.blocks, node)
 	return node
 }
 
 func (a *allocator) alloc(n int) []float64 {
-	return a.get(n).alloc()
+	return a.block(n).alloc()
 }
 
 func (a *allocator) newMat(r, c int) *mat.Dense {
 	return mat.NewDense(r, c, a.alloc(r*c))
 }
 
-type node struct {
+type block struct {
 	data [][]float64
 	i, n int
 }
 
-func (nd *node) alloc() []float64 {
-	if nd.i < len(nd.data) {
-		ret := nd.data[nd.i]
-		nd.i++
+func (b *block) reset() {
+	b.i = 0
+}
+
+func (b *block) alloc() []float64 {
+	if b.i < len(b.data) {
+		ret := b.data[b.i]
+		b.i++
 		return ret
 	}
-	ret := make([]float64, nd.n)
-	nd.data = append(nd.data, ret)
-	nd.i = len(nd.data)
+	ret := make([]float64, b.n)
+	b.data = append(b.data, ret)
+	b.i = len(b.data)
 	return ret
 }
 
