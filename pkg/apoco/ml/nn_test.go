@@ -37,8 +37,7 @@ func BenchmarkXorNN(b *testing.B) {
 }
 
 func xorfit() *NN {
-	nn := CreateNetwork(2, 4, .5)
-	nn.epochs = 10000
+	nn := CreateNetwork(NNConfig{Input: 2, Hidden: 4, Epochs: 10000, LearningRate: .5})
 	nn.Fit(xorxs, xorys)
 	return nn
 }

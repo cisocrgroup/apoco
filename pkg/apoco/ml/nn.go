@@ -21,6 +21,13 @@ func logmat(pref string, m mat.Matrix) {
 	}
 }
 
+type NNConfig struct {
+	LearningRate float64
+	Epochs       int
+	Input        int
+	Hidden       int
+}
+
 type NN struct {
 	wh, wo  mat.Dense
 	alloc   allocator
@@ -31,12 +38,13 @@ type NN struct {
 	epochs  int
 }
 
-func CreateNetwork(input, hidden int, lr float64) *NN {
+func CreateNetwork(c NNConfig) *NN {
 	nn := NN{
-		inputs:  input,
-		hiddens: hidden,
+		inputs:  c.Input,
+		hiddens: c.Hidden,
 		outputs: 2, // Fixed to 2 classes True/False
-		lr:      lr,
+		epochs:  c.Epochs,
+		lr:      c.LearningRate,
 	}
 	nn.wh.ReuseAs(nn.hiddens, nn.inputs)
 	randomInit(&nn.wh, float64(nn.inputs))
@@ -73,13 +81,9 @@ func (nn *NN) Predict(x *mat.Dense) *mat.VecDense {
 		// forward propagation
 		inputs := x.RowView(i) //mat.NewDense(c, 1, xs[i:i+c])
 		hiddenIn := nn.dot(&nn.wh, inputs)
-		// hiddenInputs := dot(&nn.wh, inputs)
 		hiddenOut := nn.apply(sigmoid, hiddenIn)
-		// hiddenOutputs := apply(sigmoid, hiddenInputs)
 		finalIn := nn.dot(&nn.wo, hiddenOut)
-		// finalInputs := dot(&nn.wo, hiddenOutputs)
 		finalOut := nn.apply(sigmoid, finalIn)
-		// finalOutputs := apply(sigmoid, finalInputs)
 		if finalOut.At(0, 0) > finalOut.At(1, 0) {
 			ys.SetVec(i, -math.Abs(finalOut.At(0, 0)))
 		} else {
@@ -108,31 +112,12 @@ func (nn *NN) train(inputs, targets mat.Matrix) {
 	hiddenOut := nn.apply(sigmoid, hiddenIn)
 	finalIn := nn.dot(&nn.wo, hiddenOut)
 	finalOut := nn.apply(sigmoid, finalIn)
-	// nn.hiddenIn.Product(&nn.wh, inputs)
-	// nn.hiddenOut.Apply(sigmoid, &nn.hiddenIn)
-	// nn.finalIn.Product(&nn.wo, &nn.hiddenOut)
-	// nn.finalOut.Apply(sigmoid, &nn.finalIn)
-
 	// Calculate errors.
 	outErr := nn.sub(targets, finalOut)
 	hiddenErr := nn.dot(nn.wo.T(), outErr)
-	// nn.outErr.Sub(targets, &nn.finalOut)
-	// nn.hiddenErr.Product(nn.wo.T(), &nn.outErr)
-
 	// Backward propagation.
-	// sigmoidp(&nn.finalOut, &nn.tmp)
-	// nn.tmp.Mul(&nn.outErr, &nn.finalOut)
-	// nn.tmp.Product(&nn.tmp, nn.hiddenOut.T())
-	// nn.tmp.Scale(nn.lr, &nn.tmp)
-	// nn.wo.Add(&nn.wo, &nn.tmp)
 	nn.wo.Add(&nn.wo, nn.scale(nn.lr,
 		nn.dot(nn.multiply(outErr, nn.sigmoidp(finalOut)), hiddenOut.T())))
-
-	// sigmoidp(&nn.hiddenOut, &nn.tmp)
-	// nn.tmp.Mul(&nn.hiddenErr, &nn.hiddenOut)
-	// nn.tmp.Product(&nn.tmp, inputs.T())
-	// nn.tmp.Scale(nn.lr, &nn.tmp)
-	// nn.wh.Add(&nn.wh, &nn.tmp)
 	nn.wh.Add(&nn.wh, nn.scale(nn.lr,
 		nn.dot(nn.multiply(hiddenErr, nn.sigmoidp(hiddenOut)), inputs.T())))
 }
