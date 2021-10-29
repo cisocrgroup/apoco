@@ -1,6 +1,8 @@
 package ml
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"math"
@@ -29,7 +31,7 @@ type NNConfig struct {
 }
 
 type NN struct {
-	wh, wo  mat.Dense
+	wh, wo  *mat.Dense
 	alloc   allocator
 	lr      float64
 	inputs  int
@@ -38,7 +40,7 @@ type NN struct {
 	epochs  int
 }
 
-func CreateNetwork(c NNConfig) *NN {
+func NewNN(c NNConfig) *NN {
 	nn := NN{
 		inputs:  c.Input,
 		hiddens: c.Hidden,
@@ -46,10 +48,10 @@ func CreateNetwork(c NNConfig) *NN {
 		epochs:  c.Epochs,
 		lr:      c.LearningRate,
 	}
-	nn.wh.ReuseAs(nn.hiddens, nn.inputs)
-	randomInit(&nn.wh, float64(nn.inputs))
-	nn.wo.ReuseAs(nn.outputs, nn.hiddens)
-	randomInit(&nn.wo, float64(nn.hiddens))
+	nn.wh = mat.NewDense(nn.hiddens, nn.inputs, nil)
+	randomInit(nn.wh, float64(nn.inputs))
+	nn.wo = mat.NewDense(nn.outputs, nn.hiddens, nil)
+	randomInit(nn.wo, float64(nn.hiddens))
 	return &nn
 }
 
@@ -80,9 +82,9 @@ func (nn *NN) Predict(x *mat.Dense) *mat.VecDense {
 		nn.alloc.reset()
 		// forward propagation
 		inputs := x.RowView(i) //mat.NewDense(c, 1, xs[i:i+c])
-		hiddenIn := nn.dot(&nn.wh, inputs)
+		hiddenIn := nn.dot(nn.wh, inputs)
 		hiddenOut := nn.apply(sigmoid, hiddenIn)
-		finalIn := nn.dot(&nn.wo, hiddenOut)
+		finalIn := nn.dot(nn.wo, hiddenOut)
 		finalOut := nn.apply(sigmoid, finalIn)
 		if finalOut.At(0, 0) > finalOut.At(1, 0) {
 			ys.SetVec(i, -math.Abs(finalOut.At(0, 0)))
@@ -109,17 +111,17 @@ func (nn *NN) Fit(x *mat.Dense, y *mat.VecDense) float64 {
 
 func (nn *NN) train(inputs, targets mat.Matrix) mat.Matrix {
 	// Forward propagation.
-	hiddenIn := nn.dot(&nn.wh, inputs)
+	hiddenIn := nn.dot(nn.wh, inputs)
 	hiddenOut := nn.apply(sigmoid, hiddenIn)
-	finalIn := nn.dot(&nn.wo, hiddenOut)
+	finalIn := nn.dot(nn.wo, hiddenOut)
 	finalOut := nn.apply(sigmoid, finalIn)
 	// Calculate errors.
 	outErr := nn.sub(targets, finalOut)
 	hiddenErr := nn.dot(nn.wo.T(), outErr)
 	// Backward propagation.
-	nn.wo.Add(&nn.wo, nn.scale(nn.lr,
+	nn.wo.Add(nn.wo, nn.scale(nn.lr,
 		nn.dot(nn.multiply(outErr, nn.sigmoidp(finalOut)), hiddenOut.T())))
-	nn.wh.Add(&nn.wh, nn.scale(nn.lr,
+	nn.wh.Add(nn.wh, nn.scale(nn.lr,
 		nn.dot(nn.multiply(hiddenErr, nn.sigmoidp(hiddenOut)), inputs.T())))
 	return outErr
 }
@@ -192,6 +194,52 @@ func (nn *NN) sigmoidp(m mat.Matrix) mat.Matrix {
 
 func sigmoid(_, _ int, z float64) float64 {
 	return 1.0 / (1 + math.Exp(-1*z))
+}
+
+type nndata struct {
+	WH, WO       []float64
+	LearningRate float64
+	Ntrain       int
+	Input        int
+	Hidden       int
+	Output       int
+}
+
+// return lr.weights.RawVector().Data
+
+// GobEncode implements the GobEncoder interface.
+func (nn *NN) GobEncode() ([]byte, error) {
+	data := nndata{
+		LearningRate: nn.lr,
+		Ntrain:       nn.epochs,
+		Input:        nn.inputs,
+		Hidden:       nn.hiddens,
+		Output:       nn.outputs,
+		WH:           nn.wh.RawMatrix().Data,
+		WO:           nn.wo.RawMatrix().Data,
+	}
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(data)
+	return buf.Bytes(), err
+}
+
+// GobDecode implements the GobDecoder interface.
+func (nn *NN) GobDecode(data []byte) error {
+	var tmp nndata
+	r := bytes.NewReader(data)
+	if err := gob.NewDecoder(r).Decode(&tmp); err != nil {
+		return err
+	}
+	*nn = NN{
+		lr:      tmp.LearningRate,
+		epochs:  tmp.Ntrain,
+		inputs:  tmp.Input,
+		hiddens: tmp.Hidden,
+		outputs: tmp.Output,
+		wh:      mat.NewDense(tmp.Hidden, tmp.Input, tmp.WH),
+		wo:      mat.NewDense(tmp.Output, tmp.Hidden, tmp.WO),
+	}
+	return nil
 }
 
 func randomInit(m *mat.Dense, v float64) {

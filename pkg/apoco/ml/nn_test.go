@@ -1,6 +1,9 @@
 package ml
 
 import (
+	"bytes"
+	"encoding/gob"
+	"reflect"
 	"testing"
 
 	"gonum.org/v1/gonum/mat"
@@ -39,8 +42,24 @@ func BenchmarkXorNN(b *testing.B) {
 	}
 }
 
+func TestGOBNN(t *testing.T) {
+	nn, _ := xorfit()
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(nn); err != nil {
+		t.Fatalf("got error: %v", err)
+	}
+	var nn2 NN
+	if err := gob.NewDecoder(&buf).Decode(&nn2); err != nil {
+		t.Fatalf("got error: %v", err)
+	}
+	nn.alloc = allocator{} // Reset allocator for deep equal
+	if !reflect.DeepEqual(*nn, nn2) {
+		t.Fatalf("expected %v; got %v", *nn, nn2)
+	}
+}
+
 func xorfit() (*NN, float64) {
-	nn := CreateNetwork(NNConfig{Input: 2, Hidden: 4, Epochs: 10000, LearningRate: .5})
+	nn := NewNN(NNConfig{Input: 2, Hidden: 4, Epochs: 10000, LearningRate: .5})
 	err := nn.Fit(xorxs, xorys)
 	return nn, err
 }
