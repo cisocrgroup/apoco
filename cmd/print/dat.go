@@ -27,6 +27,7 @@ var datFlags = struct {
 	typ      string
 	replace  []string
 	limit    int
+	year     int
 	noshorts bool
 }{}
 
@@ -37,6 +38,8 @@ func init() {
 	datCMD.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
 		"exclude short tokens (len<4) from the evaluation")
 	datCMD.Flags().IntVarP(&datFlags.limit, "limit", "m", 0, "set candidate limit")
+	datCMD.Flags().IntVarP(&datFlags.limit, "idlen", "i", 4,
+		"set length of id/year string to identify documents")
 	CMD.AddCommand(datCMD)
 }
 
@@ -258,10 +261,10 @@ func splitName(name string) (string, string, error) {
 	if pos != -1 {
 		name = name[:pos]
 	}
-	if len(name) < 6 {
+	if len(name) < datFlags.year+2 {
 		return "", "", fmt.Errorf("bad name %s: too short", name)
 	}
-	return name[:4], name[5:], nil
+	return name[:datFlags.year], name[datFlags.year+1:], nil
 }
 
 type replacer interface {
