@@ -38,8 +38,8 @@ func init() {
 	datCMD.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
 		"exclude short tokens (len<4) from the evaluation")
 	datCMD.Flags().IntVarP(&datFlags.limit, "limit", "m", 0, "set candidate limit")
-	datCMD.Flags().IntVarP(&datFlags.limit, "idlen", "i", 4,
-		"set length of id/year string to identify documents")
+	datCMD.Flags().IntVarP(&datFlags.year, "ylen", "y", 4,
+		"set length of id/year prefix used to identify documents")
 	CMD.AddCommand(datCMD)
 }
 
