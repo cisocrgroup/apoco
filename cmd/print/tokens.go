@@ -55,6 +55,9 @@ func runTokens(_ *cobra.Command, args []string) {
 func cat(gt bool) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, _ chan<- apoco.T) error {
 		return apoco.EachToken(ctx, in, func(t apoco.T) error {
+			if len(t.Tokens) == 0 { // Skip empty tokens.
+				return nil
+			}
 			stok := internal.MakeStokFromT(t, gt)
 			_, err := fmt.Println(stok.String())
 			return err
