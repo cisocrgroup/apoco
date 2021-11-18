@@ -19,7 +19,6 @@ func _ff(f FeatureFunc) func([]string) (FeatureFunc, error) {
 }
 
 // registered names for feature functions
-//var register = map[string]FeatureFunc{
 var register = map[string]func([]string) (FeatureFunc, error){
 	"AgreeingOCRs":                   _ff(AgreeingOCRs),
 	"OCRTokenLen":                    _ff(OCRTokenLen),
