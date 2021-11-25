@@ -13,7 +13,10 @@ import (
 )
 
 func _ff(f FeatureFunc) func([]string) (FeatureFunc, error) {
-	return func([]string) (FeatureFunc, error) {
+	return func(args []string) (FeatureFunc, error) {
+		if len(args) != 0 {
+			return nil, fmt.Errorf("no argument allowed for feature")
+		}
 		return f, nil
 	}
 }
