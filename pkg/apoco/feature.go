@@ -23,7 +23,7 @@ func _ff(f FeatureFunc) func([]string) (FeatureFunc, error) {
 var register = map[string]func([]string) (FeatureFunc, error){
 	"AgreeingOCRs":                   _ff(AgreeingOCRs),
 	"OCRTokenLen":                    _ff(OCRTokenLen),
-	"OCRUnigramFreq":                 _ff(OCRUnigramFreq),
+	"OCRUnigramFreq":                 mkOCRUnigramFreq,
 	"OCRTrigramFreq":                 mkOCRTrigramFreq,
 	"OCRMaxTrigramFreq":              mkOCRMinTrigramFreq,
 	"OCRMinTrigramFreq":              mkOCRMaxTrigramFreq,
@@ -34,7 +34,7 @@ var register = map[string]func([]string) (FeatureFunc, error){
 	"OCRWLevDist":                    _ff(OCRWLevDist),
 	"OCRLibFreq":                     _ff(ocrLibFreq),
 	"CandidateProfilerWeight":        _ff(CandidateProfilerWeight),
-	"CandidateUnigramFreq":           _ff(CandidateUnigramFreq),
+	"CandidateUnigramFreq":           mkCandidateUnigramFreq,
 	"CandidateTrigramFreq":           mkCandidateTrigramFreq,
 	"CandidateTrigramFreqLog":        mkCandidateTrigramFreqLog,
 	"CandidateAgreeingOCR":           _ff(CandidateAgreeingOCR),
@@ -197,10 +197,21 @@ func AgreeingOCRs(t T, i, n int) (float64, bool) {
 	return float64(ret), true
 }
 
-// OCRUnigramFreq returns the relative frequency of the OCR token in
-// the unigram language model.
-func OCRUnigramFreq(t T, i, n int) (float64, bool) {
-	return t.Document.Unigram(t.Tokens[i]), true
+// mkOCRUnigramFreq returns a function that returns the relative
+// frequency of the ocr tokens in an external frequency list. If no
+// arguments are given, the ocr-document frequencies are used.
+func mkOCRUnigramFreq(args []string) (FeatureFunc, error) {
+	if len(args) == 0 {
+		return func(t T, i, n int) (float64, bool) {
+			return t.Document.Unigram(t.Tokens[i]), true
+		}, nil
+	}
+	if len(args) != 1 {
+		return nil, fmt.Errorf("ocr unigram freq: bad arguments %v", args)
+	}
+	return func(t T, i, n int) (float64, bool) {
+		return t.Document.LM[args[0]].relative(t.Tokens[i]), true
+	}, nil
 }
 
 func lmFail(name string, err error) (FeatureFunc, error) {
@@ -301,14 +312,30 @@ func CandidateProfilerWeight(t T, i, n int) (float64, bool) {
 	return float64(candidate.Weight), true
 }
 
-// CandidateUnigramFreq returns the relative frequency of the token's
-// candidate.
-func CandidateUnigramFreq(t T, i, n int) (float64, bool) {
-	if i != 0 {
-		return 0, false
+// mkCandidateUnigramFreq returns a function that returns the relative
+// frequency of the candidate in a frequency list. If no arguments are
+// given, the master ocr document is used instead of an external
+// frequency list.
+func mkCandidateUnigramFreq(args []string) (FeatureFunc, error) {
+	if len(args) == 0 {
+		return func(t T, i, n int) (float64, bool) {
+			if i != 0 {
+				return 0, false
+			}
+			candidate := mustGetCandidate(t)
+			return t.Document.Unigram(candidate.Suggestion), true
+		}, nil
 	}
-	candidate := mustGetCandidate(t)
-	return t.Document.Unigram(candidate.Suggestion), true
+	if len(args) != 1 {
+		return nil, fmt.Errorf("candidate unigram freq: bad arguments %v", args)
+	}
+	return func(t T, i, n int) (float64, bool) {
+		if i != 0 {
+			return 0, false
+		}
+		candidate := mustGetCandidate(t)
+		return t.Document.LM[args[0]].relative(candidate.Suggestion), true
+	}, nil
 }
 
 // mkCandidateTrigramFreq returns a feature function that calculates
