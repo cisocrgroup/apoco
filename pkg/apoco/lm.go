@@ -32,6 +32,9 @@ func (f *FreqList) add(strs ...string) {
 }
 
 func (f *FreqList) absolute(str string) int {
+	if f == nil {
+		return 0
+	}
 	if n, ok := f.FreqList[str]; ok {
 		return n
 	}
@@ -39,6 +42,9 @@ func (f *FreqList) absolute(str string) int {
 }
 
 func (f *FreqList) relative(str string) float64 {
+	if f == nil {
+		return 0
+	}
 	if f.Total == 0 {
 		return 0
 	}
