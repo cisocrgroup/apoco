@@ -129,7 +129,7 @@ func EachToken(ctx context.Context, in <-chan T, f func(T) error) error {
 // their language models. The given callback function is called for
 // each group of tokens.  This function assumes that the tokens are
 // connected with a language model.
-func EachTokenInDocument(ctx context.Context, in <-chan T, f func(*Document, ...T) error) error {
+func EachTokenInDocument(ctx context.Context, in <-chan T, f func(*Document, []T) error) error {
 	var doc *Document
 	var tokens []T
 	err := EachToken(ctx, in, func(t T) error {
@@ -137,7 +137,7 @@ func EachTokenInDocument(ctx context.Context, in <-chan T, f func(*Document, ...
 			doc = t.Document
 		}
 		if doc != t.Document {
-			if err := f(doc, tokens...); err != nil {
+			if err := f(doc, tokens); err != nil {
 				return fmt.Errorf("each token language model: %v", err)
 			}
 			tokens = tokens[0:0] // Clear token array.
@@ -149,7 +149,7 @@ func EachTokenInDocument(ctx context.Context, in <-chan T, f func(*Document, ...
 	})
 	// Handle last group of tokens.
 	if len(tokens) != 0 {
-		if err := f(doc, tokens...); err != nil {
+		if err := f(doc, tokens); err != nil {
 			return fmt.Errorf("each token language model: %v", err)
 		}
 	}
@@ -353,7 +353,7 @@ func ConnectCandidates() StreamFunc {
 // Short tokens are tokens with less than or equal to max unicode runes.
 func AddShortTokensToProfile(max int) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachTokenInDocument(ctx, in, func(d *Document, ts ...T) error {
+		err := EachTokenInDocument(ctx, in, func(d *Document, ts []T) error {
 			for i, t := range ts {
 				if utf8.RuneCountInString(t.Tokens[0]) > max {
 					continue
@@ -417,8 +417,9 @@ func ConnectSplitCandidates() StreamFunc {
 // ConnectProfile returns a stream function that connects the tokens with the profile.
 func ConnectProfile(profile gofiler.Profile) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		return EachTokenInDocument(ctx, in, func(d *Document, tokens ...T) error {
+		return EachTokenInDocument(ctx, in, func(d *Document, tokens []T) error {
 			d.Profile = profile
+			// TODO: Really?
 			d.ocrPats = profile.GlobalOCRPatterns()
 			return SendTokens(ctx, out, tokens...)
 		})
@@ -428,7 +429,7 @@ func ConnectProfile(profile gofiler.Profile) StreamFunc {
 // ConnectUnigrams adds the unigrams to the tokens's language model.
 func ConnectUnigrams() StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachTokenInDocument(ctx, in, func(lm *Document, tokens ...T) error {
+		err := EachTokenInDocument(ctx, in, func(lm *Document, tokens []T) error {
 			for _, t := range tokens {
 				lm.AddUnigram(t.Tokens[0])
 			}
@@ -447,7 +448,7 @@ func ConnectUnigrams() StreamFunc {
 // ConnectLanguageModel connects the document of the tokens to a language model.
 func ConnectLanguageModel(lm map[string]*FreqList) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		return EachTokenInDocument(ctx, in, func(d *Document, tokens ...T) error {
+		return EachTokenInDocument(ctx, in, func(d *Document, tokens []T) error {
 			d.LM = lm
 			if err := SendTokens(ctx, out, tokens...); err != nil {
 				return fmt.Errorf("connect language model: %v", err)
