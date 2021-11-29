@@ -17,6 +17,7 @@ type Config struct {
 	RR       TrainingConfig      `json:"rr"`
 	DM       DMConfig            `json:"dm"`
 	MS       TrainingConfig      `json:"ms"`
+	FF       TrainingConfig      `json:"ff"`
 	Nocr     int                 `json:"nocr"`
 	Cache    bool                `json:"cache"`
 	GT       bool                `json:"gt"`

@@ -325,6 +325,26 @@ func FilterLexiconEntries() StreamFunc {
 	}
 }
 
+// FilterNonLexiconEntries returns a stream function that filters all
+// tokens that are not lexicon entries from the stream.
+func FilterNonLexiconEntries() StreamFunc {
+	return func(ctx context.Context, in <-chan T, out chan<- T) error {
+		err := EachToken(ctx, in, func(t T) error {
+			if !t.ContainsLexiconEntry() {
+				return nil
+			}
+			if err := SendTokens(ctx, out, t); err != nil {
+				return fmt.Errorf("filter non lexicon entries: %v", err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("filter non lexicon entries: %v", err)
+		}
+		return nil
+	}
+}
+
 // ConnectCandidates returns a stream function that connects tokens
 // with their respective candidates to the stream.  Tokens with no
 // candidates or tokens with only a modern interpretation are filtered
@@ -423,7 +443,7 @@ func ConnectProfile(profile gofiler.Profile) StreamFunc {
 		return EachDocument(ctx, in, func(d *Document, tokens []T) error {
 			d.Profile = profile
 			// TODO: Really?
-			d.ocrPats = profile.GlobalOCRPatterns()
+			d.OCRPats = profile.GlobalOCRPatterns()
 			return SendTokens(ctx, out, tokens...)
 		})
 	}

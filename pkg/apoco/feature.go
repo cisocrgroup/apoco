@@ -61,6 +61,7 @@ var register = map[string]func([]string) (FeatureFunc, error){
 	"SplitLen":                       _ff(splitLen),
 	"IsStartOfLine":                  _ff(isSOL),
 	"IsEndOfLine":                    _ff(isEOL),
+	"FFNumberOfCandidates":           _ff(ffNumberOfCandidates),
 }
 
 // FeatureFunc defines the function a feature needs to implement.  A
@@ -150,7 +151,7 @@ func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 		},
 	}
 	switch typ {
-	case "dm":
+	case "dm", "ff":
 		t.Payload = []Ranking{{Candidate: new(gofiler.Candidate)}}
 	case "rr":
 		t.Payload = new(gofiler.Candidate)
@@ -748,4 +749,12 @@ func isEOL(t T, i, n int) (float64, bool) {
 		return 0, false
 	}
 	return ml.Bool(t.EOL), true
+}
+
+func ffNumberOfCandidates(t T, i, n int) (float64, bool) {
+	if i != 0 {
+		return 0, false
+	}
+	cs := t.Document.Profile[t.Tokens[0]]
+	return float64(len(cs.Candidates)), true
 }

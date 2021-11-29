@@ -38,7 +38,7 @@ func init() {
 	CMD.PersistentFlags().BoolVarP(&flags.alev, "alignlev", "v", false,
 		"align using Levenshtein (matrix) alignment")
 	// Subcommands
-	CMD.AddCommand(rrCMD, dmCMD, msCMD)
+	CMD.AddCommand(rrCMD, dmCMD, msCMD, ffCMD)
 }
 
 type stats struct {

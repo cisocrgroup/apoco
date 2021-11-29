@@ -123,6 +123,8 @@ func getTrainingParams(c *internal.Config) (float64, int, []string, error) {
 		return c.DM.LearningRate, c.DM.Ntrain, c.DM.Features, nil
 	case "ms":
 		return c.DM.LearningRate, c.MS.Ntrain, c.MS.Features, nil
+	case "ff":
+		return c.FF.LearningRate, c.FF.Ntrain, c.FF.Features, nil
 	}
 	return 0, 0, nil, fmt.Errorf("bad type: %s", flags.typ)
 }
@@ -143,6 +145,8 @@ func logCorrelationMat(c *internal.Config, fn []string, x *mat.Dense) error {
 		names = fs.Names(c.RR.Features, flags.typ, c.Nocr)
 	case "ms":
 		names = fs.Names(c.MS.Features, flags.typ, c.Nocr)
+	case "ff":
+		names = fs.Names(c.FF.Features, flags.typ, c.Nocr)
 	default:
 		panic("bad type: " + flags.typ)
 	}

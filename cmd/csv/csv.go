@@ -45,7 +45,7 @@ func init() {
 	CMD.PersistentFlags().StringVarP(&flags.out, "out", "o", "out.csv", "set output file")
 
 	// Subcommands
-	CMD.AddCommand(rrCMD, dmCMD) //, msCMD)
+	CMD.AddCommand(rrCMD, dmCMD, ffCMD) //, msCMD)
 }
 
 func csv(features []string, nocr int, gt func(apoco.T) (float64, bool)) apoco.StreamFunc {

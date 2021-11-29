@@ -76,13 +76,13 @@ type Document struct {
 	LM         map[string]*FreqList // Global language models.
 	Unigrams   FreqList             // Document-wise unigram model.
 	Profile    gofiler.Profile      // Document-wise profile.
-	ocrPats    map[string]float64   // Error patterns (from the profiler).
+	OCRPats    map[string]float64   // Error patterns (from the profiler).
 	Group      string               // File group or directory of the document.
 	Lexicality float64              // Lexicality score.
 }
 
 func (d *Document) LookupOCRPattern(a, b []rune) (float64, bool) {
-	w, ok := d.ocrPats[string(a)+":"+string(b)]
+	w, ok := d.OCRPats[string(a)+":"+string(b)]
 	return 1 - w, ok
 }
 
