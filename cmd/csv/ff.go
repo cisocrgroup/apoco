@@ -102,21 +102,6 @@ func connectProfileFF(c *internal.Config, profile string) apoco.StreamFunc {
 	}
 }
 
-func loadFFModel(c *internal.Config, m *internal.Model, update bool) (*ml.LR, apoco.FeatureSet, error) {
-	if update {
-		return m.Get("ff", c.Nocr)
-	}
-	fs, err := apoco.NewFeatureSet(c.FF.Features...)
-	if err != nil {
-		return nil, nil, err
-	}
-	lr := &ml.LR{
-		LearningRate: c.FF.LearningRate,
-		Ntrain:       c.FF.Ntrain,
-	}
-	return lr, fs, nil
-}
-
 func ffGT(t apoco.T) (float64, bool) {
 	return ml.Bool(t.Tokens[0] != t.GT()), true
 }
