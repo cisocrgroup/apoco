@@ -70,11 +70,9 @@ func dmEval(c *internal.Config, m *internal.Model) apoco.StreamFunc {
 			return fail(err)
 		}
 		var xs, ys []float64
-		var tokens []apoco.T
 		err = apoco.EachToken(ctx, in, func(t apoco.T) error {
 			xs = fs.Calculate(xs, t, c.Nocr)
 			ys = append(ys, dmGT(t))
-			tokens = append(tokens, t)
 			return nil
 		})
 		if err != nil {
