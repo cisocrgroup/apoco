@@ -15,7 +15,7 @@ import (
 // the profile from the cache and connects the profile with the tokens.
 func ConnectProfile(c *Config, suffix string) apoco.StreamFunc {
 	return func(ctx context.Context, in <-chan apoco.T, out chan<- apoco.T) error {
-		return apoco.EachTokenInDocument(ctx, in, func(doc *apoco.Document, ts []apoco.T) error {
+		return apoco.EachDocument(ctx, in, func(doc *apoco.Document, ts []apoco.T) error {
 			profile, err := readProfile(ctx, c, doc.Group, suffix, ts)
 			if err != nil {
 				return fmt.Errorf("connect profile: %v", err)
