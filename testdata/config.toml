@@ -13,9 +13,16 @@ gt = false
 # Use Levenshtein-Alignment (enable with -v/--alignlev)
 alignLev = false
 
+# Enable handling of false friends (enable with -x/--lex)
+lex = false
+
 # Settings for the various language models
 [lm.3grams]
 path = "data/3gs.csv.gz"
+
+# Additional language models can be specified
+# [lm.lib]
+# path = "data/lm.csv.gz"
 
 # Profiler settings.
 [profiler]

@@ -23,7 +23,7 @@ var flags = struct {
 	extensions            []string
 	parameter, model, out string
 	nocr, bufs            int
-	cache, alev           bool
+	cache, alev, lex      bool
 }{}
 
 const bufs int = 64 * 1024
@@ -42,6 +42,7 @@ func init() {
 		"enable caching of profiles (overwrites the setting in the configuration file)")
 	CMD.PersistentFlags().BoolVarP(&flags.alev, "alignlev", "v", false,
 		"align using Levenshtein (matrix) alignment")
+	CMD.PersistentFlags().BoolVarP(&flags.lex, "lex", "x", false, "operate on lexical tokens only")
 	CMD.PersistentFlags().StringVarP(&flags.out, "out", "o", "out.csv", "set output file")
 
 	// Subcommands

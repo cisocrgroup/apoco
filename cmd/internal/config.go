@@ -22,6 +22,7 @@ type Config struct {
 	Cache    bool                `json:"cache"`
 	GT       bool                `json:"gt"`
 	AlignLev bool                `json:"alignLev"`
+	Lex      bool                `json:"lex"`
 }
 
 // LMConfig configures the path to a language model csv file.

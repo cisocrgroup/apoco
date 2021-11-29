@@ -22,7 +22,7 @@ var dmFlags = struct {
 
 func init() {
 	dmCMD.Flags().StringVarP(&dmFlags.filter, "filter", "f", "courageous",
-		"use cautious training (overwrites the setting in the configuration file)")
+		"set courageous, redundant or cautious training filter")
 }
 
 func dmRun(_ *cobra.Command, args []string) {
@@ -33,6 +33,7 @@ func dmRun(_ *cobra.Command, args []string) {
 	internal.UpdateInConfig(&c.Nocr, flags.nocr)
 	internal.UpdateInConfig(&c.Cache, flags.cache)
 	internal.UpdateInConfig(&c.AlignLev, flags.alev)
+	internal.UpdateInConfig(&c.Lex, flags.lex)
 	internal.UpdateInConfig(&c.DM.Filter, dmFlags.filter)
 
 	m, err := internal.ReadModel(c.Model, c.LM, true)
@@ -51,7 +52,7 @@ func dmRun(_ *cobra.Command, args []string) {
 		apoco.ConnectLanguageModel(m.LM),
 		apoco.ConnectUnigrams(),
 		internal.ConnectProfile(c, "-profile.json.gz"),
-		apoco.FilterLexiconEntries(),
+		internal.FilterLex(c),
 		apoco.ConnectCandidates(),
 		apoco.ConnectRankings(lr, fs, c.Nocr),
 		csv(c.DM.Features, c.Nocr, dmGT(dmFlags.filter)),
