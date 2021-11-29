@@ -264,82 +264,70 @@ func normalizeChars(chars Chars) Chars {
 	return chars[i:j]
 }
 
-// FilterBad returns a astream function that filters tokens with not
-// enough ocr and/or gt tokens.
-func FilterBad(min int) StreamFunc {
+func filter(fn func(T) bool) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		err := EachToken(ctx, in, func(t T) error {
-			if len(t.Tokens) < min {
+			if fn(t) {
 				return nil
 			}
-			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("filter bad: send tokens: %v", err)
-			}
-			return nil
+			return SendTokens(ctx, out, t)
 		})
 		if err != nil {
-			return fmt.Errorf("filter bad: each token: %v", err)
+			return fmt.Errorf("filter: %v", err)
 		}
 		return nil
 	}
+}
+
+// FilterBad returns a astream function that filters tokens with not
+// enough ocr and/or gt tokens.
+func FilterBad(min int) StreamFunc {
+	return filter(func(t T) bool {
+		return len(t.Tokens) < min
+	})
 }
 
 // FilterShort returns a stream function that filters short master OCR
 // tokens from the input stream.  Short tokens are tokens, with less
 // than min unicode characters.
 func FilterShort(min int) StreamFunc {
-	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachToken(ctx, in, func(t T) error {
-			if utf8.RuneCountInString(t.Tokens[0]) < min {
-				return nil
-			}
-			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("filter short: send tokens: %v", err)
-			}
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("filter short: each token: %v", err)
-		}
-		return nil
-	}
+	return filter(func(t T) bool {
+		return utf8.RuneCountInString(t.Tokens[0]) < min
+	})
 }
 
 // FilterLexiconEntries returns a stream function that filters all
 // tokens that are lexicon entries from the stream.
 func FilterLexiconEntries() StreamFunc {
-	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachToken(ctx, in, func(t T) error {
-			if t.IsLexiconEntry() {
-				return nil
-			}
-			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("filterLexiconEntry: %v", err)
-			}
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("filterLexiconEntry: %v", err)
-		}
-		return nil
-	}
+	return filter(func(t T) bool {
+		return t.ContainsLexiconEntry()
+	})
 }
 
 // FilterNonLexiconEntries returns a stream function that filters all
 // tokens that are not lexicon entries from the stream.
 func FilterNonLexiconEntries() StreamFunc {
+	return filter(func(t T) bool {
+		return !t.ContainsLexiconEntry()
+	})
+}
+
+// MarkSplits detects possible splits between the primary and a secondary
+// OCR (denoted by the given index n).  A split is detected if two or
+// more primary OCR tokens are aligned to the same secondary OCR token.
+func MarkSplits(n int) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
-		err := EachToken(ctx, in, func(t T) error {
-			if !t.ContainsLexiconEntry() {
-				return nil
+		err := EachDocument(ctx, in, func(_ *Document, ts []T) error {
+			for i := range ts {
+				if i > 0 && ts[i-1].Tokens[n] == ts[i].Tokens[n] {
+					ts[i-1].IsSplit = true
+					ts[i].IsSplit = true
+				}
 			}
-			if err := SendTokens(ctx, out, t); err != nil {
-				return fmt.Errorf("filter non lexicon entries: %v", err)
-			}
-			return nil
+			return SendTokens(ctx, out, ts...)
 		})
 		if err != nil {
-			return fmt.Errorf("filter non lexicon entries: %v", err)
+			return fmt.Errorf("mark splits: %v", err)
 		}
 		return nil
 	}

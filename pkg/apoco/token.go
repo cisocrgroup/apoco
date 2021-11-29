@@ -18,6 +18,7 @@ type T struct {
 	Chars    Chars       // Master OCR chars including their confidences
 	Tokens   []string    // Master and support OCRs and gt
 	EOL, SOL bool        // End of line and start of line marker.
+	IsSplit  bool        // Marks possible split tokens between the primary and secondary OCR.
 }
 
 // IsLexiconEntry returns true if this token is a normal lexicon entry
