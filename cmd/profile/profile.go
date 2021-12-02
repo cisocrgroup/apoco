@@ -107,7 +107,7 @@ func eachStok(in io.Reader, f func(internal.Stok) error) error {
 		if len(scanner.Text()) > 0 && scanner.Text()[0] == '#' {
 			continue
 		}
-		t, err := internal.MakeStok(scanner.Text())
+		t, err := internal.MakeStokFromLine(scanner.Text())
 		if err != nil {
 			return err
 		}

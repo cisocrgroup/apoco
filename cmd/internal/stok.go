@@ -34,8 +34,9 @@ func MakeStokFromT(t apoco.T, gt bool) Stok {
 	return ret
 }
 
-// MakeStok creates a new stats token from a according formatted line.
-func MakeStok(line string) (Stok, error) {
+// MakeStokFromLine creates a new stats token from a according
+// formatted line.
+func MakeStokFromLine(line string) (Stok, error) {
 	var stok Stok
 	toks := strings.Split(line, " ")
 	for _, tok := range toks {
@@ -312,7 +313,7 @@ func EachStok(r io.Reader, f func(string, Stok) error) error {
 		if line == "" || strings.HasPrefix(line, StokComment) {
 			continue
 		}
-		stok, err := MakeStok(line)
+		stok, err := MakeStokFromLine(line)
 		if err != nil {
 			return err
 		}

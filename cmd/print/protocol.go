@@ -78,7 +78,7 @@ func printStoksInPageXML(ifg, name string) {
 		}
 		switch {
 		case flags.json:
-			stok, err := internal.MakeStok(dtd)
+			stok, err := internal.MakeStokFromLine(dtd)
 			chk(err)
 			stoks[ifg] = append(stoks[ifg], stok)
 		default:

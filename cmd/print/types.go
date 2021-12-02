@@ -38,7 +38,7 @@ func printTypesJSON() {
 			_, err := fmt.Sscanf(line, "#name=%s", &name)
 			chk(err)
 		default:
-			s, err := internal.MakeStok(line)
+			s, err := internal.MakeStokFromLine(line)
 			chk(err)
 			stoks[name] = append(stoks[name], stok{Stok: s, Type: typ(s, before)})
 			before = s
@@ -55,7 +55,7 @@ func printTypes() {
 			_, err := fmt.Println(line)
 			chk(err)
 		default:
-			s, err := internal.MakeStok(line)
+			s, err := internal.MakeStokFromLine(line)
 			chk(err)
 			_, err = fmt.Printf("%s type=%s\n", s, typ(s, before))
 			chk(err)
