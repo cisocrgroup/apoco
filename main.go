@@ -28,14 +28,14 @@ var logLevel string
 func init() {
 	root.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "INFO", "set log level")
 	root.AddCommand(
-		align.CMD,
-		correct.CMD,
-		csv.CMD,
-		eval.CMD,
-		print.CMD,
-		profile.CMD,
-		train.CMD,
-		version.CMD,
+		align.Cmd,
+		correct.Cmd,
+		csv.Cmd,
+		eval.Cmd,
+		print.Cmd,
+		profile.Cmd,
+		train.Cmd,
+		version.Cmd,
 	)
 }
 

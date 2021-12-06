@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CMD defines the apoco train command.
-var CMD = &cobra.Command{
+// Cmd defines the apoco train command.
+var Cmd = &cobra.Command{
 	Use:   "csv",
 	Short: "Extract training-features to csv",
 }
@@ -30,23 +30,23 @@ const bufs int = 64 * 1024
 
 func init() {
 	// Train flags
-	CMD.PersistentFlags().StringVarP(&flags.parameter, "parameter", "p", "config.toml",
+	Cmd.PersistentFlags().StringVarP(&flags.parameter, "parameter", "p", "config.toml",
 		"set the path to the configuration file")
-	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
+	Cmd.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", []string{".xml"},
 		"set the input file extensions")
-	CMD.PersistentFlags().IntVarP(&flags.nocr, "nocr", "n", 0,
+	Cmd.PersistentFlags().IntVarP(&flags.nocr, "nocr", "n", 0,
 		"set the number of parallel OCRs (overwrites the setting in the configuration file)")
-	CMD.PersistentFlags().StringVarP(&flags.model, "model", "M", "",
+	Cmd.PersistentFlags().StringVarP(&flags.model, "model", "M", "",
 		"set the model path (overwrites the setting in the configuration file)")
-	CMD.PersistentFlags().BoolVarP(&flags.cache, "cache", "c", false,
+	Cmd.PersistentFlags().BoolVarP(&flags.cache, "cache", "c", false,
 		"enable caching of profiles (overwrites the setting in the configuration file)")
-	CMD.PersistentFlags().BoolVarP(&flags.alev, "alignlev", "v", false,
+	Cmd.PersistentFlags().BoolVarP(&flags.alev, "alignlev", "v", false,
 		"align using Levenshtein (matrix) alignment")
-	CMD.PersistentFlags().BoolVarP(&flags.lex, "lex", "x", false, "operate on lexical tokens only")
-	CMD.PersistentFlags().StringVarP(&flags.out, "out", "o", "out.csv", "set output file")
+	Cmd.PersistentFlags().BoolVarP(&flags.lex, "lex", "x", false, "operate on lexical tokens only")
+	Cmd.PersistentFlags().StringVarP(&flags.out, "out", "o", "out.csv", "set output file")
 
 	// Subcommands
-	CMD.AddCommand(rrCMD, dmCMD, ffCMD) //, msCMD)
+	Cmd.AddCommand(rrCmd, dmCmd, ffCmd) //, msCmd)
 }
 
 func csv(features []string, nocr int, gt func(apoco.T) (float64, bool)) apoco.StreamFunc {

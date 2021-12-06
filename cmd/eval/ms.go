@@ -13,8 +13,8 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// msCMD defines the apoco train rr command.
-var msCMD = &cobra.Command{
+// msCmd defines the apoco train rr command.
+var msCmd = &cobra.Command{
 	Use:   "ms [DIRS...]",
 	Short: "Evaluate an apoco merge split model",
 	Run:   msRun,
@@ -25,7 +25,7 @@ var msFlags struct {
 }
 
 func init() {
-	msCMD.Flags().Float64VarP(&msFlags.threshold, "threshold", "t", 0.5, "set the threshold for the merge confidence")
+	msCmd.Flags().Float64VarP(&msFlags.threshold, "threshold", "t", 0.5, "set the threshold for the merge confidence")
 }
 
 func msRun(_ *cobra.Command, args []string) {

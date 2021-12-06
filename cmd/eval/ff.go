@@ -13,8 +13,8 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// ffCMD defines the apoco train ff command.
-var ffCMD = &cobra.Command{
+// ffCmd defines the apoco train ff command.
+var ffCmd = &cobra.Command{
 	Use:   "ff [DIRS...]",
 	Short: "Evaluate an apoco false-friends model",
 	Run:   ffRun,

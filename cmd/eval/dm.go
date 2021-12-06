@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// dmCMD defines the apoco train command.
-var dmCMD = &cobra.Command{
+// dmCmd defines the apoco train command.
+var dmCmd = &cobra.Command{
 	Use:   "dm  [DIRS...]",
 	Short: "Evaluate a decision maker model",
 	Run:   dmRun,
@@ -23,7 +23,7 @@ var dmFlags = struct {
 }{}
 
 func init() {
-	dmCMD.Flags().StringVarP(&dmFlags.filter, "filter", "f", "courageous",
+	dmCmd.Flags().StringVarP(&dmFlags.filter, "filter", "f", "courageous",
 		"use cautious training (overwrites the setting in the configuration file)")
 }
 

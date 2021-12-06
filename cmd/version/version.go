@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CMD defines the apoco version command.
-var CMD = &cobra.Command{
+// Cmd defines the apoco version command.
+var Cmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print apoco's version",
 	Run:   run,

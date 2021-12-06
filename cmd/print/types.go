@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// typesCMD runs the apoco print errtypes.
-var typesCMD = &cobra.Command{
+// typesCmd runs the apoco print errtypes.
+var typesCmd = &cobra.Command{
 	Use:   "types [DIRS...]",
 	Short: "Augment stat tokens with types",
 	Args:  cobra.ExactArgs(0),

@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CMD defines the apoco profile command.
-var CMD = &cobra.Command{
+// Cmd defines the apoco profile command.
+var Cmd = &cobra.Command{
 	Use:   "profile [DIRS...] OUT",
 	Short: "Create profiles of documents",
 	Args:  cobra.MinimumNArgs(1),
@@ -31,11 +31,11 @@ var flags = struct {
 }{}
 
 func init() {
-	CMD.PersistentFlags().StringVarP(&flags.parameter, "parameter", "p", "config.toml",
+	Cmd.PersistentFlags().StringVarP(&flags.parameter, "parameter", "p", "config.toml",
 		"set the path to the configuration file")
-	CMD.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", nil,
+	Cmd.PersistentFlags().StringSliceVarP(&flags.extensions, "extensions", "e", nil,
 		"set the input file extensions")
-	CMD.PersistentFlags().BoolVarP(&flags.corrections, "corrections", "c", false,
+	Cmd.PersistentFlags().BoolVarP(&flags.corrections, "corrections", "c", false,
 		"add corrections to the profiler")
 }
 

@@ -20,15 +20,15 @@ var protocolFlags = struct {
 	ifgs []string
 }{}
 
-var protocolCMD = &cobra.Command{
+var protocolCmd = &cobra.Command{
 	Use:   "protocol [INPUT...]",
 	Short: "Output stats from a-i-pocoto protocol or from page XML files",
 	Run:   runProtocol,
 }
 
 func init() {
-	protocolCMD.Flags().StringVarP(&protocolFlags.mets, "mets", "m", "mets.xml", "set path to the mets file")
-	protocolCMD.Flags().StringSliceVarP(&protocolFlags.ifgs, "input-file-grp", "I", nil, "set input file groups")
+	protocolCmd.Flags().StringVarP(&protocolFlags.mets, "mets", "m", "mets.xml", "set path to the mets file")
+	protocolCmd.Flags().StringSliceVarP(&protocolFlags.ifgs, "input-file-grp", "I", nil, "set input file groups")
 }
 
 func runProtocol(_ *cobra.Command, args []string) {

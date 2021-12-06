@@ -14,8 +14,8 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// msCMD defines the apoco train ms command.
-var msCMD = &cobra.Command{
+// msCmd defines the apoco train ms command.
+var msCmd = &cobra.Command{
 	Use:   "ms [[DIR...] | [FILE...]]",
 	Short: "Extract merge-split features to csv",
 	Run:   msRun,

@@ -19,8 +19,8 @@ import (
 	"gonum.org/v1/gonum/stat"
 )
 
-// CMD defines the apoco train command.
-var CMD = &cobra.Command{
+// Cmd defines the apoco train command.
+var Cmd = &cobra.Command{
 	Use:   "train [CSV...]",
 	Short: "Train post-correction models",
 	Args:  cobra.MinimumNArgs(1),
@@ -34,15 +34,15 @@ var flags = struct {
 
 func init() {
 	// Train flags
-	CMD.PersistentFlags().StringVarP(&flags.parameter, "parameter", "p", "config.toml",
+	Cmd.PersistentFlags().StringVarP(&flags.parameter, "parameter", "p", "config.toml",
 		"set the path to the configuration file")
-	CMD.PersistentFlags().StringVarP(&flags.typ, "type", "t", "",
+	Cmd.PersistentFlags().StringVarP(&flags.typ, "type", "t", "",
 		"set the type of the model (rr, dm, ...)")
-	CMD.PersistentFlags().StringVarP(&flags.model, "model", "M", "",
+	Cmd.PersistentFlags().StringVarP(&flags.model, "model", "M", "",
 		"set the model path (overwrites the setting in the configuration file)")
-	CMD.PersistentFlags().IntVarP(&flags.nocr, "nocr", "n", 0,
+	Cmd.PersistentFlags().IntVarP(&flags.nocr, "nocr", "n", 0,
 		"set the number of parallel OCRs (overwrites the setting in the configuration file)")
-	CMD.PersistentFlags().IntVarP(&flags.batch, "batch", "b", 1e8,
+	Cmd.PersistentFlags().IntVarP(&flags.batch, "batch", "b", 1e8,
 		"set the number of parallel OCRs (overwrites the setting in the configuration file)")
 }
 

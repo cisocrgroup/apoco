@@ -15,12 +15,12 @@ var trigramsFlags = struct {
 }{}
 
 func init() {
-	trigramsCMD.Flags().IntVarP(&trigramsFlags.clean, "clean", "c",
+	trigramsCmd.Flags().IntVarP(&trigramsFlags.clean, "clean", "c",
 		0, "remove trigrams with less than arg occurences")
 }
 
-// trigramsCMD runs the apoco print trigrams subcommand.
-var trigramsCMD = &cobra.Command{
+// trigramsCmd runs the apoco print trigrams subcommand.
+var trigramsCmd = &cobra.Command{
 	Run:   runTrigrams,
 	Use:   "trigrams",
 	Short: "Generate language model trigrams",

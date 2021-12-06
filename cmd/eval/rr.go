@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// rrCMD defines the apoco eval rr command.
-var rrCMD = &cobra.Command{
+// rrCmd defines the apoco eval rr command.
+var rrCmd = &cobra.Command{
 	Use:   "rr [DIR...]",
 	Short: "Evaluate an apoco re-ranking model",
 	Run:   rrRun,

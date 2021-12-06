@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ffCMD defines the apoco train ff command.
-var ffCMD = &cobra.Command{
+// ffCmd defines the apoco train ff command.
+var ffCmd = &cobra.Command{
 	Use:   "ff [DIRS...]",
 	Short: "Train an apoco false friends detection model",
 	Run:   ffRun,

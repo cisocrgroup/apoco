@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// profileCMD runs the apoco print profile command.
-var profileCMD = &cobra.Command{
+// profileCmd runs the apoco print profile command.
+var profileCmd = &cobra.Command{
 	Use:   "profile [PROFILE...]",
 	Short: "Print information about profiles",
 	Run:   runProfile,
@@ -23,11 +23,11 @@ var profileFlags = struct {
 }{}
 
 func init() {
-	profileCMD.Flags().BoolVarP(&profileFlags.histPats, "histpats", "p", false,
+	profileCmd.Flags().BoolVarP(&profileFlags.histPats, "histpats", "p", false,
 		"output global historical pattern probabilities")
-	profileCMD.Flags().BoolVarP(&profileFlags.ocrPats, "ocrpats", "e", false,
+	profileCmd.Flags().BoolVarP(&profileFlags.ocrPats, "ocrpats", "e", false,
 		"output global ocr error pattern probabilities")
-	profileCMD.Flags().BoolVarP(&profileFlags.noProfile, "noprofile", "n", false,
+	profileCmd.Flags().BoolVarP(&profileFlags.noProfile, "noprofile", "n", false,
 		"do not output profile interpretations ")
 }
 

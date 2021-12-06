@@ -17,20 +17,20 @@ var tokensFlags = struct {
 	normalize, gt    bool
 }{}
 
-// CMD defines the apoco cat command.
-var tokensCMD = &cobra.Command{
+// Cmd defines the apoco cat command.
+var tokensCmd = &cobra.Command{
 	Use:   "tokens [DIRS...]",
 	Short: "Output tokens to stdout",
 	Run:   runTokens,
 }
 
 func init() {
-	tokensCMD.Flags().StringSliceVarP(&tokensFlags.ifgs, "input-file-grp", "I", nil, "set input file groups")
-	tokensCMD.Flags().StringSliceVarP(&tokensFlags.extensions, "extensions", "e", []string{".xml"},
+	tokensCmd.Flags().StringSliceVarP(&tokensFlags.ifgs, "input-file-grp", "I", nil, "set input file groups")
+	tokensCmd.Flags().StringSliceVarP(&tokensFlags.extensions, "extensions", "e", []string{".xml"},
 		"set input file extensions")
-	tokensCMD.Flags().StringVarP(&tokensFlags.mets, "mets", "m", "mets.xml", "set path to the mets file")
-	tokensCMD.Flags().BoolVarP(&tokensFlags.normalize, "normalize", "N", false, "normalize tokens")
-	tokensCMD.Flags().BoolVarP(&tokensFlags.gt, "gt", "g", false, "enable ground-truth data")
+	tokensCmd.Flags().StringVarP(&tokensFlags.mets, "mets", "m", "mets.xml", "set path to the mets file")
+	tokensCmd.Flags().BoolVarP(&tokensFlags.normalize, "normalize", "N", false, "normalize tokens")
+	tokensCmd.Flags().BoolVarP(&tokensFlags.gt, "gt", "g", false, "enable ground-truth data")
 }
 
 func runTokens(_ *cobra.Command, args []string) {

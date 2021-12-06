@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// charsetCMD runs the apoco print charset subcommand.
-var charsetCMD = &cobra.Command{
+// charsetCmd runs the apoco print charset subcommand.
+var charsetCmd = &cobra.Command{
 	Use:   "charset",
 	Short: "Extract differences in character sets",
 	Run:   runCharset,

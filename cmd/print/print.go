@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CMD defines the apoco print command.
-var CMD = &cobra.Command{
+// Cmd defines the apoco print command.
+var Cmd = &cobra.Command{
 	Use:   "print",
 	Short: "Print out information",
 }
@@ -17,10 +17,10 @@ var flags = struct {
 }{}
 
 func init() {
-	CMD.PersistentFlags().BoolVarP(&flags.json, "json", "J", false, "set json output")
+	Cmd.PersistentFlags().BoolVarP(&flags.json, "json", "J", false, "set json output")
 	// Subcommands
-	CMD.AddCommand(statsCMD, tokensCMD, modelCMD, protocolCMD, profileCMD, charsetCMD,
-		typesCMD, trigramsCMD)
+	Cmd.AddCommand(statsCmd, tokensCmd, modelCmd, protocolCmd, profileCmd, charsetCmd,
+		typesCmd, trigramsCmd)
 }
 
 func chk(err error) {

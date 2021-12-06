@@ -18,37 +18,37 @@ var flags = struct {
 	cache, gt, correct                     bool
 }{}
 
-// CMD runs the apoco correct command.
-var CMD = &cobra.Command{
+// Cmd runs the apoco correct command.
+var Cmd = &cobra.Command{
 	Use:   "correct [DIRS...]",
 	Short: "Automatically post-correct documents",
 	Run:   run,
 }
 
 func init() {
-	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I",
+	Cmd.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I",
 		nil, "set input file groups")
-	CMD.Flags().StringSliceVarP(&flags.exts, "extensions", "e",
+	Cmd.Flags().StringSliceVarP(&flags.exts, "extensions", "e",
 		[]string{".xml"}, "set input file extensions")
-	CMD.Flags().StringVarP(&flags.ofg, "output-file-grp", "O",
+	Cmd.Flags().StringVarP(&flags.ofg, "output-file-grp", "O",
 		"", "set output file group")
-	CMD.Flags().StringVarP(&flags.mets, "mets", "m",
+	Cmd.Flags().StringVarP(&flags.mets, "mets", "m",
 		"mets.xml", "set path to the mets file")
-	CMD.Flags().StringVarP(&flags.params, "parameter", "p",
+	Cmd.Flags().StringVarP(&flags.params, "parameter", "p",
 		"config.toml", "set path to the configuration file")
-	CMD.Flags().StringVarP(&flags.profile, "profile", "f",
+	Cmd.Flags().StringVarP(&flags.profile, "profile", "f",
 		"", "set external profile file")
-	CMD.Flags().StringVarP(&flags.suf, "suffix", "s",
+	Cmd.Flags().StringVarP(&flags.suf, "suffix", "s",
 		".cor.txt", "set the suffix for correction snippet files")
-	CMD.Flags().IntVarP(&flags.nocr, "nocr", "n",
+	Cmd.Flags().IntVarP(&flags.nocr, "nocr", "n",
 		0, "set nocr (overwrites setting in the configuration file)")
-	CMD.Flags().IntVarP(&flags.cands, "cands", "d",
+	Cmd.Flags().IntVarP(&flags.cands, "cands", "d",
 		-1, "output candidates for tokens (0=all, -1=no)")
-	CMD.Flags().StringVarP(&flags.model, "model", "M", "",
+	Cmd.Flags().StringVarP(&flags.model, "model", "M", "",
 		"set model path (overwrites setting in the configuration file)")
-	CMD.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
-	CMD.Flags().BoolVarP(&flags.gt, "gt", "g", false, "enable ground-truth data")
-	CMD.Flags().BoolVarP(&flags.correct, "correct", "C", false, "do not output stoks; correct files directly")
+	Cmd.Flags().BoolVarP(&flags.cache, "cache", "c", false, "enable caching of profile")
+	Cmd.Flags().BoolVarP(&flags.gt, "gt", "g", false, "enable ground-truth data")
+	Cmd.Flags().BoolVarP(&flags.correct, "correct", "C", false, "do not output stoks; correct files directly")
 }
 
 func run(_ *cobra.Command, args []string) {

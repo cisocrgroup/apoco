@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// rrCMD defines the apoco csv rr command.
-var rrCMD = &cobra.Command{
+// rrCmd defines the apoco csv rr command.
+var rrCmd = &cobra.Command{
 	Use:   "rr [[DIR...] | [FILE...]]",
 	Short: "Extract re-ranking features to csv",
 	Run:   rrRun,

@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// modelCMD runs the apoco print model command.
-var modelCMD = &cobra.Command{
+// modelCmd runs the apoco print model command.
+var modelCmd = &cobra.Command{
 	Use:   "model [MODEL...]",
 	Short: "Print information about models",
 	Run:   runModel,
@@ -24,11 +24,11 @@ var modelFlags = struct {
 }{}
 
 func init() {
-	modelCMD.Flags().BoolVarP(&modelFlags.histPats, "histpats", "p", false,
+	modelCmd.Flags().BoolVarP(&modelFlags.histPats, "histpats", "p", false,
 		"output global historical pattern probabilities")
-	modelCMD.Flags().BoolVarP(&modelFlags.ocrPats, "ocrpats", "e", false,
+	modelCmd.Flags().BoolVarP(&modelFlags.ocrPats, "ocrpats", "e", false,
 		"output global ocr error pattern probabilities")
-	modelCMD.Flags().BoolVarP(&modelFlags.noWeights, "noweights", "n", false,
+	modelCmd.Flags().BoolVarP(&modelFlags.noWeights, "noweights", "n", false,
 		"do not output feature weights")
 }
 

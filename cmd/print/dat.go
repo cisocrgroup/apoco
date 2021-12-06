@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CMD defines the apoco train command.
-var datCMD = &cobra.Command{
+// Cmd defines the apoco train command.
+var datCmd = &cobra.Command{
 	Use:   "dat [FILES...]",
 	Short: "Print data for gnuplot",
 	Run:   run,
@@ -32,15 +32,15 @@ var datFlags = struct {
 }{}
 
 func init() {
-	datCMD.Flags().StringVarP(&datFlags.typ, "type", "t", "acc", "set type of evaluation")
-	datCMD.Flags().StringSliceVarP(&datFlags.replace, "substitute", "e", nil,
+	datCmd.Flags().StringVarP(&datFlags.typ, "type", "t", "acc", "set type of evaluation")
+	datCmd.Flags().StringSliceVarP(&datFlags.replace, "substitute", "e", nil,
 		"set expressions applied to file names (sed s/// syntax)")
-	datCMD.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
+	datCmd.Flags().BoolVarP(&datFlags.noshorts, "noshort", "s", false,
 		"exclude short tokens (len<4) from the evaluation")
-	datCMD.Flags().IntVarP(&datFlags.limit, "limit", "m", 0, "set candidate limit")
-	datCMD.Flags().IntVarP(&datFlags.year, "ylen", "y", 4,
+	datCmd.Flags().IntVarP(&datFlags.limit, "limit", "m", 0, "set candidate limit")
+	datCmd.Flags().IntVarP(&datFlags.year, "ylen", "y", 4,
 		"set length of id/year prefix used to identify documents")
-	CMD.AddCommand(datCMD)
+	Cmd.AddCommand(datCmd)
 }
 
 func run(_ *cobra.Command, args []string) {

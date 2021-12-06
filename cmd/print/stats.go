@@ -18,19 +18,19 @@ var statsFlags = struct {
 	verbose   bool
 }{}
 
-// statsCMD runs the apoco stats command.
-var statsCMD = &cobra.Command{
+// statsCmd runs the apoco stats command.
+var statsCmd = &cobra.Command{
 	Use:   "stats [FILE...]",
 	Short: "Extract correction stats",
 	Run:   runStats,
 }
 
 func init() {
-	statsCMD.Flags().StringVarP(&statsFlags.name, "name", "n", "", "set name")
-	statsCMD.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
-	statsCMD.Flags().BoolVarP(&statsFlags.skipShort, "noshort", "s", false,
+	statsCmd.Flags().StringVarP(&statsFlags.name, "name", "n", "", "set name")
+	statsCmd.Flags().IntVarP(&statsFlags.limit, "limit", "L", 0, "set limit for the profiler's candidate set")
+	statsCmd.Flags().BoolVarP(&statsFlags.skipShort, "noshort", "s", false,
 		"exclude short tokens (len<4) from the evaluation")
-	statsCMD.Flags().BoolVarP(&statsFlags.verbose, "verbose", "v", false,
+	statsCmd.Flags().BoolVarP(&statsFlags.verbose, "verbose", "v", false,
 		"enable more verbose error and correction output")
 }
 

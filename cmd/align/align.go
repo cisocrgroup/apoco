@@ -25,17 +25,17 @@ var flags = struct {
 	ofg, mets string
 }{}
 
-// CMD defines the apoco align command.
-var CMD = &cobra.Command{
+// Cmd defines the apoco align command.
+var Cmd = &cobra.Command{
 	Use:   "align",
 	Short: "Align multiple input file groups",
 	Run:   run,
 }
 
 func init() {
-	CMD.Flags().StringVarP(&flags.ofg, "out-file-grp", "O", "", "set output file group of alignments")
-	CMD.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to mets file")
-	CMD.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
+	Cmd.Flags().StringVarP(&flags.ofg, "out-file-grp", "O", "", "set output file group of alignments")
+	Cmd.Flags().StringVarP(&flags.mets, "mets", "m", "mets.xml", "set path to mets file")
+	Cmd.Flags().StringSliceVarP(&flags.ifgs, "input-file-grp", "I", nil, "set input file groups")
 }
 
 func run(_ *cobra.Command, args []string) {
