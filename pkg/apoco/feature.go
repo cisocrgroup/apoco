@@ -80,7 +80,7 @@ type FeatureSet []FeatureFunc
 // function names.
 //
 // Feature function names can have optional arguments. The arguments
-// of a feature function must be given in a comman-separated list
+// of a feature function must be given in a comma-separated list
 // enclosed in `()`. For example `feature`, `feature()`,
 // `feature(arg1,arg2)` are all valid feature function names.
 func NewFeatureSet(names ...string) (FeatureSet, error) {
