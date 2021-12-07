@@ -63,8 +63,15 @@ func profilerCachePath(base, suffix string) (string, bool) {
 	}
 	cacheDir := filepath.Join(dir, "apoco")
 	_ = os.MkdirAll(cacheDir, 0755)
+	base, err = filepath.Abs(base)
+	if err != nil {
+		return "", false
+	}
 	for strings.HasSuffix(base, "/") {
 		base = base[0 : len(base)-1]
+	}
+	for strings.HasPrefix(base, "/") {
+		base = base[1:]
 	}
 	base = strings.ReplaceAll(base, "/", "-") + suffix
 	return filepath.Join(cacheDir, base), true
