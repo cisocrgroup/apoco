@@ -312,9 +312,10 @@ func FilterNonLexiconEntries() StreamFunc {
 	})
 }
 
-// MarkSplits detects possible splits between the primary and a secondary
-// OCR (denoted by the given index n).  A split is detected if two or
-// more primary OCR tokens are aligned to the same secondary OCR token.
+// MarkSplits detects possible splits between the primary and a
+// secondary OCR (denoted by the given index n).  A split is detected
+// if two or more primary OCR tokens are aligned to the same secondary
+// OCR token.
 func MarkSplits(n int) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		err := EachDocument(ctx, in, func(_ *Document, ts []T) error {
@@ -361,7 +362,8 @@ func ConnectCandidates() StreamFunc {
 
 // AddShortTokensToProfile returns a stream function that adds fake
 // profiler interpretation for short tokens into the token's profile.
-// Short tokens are tokens with less than or equal to max unicode runes.
+// Short tokens are tokens with less than or equal to max unicode
+// runes.
 func AddShortTokensToProfile(max int) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		err := EachDocument(ctx, in, func(d *Document, ts []T) error {
@@ -425,7 +427,8 @@ func ConnectSplitCandidates() StreamFunc {
 	}
 }
 
-// ConnectProfile returns a stream function that connects the tokens with the profile.
+// ConnectProfile returns a stream function that connects the tokens
+// with the profile.
 func ConnectProfile(profile gofiler.Profile) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		return EachDocument(ctx, in, func(d *Document, tokens []T) error {
@@ -456,7 +459,8 @@ func ConnectUnigrams() StreamFunc {
 	}
 }
 
-// ConnectLanguageModel connects the document of the tokens to a language model.
+// ConnectLanguageModel connects the document of the tokens to a
+// language model.
 func ConnectLanguageModel(lm map[string]*FreqList) StreamFunc {
 	return func(ctx context.Context, in <-chan T, out chan<- T) error {
 		return EachDocument(ctx, in, func(d *Document, tokens []T) error {

@@ -138,8 +138,8 @@ func (fs FeatureSet) Calculate(xs []float64, t T, n int) []float64 {
 }
 
 // Names returns the names of the features including the features for
-// different values of OCR's.  This function panics if the length of the
-// feature set differs from the length of the given feature names.
+// different values of OCR's.  This function panics if the length of
+// the feature set differs from the length of the given feature names.
 func (fs FeatureSet) Names(names []string, typ string, nocr int) []string {
 	if len(names) != len(fs) {
 		panic("bad names")

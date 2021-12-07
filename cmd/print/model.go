@@ -19,16 +19,16 @@ var modelCmd = &cobra.Command{
 	Run:   runModel,
 }
 
-var modelFlags = struct {
+var modelArgs = struct {
 	histPats, ocrPats, noWeights bool
 }{}
 
 func init() {
-	modelCmd.Flags().BoolVarP(&modelFlags.histPats, "histpats", "p", false,
+	modelCmd.Flags().BoolVarP(&modelArgs.histPats, "histpats", "p", false,
 		"output global historical pattern probabilities")
-	modelCmd.Flags().BoolVarP(&modelFlags.ocrPats, "ocrpats", "e", false,
+	modelCmd.Flags().BoolVarP(&modelArgs.ocrPats, "ocrpats", "e", false,
 		"output global ocr error pattern probabilities")
-	modelCmd.Flags().BoolVarP(&modelFlags.noWeights, "noweights", "n", false,
+	modelCmd.Flags().BoolVarP(&modelArgs.noWeights, "noweights", "n", false,
 		"do not output feature weights")
 }
 
@@ -49,13 +49,13 @@ func printmodel(name string, model *internal.Model) {
 	defer func() {
 		chk(w.Flush())
 	}()
-	if modelFlags.histPats {
+	if modelArgs.histPats {
 		printpats(w, name, "hist", model.GlobalHistPatterns)
 	}
-	if modelFlags.ocrPats {
+	if modelArgs.ocrPats {
 		printpats(w, name, "ocr", model.GlobalOCRPatterns)
 	}
-	if !modelFlags.noWeights {
+	if !modelArgs.noWeights {
 		for _, typ := range []string{"mrg", "rr", "dm"} {
 			printmodeldata(w, name, typ, model.Models[typ])
 		}
@@ -88,13 +88,13 @@ func printpats(out io.Writer, name, typ string, pats map[string]float64) {
 
 func printmodeljson(name string, model *internal.Model) {
 	st := modelst{Name: name}
-	if modelFlags.histPats {
+	if modelArgs.histPats {
 		st.GlobalHistPatterns = model.GlobalHistPatterns
 	}
-	if modelFlags.ocrPats {
+	if modelArgs.ocrPats {
 		st.GlobalOCRPatterns = model.GlobalOCRPatterns
 	}
-	if !modelFlags.noWeights {
+	if !modelArgs.noWeights {
 		st.Features = make(map[string][]feature)
 		for typ, data := range model.Models {
 			st.Features[typ] = jsonfeatures(typ, data)
