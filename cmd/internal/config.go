@@ -6,28 +6,24 @@ import (
 	"os"
 	"strings"
 
+	"git.sr.ht/~flobar/apoco/pkg/apoco"
 	"github.com/BurntSushi/toml"
 )
 
 // Config defines the command's configuration.
 type Config struct {
-	Model    string              `json:"model,omitempty"`
-	LM       map[string]LMConfig `json:"lm"`
-	Profiler ProfilerConfig      `json:"profiler"`
-	RR       TrainingConfig      `json:"rr"`
-	DM       DMConfig            `json:"dm"`
-	MS       TrainingConfig      `json:"ms"`
-	FF       TrainingConfig      `json:"ff"`
-	Nocr     int                 `json:"nocr"`
-	Cache    bool                `json:"cache"`
-	GT       bool                `json:"gt"`
-	AlignLev bool                `json:"alignLev"`
-	Lex      bool                `json:"lex"`
-}
-
-// LMConfig configures the path to a language model csv file.
-type LMConfig struct {
-	Path string `json:"path"`
+	Model    string                    `json:"model,omitempty"`
+	LM       map[string]apoco.LMConfig `json:"lm"`
+	Profiler ProfilerConfig            `json:"profiler"`
+	RR       TrainingConfig            `json:"rr"`
+	DM       DMConfig                  `json:"dm"`
+	MS       TrainingConfig            `json:"ms"`
+	FF       TrainingConfig            `json:"ff"`
+	Nocr     int                       `json:"nocr"`
+	Cache    bool                      `json:"cache"`
+	GT       bool                      `json:"gt"`
+	AlignLev bool                      `json:"alignLev"`
+	Lex      bool                      `json:"lex"`
 }
 
 // ProfilerConfig holds the profiler's configuration values.
